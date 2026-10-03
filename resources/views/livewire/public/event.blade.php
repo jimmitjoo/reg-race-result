@@ -99,7 +99,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         ]);
 
         if ($price === 0) {
-            $registration->markPaid();
+            $registration->markPaid('free');
             $this->redirect($confirmationUrl);
 
             return;
@@ -116,6 +116,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     <div>
         <flux:heading size="xl">{{ $event->name }}</flux:heading>
         <flux:subheading>{{ $event->date->toDateString() }} · {{ $event->organizer->name }}</flux:subheading>
+        <flux:link :href="route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" class="text-sm">{{ __('onsite.start_list') }}</flux:link>
     </div>
 
     <section class="flex flex-col gap-3">

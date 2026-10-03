@@ -18,10 +18,10 @@ class Registration extends Model
         return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime', 'manual_finish_at' => UtcDateTime::class.':ms'];
     }
 
-    public function markPaid(): void
+    public function markPaid(string $method): void
     {
         if (! $this->paid_at) {
-            $this->update(['paid_at' => now()]);
+            $this->update(['paid_at' => now(), 'payment_method' => $method]);
         }
     }
 
