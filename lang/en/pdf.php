@@ -15,4 +15,5 @@ return [
     'last_name' => 'Last name',
     'country' => 'Country',
     'filename' => ':event Results.pdf',
+    'prizes' => 'Prize draw',
 ];

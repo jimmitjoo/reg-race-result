@@ -20,6 +20,7 @@ final class ResultsPdf
             'classes' => $classes,
             'registered' => $event->registrations()->count(),
             'finished' => $finished,
+            'prizes' => $event->prizes()->with('winner')->whereNotNull('registration_id')->orderBy('id')->get(),
             'measuredRace' => $event->races()->whereNotNull('course_measurer')->whereNotNull('measured_on')->first(),
         ])->render();
     }

@@ -15,4 +15,5 @@ return [
     'last_name' => 'Efternamn',
     'country' => 'Land',
     'filename' => ':event Resultat.pdf',
+    'prizes' => 'Utlottade priser',
 ];
