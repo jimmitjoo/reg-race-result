@@ -17,7 +17,7 @@ final class ResultCalculator
      * @param  list<Read>  $reads  from all readers, in any order
      * @param  list<Entry>  $entries  timed entries only
      */
-    public static function calculate(array $reads, array $entries, int $minTimeSeconds): Calculation
+    public static function calculate(array $reads, array $entries): Calculation
     {
         $readsByChip = [];
         foreach ($reads as $read) {
@@ -33,7 +33,7 @@ final class ResultCalculator
         $continuous = [];
         foreach ($entries as $entry) {
             $knownChips[$entry->chip] = true;
-            $earliest = $entry->startAt->addSeconds($minTimeSeconds);
+            $earliest = $entry->startAt->addSeconds($entry->minTimeSeconds);
             $chipReads = $readsByChip[$entry->chip] ?? [];
             $raceReads = array_values(array_filter($chipReads, fn (Read $read) => $read->readAt >= $earliest));
 
