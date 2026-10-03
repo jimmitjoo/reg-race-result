@@ -20,7 +20,10 @@ new class extends Component {
             <flux:subheading>{{ $event->name }}</flux:subheading>
         </div>
         <div class="flex flex-col items-end gap-1">
-            <flux:button :href="route('exports.sfif', $event)" icon="arrow-down-tray">{{ __('results.export_sfif') }}</flux:button>
+            <div class="flex gap-2">
+                <flux:button :href="route('exports.pdf', $event)" icon="document-arrow-down">{{ __('results.export_pdf') }}</flux:button>
+                <flux:button :href="route('exports.sfif', $event)" icon="arrow-down-tray">{{ __('results.export_sfif') }}</flux:button>
+            </div>
             <flux:text class="text-xs">{{ __('results.export_sfif_help') }}</flux:text>
         </div>
     </div>

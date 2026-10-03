@@ -11,5 +11,8 @@ final readonly class ResultRow
         public ?string $birthYear,
         public ?string $club,
         public ?string $time,
+        public string $firstName = '',
+        public string $lastName = '',
+        public ?string $country = null,
     ) {}
 }

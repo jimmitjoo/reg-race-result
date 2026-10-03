@@ -28,6 +28,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('events/{event}/results', 'events.results')->name('results.show');
     Volt::route('events/{event}/missing', 'events.missing')->name('missing.show');
     Route::get('events/{event}/exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
+    Route::get('events/{event}/exports/pdf', [ExportController::class, 'pdf'])->name('exports.pdf');
     Volt::route('events/{event}/uncollected', 'events.uncollected')->name('uncollected.show');
     Route::get('events/{event}/timing', [TimingController::class, 'show'])->name('timing.show');
     Route::post('events/{event}/reads', [TimingController::class, 'storeReads'])->name('timing.reads.store');

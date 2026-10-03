@@ -85,6 +85,9 @@ final class ResultList
             $registration->birth_date?->format('y'),
             $registration->club,
             $time,
+            $registration->first_name,
+            $registration->last_name,
+            $registration->country,
         );
     }
 
