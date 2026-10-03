@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Club;
 use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\Race;
@@ -157,4 +158,32 @@ it('creates event slugs from the name, unique per organizer', function () {
 
 it('has every registration translation in Swedish and English', function () {
     expect(array_keys(require lang_path('sv/registration.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/registration.php')));
+});
+
+it('stores the official club name and link when the typed club is in the federation list', function () {
+    [, , , $class] = openEvent();
+    $club = Club::create(['federation' => 'SFIF', 'external_id' => '506', 'name' => 'Högby IF', 'district' => 'Småland']);
+
+    fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
+        ->set('club', 'högby if ')
+        ->call('register');
+
+    expect(Registration::sole())->club->toBe('Högby IF')->club_id->toBe($club->id);
+});
+
+it('keeps a home town as free text', function () {
+    [, , , $class] = openEvent();
+
+    fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
+        ->set('club', 'Kalmar')
+        ->call('register');
+
+    expect(Registration::sole())->club->toBe('Kalmar')->club_id->toBeNull();
+});
+
+it('suggests the federation clubs in the form', function () {
+    openEvent();
+    Club::create(['federation' => 'SFIF', 'external_id' => '506', 'name' => 'Högby IF']);
+
+    $this->get('/hogby-if/sylvesterloppet-2026')->assertSee('<datalist id="clubs">', false)->assertSee('<option value="Högby IF">', false);
 });

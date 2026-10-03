@@ -13,7 +13,7 @@ return [
     'gender_m' => 'Man',
     'gender_k' => 'Woman',
     'club' => 'Club or town',
-    'club_help' => 'Your club, or your home town if you do not run for a club.',
+    'club_help' => 'Start typing to get suggestions from the federation club list. If you do not run for a club, write your home town.',
     'email' => 'Email',
     'phone' => 'Phone',
     'submit' => 'Register',
