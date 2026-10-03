@@ -54,6 +54,11 @@ class Event extends Model
         return $this->hasManyThrough(Registration::class, RaceClass::class);
     }
 
+    public function prizes(): HasMany
+    {
+        return $this->hasMany(Prize::class);
+    }
+
     public function chips(): HasMany
     {
         return $this->hasMany(Chip::class);
