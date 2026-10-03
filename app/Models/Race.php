@@ -14,6 +14,13 @@ class Race extends Model
 
     protected $guarded = [];
 
+    public const TYPES = ['Väg', 'Terräng', 'Trail'];
+
+    protected function casts(): array
+    {
+        return ['measured_on' => 'immutable_date', 'age_groups' => 'boolean'];
+    }
+
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);

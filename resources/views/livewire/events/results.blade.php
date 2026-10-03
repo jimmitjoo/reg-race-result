@@ -14,9 +14,15 @@ new class extends Component {
 }; ?>
 
 <div class="flex max-w-4xl flex-col gap-8" wire:poll.10s>
-    <div>
-        <flux:heading size="xl">{{ __('results.title') }}</flux:heading>
-        <flux:subheading>{{ $event->name }}</flux:subheading>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <flux:heading size="xl">{{ __('results.title') }}</flux:heading>
+            <flux:subheading>{{ $event->name }}</flux:subheading>
+        </div>
+        <div class="flex flex-col items-end gap-1">
+            <flux:button :href="route('exports.sfif', $event)" icon="arrow-down-tray">{{ __('results.export_sfif') }}</flux:button>
+            <flux:text class="text-xs">{{ __('results.export_sfif_help') }}</flux:text>
+        </div>
     </div>
 
     @foreach ($classes as $results)
