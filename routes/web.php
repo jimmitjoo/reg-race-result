@@ -23,6 +23,8 @@ Route::middleware(['auth'])->group(function () {
 
     Volt::route('events', 'events.index')->name('events.index');
     Volt::route('events/{event}', 'events.show')->name('events.show');
+    Volt::route('events/{event}/start', 'events.start')->name('start.show');
+    Volt::route('events/{event}/results', 'events.results')->name('results.show');
     Route::get('events/{event}/timing', [TimingController::class, 'show'])->name('timing.show');
     Route::post('events/{event}/reads', [TimingController::class, 'storeReads'])->name('timing.reads.store');
 });

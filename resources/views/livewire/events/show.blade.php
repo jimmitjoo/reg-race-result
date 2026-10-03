@@ -122,7 +122,11 @@ new class extends Component {
             <flux:heading size="xl">{{ $event->name }}</flux:heading>
             <flux:subheading>{{ $event->date->toDateString() }} · {{ $event->timezone }}</flux:subheading>
         </div>
-        <flux:button :href="route('timing.show', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
+        <div class="flex flex-wrap gap-2">
+            <flux:button :href="route('timing.show', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
+            <flux:button :href="route('start.show', $event)" icon="flag" wire:navigate>{{ __('results.start') }}</flux:button>
+            <flux:button :href="route('results.show', $event)" icon="trophy" wire:navigate>{{ __('results.title') }}</flux:button>
+        </div>
     </div>
 
     @foreach ($races as $race)
