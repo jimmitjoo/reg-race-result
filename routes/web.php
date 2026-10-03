@@ -31,6 +31,7 @@ Route::middleware(['auth'])->group(function () {
         Volt::route('uncollected', 'events.uncollected')->name('uncollected');
         Volt::route('chips', 'events.chips')->name('chips');
         Volt::route('prizes', 'events.prizes')->name('prizes');
+        Volt::route('onsite', 'events.onsite')->name('onsite');
         Route::get('exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
         Route::get('exports/pdf', [ExportController::class, 'pdf'])->name('exports.pdf');
         Route::get('timing', [TimingController::class, 'show'])->name('timing');
@@ -46,6 +47,7 @@ Route::post('stripe/webhook', StripeWebhookController::class)->name('stripe.webh
 // Public pages by slug. Registered last so that fixed paths (settings, events, login …) win.
 // Later the organizer can also come from a custom domain (#43).
 Volt::route('{organizer}/{event}', 'public.event')->name('public.event');
+Volt::route('{organizer}/{event}/start-list', 'public.start-list')->name('public.start-list');
 Route::get('{organizer}/{event}/registrations/{registration}', [PublicRegistrationController::class, 'show'])
     ->middleware('signed')
     ->name('public.registration');

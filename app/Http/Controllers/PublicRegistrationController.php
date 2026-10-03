@@ -16,7 +16,7 @@ class PublicRegistrationController extends Controller
 
         // Back from Stripe before the webhook arrived: ask Stripe directly.
         if (! $registration->paid_at && $registration->stripe_checkout_session_id && app(StripeCheckout::class)->isPaid($registration)) {
-            $registration->markPaid();
+            $registration->markPaid('stripe');
         }
 
         return view('public.registration', ['registration' => $registration, 'event' => $registrationEvent]);

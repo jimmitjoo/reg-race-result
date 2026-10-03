@@ -27,7 +27,7 @@ class StripeWebhookController extends Controller
             Registration::where('id', $session->metadata['registration_id'] ?? null)
                 ->where('stripe_checkout_session_id', $session->id)
                 ->first()
-                ?->markPaid();
+                ?->markPaid('stripe');
         }
 
         return response('ok');
