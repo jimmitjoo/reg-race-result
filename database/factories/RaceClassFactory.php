@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Event;
+use App\Models\Race;
 use App\Models\RaceClass;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -13,6 +14,7 @@ class RaceClassFactory extends Factory
     {
         return [
             'event_id' => Event::factory(),
+            'race_id' => fn (array $attributes) => Race::factory()->create(['event_id' => $attributes['event_id']]),
             'name' => 'Kvinnor 10 km',
             'distance_meters' => 10000,
             'gender' => 'K',

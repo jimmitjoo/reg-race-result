@@ -24,6 +24,11 @@ class RaceClass extends Model
         return $this->belongsTo(Event::class);
     }
 
+    public function race(): BelongsTo
+    {
+        return $this->belongsTo(Race::class);
+    }
+
     public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class);
