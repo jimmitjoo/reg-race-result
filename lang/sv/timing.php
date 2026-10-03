@@ -18,4 +18,9 @@ return [
     'all_sent' => 'Allt är skickat',
     'sending' => 'Skickar …',
     'unsent_warning' => 'Alla läsningar är inte skickade än. Stäng inte sidan.',
+    'upload_title' => 'Ladda upp fil',
+    'upload_help' => 'Reserv om sidan inte kunde läsa mappen under loppet: välj RFIDServers fil, t.ex. 192.168.1.241.txt. Läsningar som redan finns hoppas över.',
+    'upload' => 'Ladda upp',
+    'uploaded' => 'Läsare :reader: :inserted nya läsningar, :duplicates fanns redan.',
+    'upload_bad_name' => 'Filen ska heta som läsarens IP-adress, t.ex. 192.168.1.241.txt.',
 ];

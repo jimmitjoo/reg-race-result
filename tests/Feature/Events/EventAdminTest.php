@@ -52,8 +52,8 @@ it('hides other organizers events', function () {
     $this->actingAs(organizerUser());
 
     $this->get(route('events.show', $event))->assertNotFound();
-    $this->get(route('timing.show', $event))->assertNotFound();
-    $this->postJson(route('timing.reads.store', $event), ['reader' => '240', 'lines' => ''])->assertNotFound();
+    $this->get(route('events.timing', $event))->assertNotFound();
+    $this->postJson(route('events.timing.reads', $event), ['reader' => '240', 'lines' => ''])->assertNotFound();
 });
 
 it('adds a class with its start time in the event timezone and the minimum time in minutes', function () {
@@ -123,7 +123,7 @@ it('shows classes with local start times and links to timing', function () {
         ->get(route('events.show', $event))
         ->assertSee('Män 10 km')
         ->assertSee('10:03:30')
-        ->assertSee(route('timing.show', $event));
+        ->assertSee(route('events.timing', $event));
 });
 
 it('has every events translation in Swedish and English', function () {

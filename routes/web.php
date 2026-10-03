@@ -24,16 +24,19 @@ Route::middleware(['auth'])->group(function () {
 
     Volt::route('events', 'events.index')->name('events.index');
     Volt::route('events/{event}', 'events.show')->name('events.show');
-    Volt::route('events/{event}/start', 'events.start')->name('start.show');
-    Volt::route('events/{event}/results', 'events.results')->name('results.show');
-    Volt::route('events/{event}/missing', 'events.missing')->name('missing.show');
-    Route::get('events/{event}/exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
-    Route::get('events/{event}/exports/pdf', [ExportController::class, 'pdf'])->name('exports.pdf');
-    Volt::route('events/{event}/uncollected', 'events.uncollected')->name('uncollected.show');
-    Volt::route('events/{event}/chips', 'events.chips')->name('chips.show');
-    Volt::route('events/{event}/prizes', 'events.prizes')->name('prizes.show');
-    Route::get('events/{event}/timing', [TimingController::class, 'show'])->name('timing.show');
-    Route::post('events/{event}/reads', [TimingController::class, 'storeReads'])->name('timing.reads.store');
+    Route::prefix('events/{event}')->name('events.')->group(function () {
+        Volt::route('start', 'events.start')->name('start');
+        Volt::route('results', 'events.results')->name('results');
+        Volt::route('missing', 'events.missing')->name('missing');
+        Volt::route('uncollected', 'events.uncollected')->name('uncollected');
+        Volt::route('chips', 'events.chips')->name('chips');
+        Volt::route('prizes', 'events.prizes')->name('prizes');
+        Route::get('exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
+        Route::get('exports/pdf', [ExportController::class, 'pdf'])->name('exports.pdf');
+        Route::get('timing', [TimingController::class, 'show'])->name('timing');
+        Route::post('reads', [TimingController::class, 'storeReads'])->name('timing.reads');
+        Route::post('timing/upload', [TimingController::class, 'upload'])->name('timing.upload');
+    });
 });
 
 require __DIR__.'/auth.php';
