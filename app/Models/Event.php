@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Str;
 
 class Event extends Model
 {
@@ -17,6 +18,20 @@ class Event extends Model
     protected function casts(): array
     {
         return ['date' => 'immutable_date'];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Event $event) {
+            if (! $event->slug) {
+                $base = Str::slug($event->name);
+                $slug = $base;
+                for ($n = 2; static::where('organizer_id', $event->organizer_id)->where('slug', $slug)->exists(); $n++) {
+                    $slug = "{$base}-{$n}";
+                }
+                $event->slug = $slug;
+            }
+        });
     }
 
     public function organizer(): BelongsTo

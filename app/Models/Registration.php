@@ -12,6 +12,11 @@ class Registration extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime'];
+    }
+
     public function raceClass(): BelongsTo
     {
         return $this->belongsTo(RaceClass::class);

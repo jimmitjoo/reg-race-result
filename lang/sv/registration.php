@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'Anmälan',
+    'classes' => 'Klasser',
+    'class' => 'Klass',
+    'choose_class' => 'Välj klass',
+    'closed' => 'Anmälan stängd',
+    'first_name' => 'Förnamn',
+    'last_name' => 'Efternamn',
+    'birth_date' => 'Födelsedatum',
+    'gender' => 'Kön',
+    'gender_m' => 'Man',
+    'gender_k' => 'Kvinna',
+    'club' => 'Förening eller ort',
+    'club_help' => 'Skriv din förening, eller din ort om du inte springer för en förening.',
+    'email' => 'E-post',
+    'phone' => 'Telefon',
+    'submit' => 'Anmäl',
+    'class_not_open' => 'Klassen går inte att anmäla sig till.',
+    'min_age' => 'Halvmaraton och längre: du måste fylla 17 år i år.',
+    'confirmation_title' => 'Tack för din anmälan!',
+    'confirmation_text' => ':name är anmäld till :class i :event.',
+    'unpaid' => 'Anmälan är inte betald än.',
+    'publication_notice' => 'Namn, födelseår, förening och resultat publiceras i start- och resultatlistor.',
+];

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PublicRegistrationController;
 use App\Http\Controllers\TimingController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -26,3 +27,10 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// Public pages by slug. Registered last so that fixed paths (settings, events, login …) win.
+// Later the organizer can also come from a custom domain (#43).
+Volt::route('{organizer}/{event}', 'public.event')->name('public.event');
+Route::get('{organizer}/{event}/registrations/{registration}', [PublicRegistrationController::class, 'show'])
+    ->middleware('signed')
+    ->name('public.registration');

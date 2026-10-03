@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'Registration',
+    'classes' => 'Classes',
+    'class' => 'Class',
+    'choose_class' => 'Choose class',
+    'closed' => 'Registration closed',
+    'first_name' => 'First name',
+    'last_name' => 'Last name',
+    'birth_date' => 'Date of birth',
+    'gender' => 'Gender',
+    'gender_m' => 'Man',
+    'gender_k' => 'Woman',
+    'club' => 'Club or town',
+    'club_help' => 'Your club, or your home town if you do not run for a club.',
+    'email' => 'Email',
+    'phone' => 'Phone',
+    'submit' => 'Register',
+    'class_not_open' => 'This class is not open for registration.',
+    'min_age' => 'Half marathon and longer: you must turn 17 this year.',
+    'confirmation_title' => 'Thank you for registering!',
+    'confirmation_text' => ':name is registered for :class at :event.',
+    'unpaid' => 'The registration has not been paid yet.',
+    'publication_notice' => 'Name, year of birth, club and results are published in start and result lists.',
+];
