@@ -12,5 +12,6 @@ final readonly class Entry
         public CarbonImmutable $startAt,
         public int $minTimeSeconds,
         public bool $dns = false,
+        public ?CarbonImmutable $manualFinishAt = null,
     ) {}
 }

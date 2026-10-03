@@ -126,6 +126,8 @@ new class extends Component {
             <flux:button :href="route('timing.show', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
             <flux:button :href="route('start.show', $event)" icon="flag" wire:navigate>{{ __('results.start') }}</flux:button>
             <flux:button :href="route('results.show', $event)" icon="trophy" wire:navigate>{{ __('results.title') }}</flux:button>
+            <flux:button :href="route('missing.show', $event)" icon="question-mark-circle" wire:navigate>{{ __('results.missing') }}</flux:button>
+            <flux:button :href="route('uncollected.show', $event)" icon="squares-2x2" wire:navigate>{{ __('results.uncollected') }}</flux:button>
         </div>
     </div>
 

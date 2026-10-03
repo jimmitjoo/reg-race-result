@@ -23,6 +23,7 @@ final class EventResults
                 startAt: $registration->raceClass->start_at,
                 minTimeSeconds: $registration->raceClass->min_time_seconds,
                 dns: $registration->status === 'dns',
+                manualFinishAt: $registration->manual_finish_at,
             ))
             ->all();
 

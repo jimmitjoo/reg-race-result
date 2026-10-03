@@ -156,3 +156,17 @@ it('uses the minimum time of each entry', function () {
     expect($calculation->results['5']->elapsedSeconds)->toBe(600)
         ->and($calculation->results['10']->elapsedSeconds)->toBe(2400);
 });
+
+it('uses a manual finish time instead of reads', function () {
+    $entry = new Entry('7', '7', at('10:00:00.000'), 60, manualFinishAt: at('10:41:07.000'));
+
+    $result = ResultCalculator::calculate([read('7', '10:45:00.000')], [$entry])->results['7'];
+
+    expect($result->status)->toBe(ResultStatus::Finished)->and($result->elapsedSeconds)->toBe(2467);
+});
+
+it('ignores a manual finish time for DNS', function () {
+    $entry = new Entry('7', '7', at('10:00:00.000'), 60, dns: true, manualFinishAt: at('10:41:07.000'));
+
+    expect(ResultCalculator::calculate([], [$entry])->results['7']->status)->toBe(ResultStatus::Dns);
+});

@@ -51,18 +51,18 @@ final class ResultCalculator
         return new Calculation($results, $unknown, $continuous);
     }
 
-    /** @param  list<Read>  $raceReads  sorted, after the minimum time */
+    /** @param  list<Read>  $raceReads  sorted, after the minimum time; a manual finish time wins */
     private static function result(Entry $entry, array $raceReads): Result
     {
         if ($entry->dns) {
             return new Result($entry->bib, ResultStatus::Dns);
         }
 
-        if ($raceReads === []) {
+        $finish = $entry->manualFinishAt ?? ($raceReads[0] ?? null)?->readAt;
+
+        if ($finish === null) {
             return new Result($entry->bib, ResultStatus::Missing);
         }
-
-        $finish = $raceReads[0]->readAt;
 
         return new Result(
             $entry->bib,
