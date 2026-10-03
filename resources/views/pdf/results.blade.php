@@ -40,6 +40,18 @@
     @if ($measuredRace)
         <p class="note">{{ __('pdf.measured', ['date' => $measuredRace->measured_on->toDateString(), 'name' => $measuredRace->course_measurer]) }}</p>
     @endif
+    @if ($prizes->isNotEmpty())
+        <table class="meta note">
+            <tr><td colspan="3"><strong>{{ __('pdf.prizes') }}</strong></td></tr>
+            @foreach ($prizes as $prize)
+                <tr>
+                    <td>{{ $prize->name }}</td>
+                    <td>{{ $prize->winner->bib }}</td>
+                    <td>{{ $prize->winner->first_name }} {{ $prize->winner->last_name }}@if ($prize->winner->club), {{ $prize->winner->club }}@endif</td>
+                </tr>
+            @endforeach
+        </table>
+    @endif
     @if ($event->contact_email)
         <p class="note">{{ __('pdf.feedback', ['email' => $event->contact_email]) }}</p>
     @endif

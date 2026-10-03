@@ -71,3 +71,7 @@ it('requires a selected class and a valid time', function () {
 it('has every results translation in Swedish and English', function () {
     expect(array_keys(require lang_path('sv/results.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/results.php')));
 });
+
+it('has every prizes translation in Swedish and English', function () {
+    expect(array_keys(require lang_path('sv/prizes.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/prizes.php')));
+});

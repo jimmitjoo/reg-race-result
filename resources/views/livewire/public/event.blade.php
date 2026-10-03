@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Club;
 use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\RaceClass;
@@ -40,6 +41,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             'races' => $this->raceEvent->races()->with(['raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get()
                 ->map(fn ($race) => ['race' => $race, 'price' => $race->priceAt($now)]),
             'currency' => $this->raceEvent->organizer->currency,
+            'clubs' => Club::orderBy('name')->pluck('name'),
         ];
     }
 
@@ -76,12 +78,15 @@ new #[Layout('components.layouts.public')] class extends Component {
             return;
         }
 
+        $club = Club::match($this->club);
+
         $registration = $class->registrations()->create([
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
             'birth_date' => $this->birthDate,
             'gender' => $this->gender,
-            'club' => $this->club ?: null,
+            'club' => $club?->name ?? ($this->club ?: null),
+            'club_id' => $club?->id,
             'email' => $this->email,
             'phone' => $this->phone ?: null,
             'price' => $price,
@@ -153,7 +158,12 @@ new #[Layout('components.layouts.public')] class extends Component {
             </flux:select>
         </div>
 
-        <flux:input wire:model="club" :label="__('registration.club')" :description="__('registration.club_help')" />
+        <flux:input wire:model="club" list="clubs" autocomplete="off" :label="__('registration.club')" :description="__('registration.club_help')" />
+        <datalist id="clubs">
+            @foreach ($clubs as $name)
+                <option value="{{ $name }}">
+            @endforeach
+        </datalist>
 
         <div class="grid gap-4 sm:grid-cols-2">
             <flux:input wire:model="email" type="email" :label="__('registration.email')" autocomplete="email" />
