@@ -49,7 +49,7 @@ new class extends Component {
             'races' => $this->event->races()->with(['priceSteps', 'raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get(),
             'unassigned' => $this->event->raceClasses()->whereNull('race_id')->orderBy('start_at')->get(),
             'currency' => $this->event->organizer->currency,
-            'districts' => App\Models\Club::whereNotNull('district')->distinct()->orderBy('district')->pluck('district'),
+            'districts' => App\Results\Districts::names(),
         ];
     }
 

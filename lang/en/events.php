@@ -61,6 +61,6 @@ return [
     'championship_dm' => 'District championship (DM)',
     'championship_sm' => 'National championship (SM)',
     'championship_districts' => 'Districts that count',
-    'championship_districts_help' => 'Runners whose club belongs to these districts in the federation club list.',
+    'championship_districts_help' => 'Runners whose club belongs to these districts in the federation club list count in the championship.',
     'championship_veterans' => 'Also veteran placings (:name)',
 ];
