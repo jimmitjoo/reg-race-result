@@ -47,6 +47,9 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
+      - name: Run JS Tests
+        run: npm test
+
       - name: Build Assets
         run: npm run build
 

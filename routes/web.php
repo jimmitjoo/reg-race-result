@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TimingController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -17,6 +18,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
+
+    Route::get('events/{event}/timing', [TimingController::class, 'show'])->name('timing.show');
+    Route::post('events/{event}/reads', [TimingController::class, 'storeReads'])->name('timing.reads.store');
 });
 
 require __DIR__.'/auth.php';
