@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Results\Districts;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +27,7 @@ class Race extends Model
     {
         return match ($this->championship) {
             'SM' => $club !== null,
-            'DM' => $club !== null && in_array($club->district, $this->championship_districts ?? [], true),
+            'DM' => $club !== null && in_array($club->district, Districts::expand($this->championship_districts ?? []), true),
             default => false,
         };
     }

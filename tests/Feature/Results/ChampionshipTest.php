@@ -42,7 +42,7 @@ function placings(Event $event, RaceClass $class): array
 }
 
 it('places DM among runners from clubs in the chosen districts, and VDM per veteran group', function () {
-    [$event, , $class, $clubs] = championshipEvent(['championship' => 'DM', 'championship_districts' => ['Småland', 'Blekinge', 'Östergötland'], 'championship_veterans' => true]);
+    [$event, , $class, $clubs] = championshipEvent(['championship' => 'DM', 'championship_districts' => ['Östsvenska'], 'championship_veterans' => true]);
     champRunner($class, 170, '17:43:38.000', $clubs['Hälle IF']);
     champRunner($class, 60, '17:46:09.000', $clubs['Högby IF']);
     champRunner($class, 177, '17:46:53.000', null);
@@ -96,14 +96,14 @@ it('saves the championship settings of a race', function () {
     Volt::test('events.show', ['event' => $event])
         ->call('editRace', $race->id)
         ->set('championship', 'DM')
-        ->set('championshipDistricts', ['Småland', 'Blekinge', 'Östergötland'])
+        ->set('championshipDistricts', ['Östsvenska'])
         ->set('championshipVeterans', true)
         ->call('saveRace')
         ->assertHasNoErrors();
 
     expect($race->fresh())
         ->championship->toBe('DM')
-        ->championship_districts->toBe(['Småland', 'Blekinge', 'Östergötland'])
+        ->championship_districts->toBe(['Östsvenska'])
         ->championship_veterans->toBeTrue();
 });
 
@@ -115,4 +115,32 @@ it('shows DM and VDM columns on the result page and in the PDF only for champion
 
     $this->get(route('events.results', $event))->assertSee(__('results.championship_placing', ['name' => 'DM']))->assertSee(__('results.championship_placing', ['name' => 'VDM']))->assertSee('1 K35');
     expect(ResultsPdf::html($event))->toContain('DM plac')->toContain('1 K35');
+});
+
+it('uses the SM template in the federation file when a race is SM', function () {
+    [$event, $race, $class, $clubs] = championshipEvent(['championship' => 'SM', 'championship_veterans' => true]);
+    champRunner($class, 1, '17:40:00.000', $clubs['Hälle IF'], '1981-10-31');
+    champRunner($class, 2, '17:41:00.000', null, '1984-01-01');
+    champRunner($class, 3, '17:42:00.000', $clubs['Högby IF'], '1995-01-01');
+    champRunner($class, 4, '17:43:00.000', $clubs['IK Akele'], '1983-01-28');
+
+    $lines = explode("\r\n", rtrim(substr(SfifExport::csv($event), 3)));
+    $header = explode(';', $lines[0]);
+    $rows = array_map(fn ($line) => array_combine($header, explode(';', $line)), array_slice($lines, 1));
+
+    expect($header)->toBe(['type', 'race_name', 'city', 'date', 'organizer', 'distance', 'gender', 'course_measurer', 'date_of_measurement', 'placing', 'smplacing', 'agegroup', 'agegroupplacing', 'vsmagegroupplacing', 'firstname', 'lastname', 'country', 'club', 'birthdate', 'yb', 'result', 'netto'])
+        ->and(array_map(fn ($r) => [$r['placing'], $r['smplacing'], $r['agegroup'], $r['agegroupplacing'], $r['vsmagegroupplacing']], $rows))->toBe([
+            ['1', '1', 'K45', '1', '1'],
+            ['2', '', 'K40', '1', ''],
+            ['3', '2', '', '', ''],
+            ['4', '3', 'K40', '2', '1'],
+        ]);
+});
+
+it('counts a DM district chosen with its new name', function () {
+    [$event, , $class, $clubs] = championshipEvent(['championship' => 'DM', 'championship_districts' => ['Östsvenska']]);
+    champRunner($class, 1, '17:40:00.000', $clubs['IK Akele']);
+    champRunner($class, 2, '17:41:00.000', $clubs['Hälle IF']);
+
+    expect(array_column(placings($event, $class), 2))->toBe([1, null]);
 });

@@ -61,6 +61,6 @@ return [
     'championship_dm' => 'DM (distriktsmästerskap)',
     'championship_sm' => 'SM (svenska mästerskap)',
     'championship_districts' => 'Distrikt som räknas',
-    'championship_districts_help' => 'Löpare vars förening hör till de här distrikten i Friidrottsförbundets föreningslista. Östsvenska = Blekinge, Småland och Östergötland.',
+    'championship_districts_help' => 'Löpare vars förening hör till de här distrikten i Friidrottsförbundets föreningslista räknas i DM.',
     'championship_veterans' => 'Även veteranplaceringar (:name)',
 ];

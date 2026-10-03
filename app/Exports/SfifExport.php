@@ -23,14 +23,21 @@ final class SfifExport
         'placing', 'agegroup', 'agegroupplacing', 'extra', 'firstname', 'lastname', 'country', 'club', 'birthdate', 'yb', 'result', 'netto',
     ];
 
+    /** The federation's template for races that include an SM (Swedish championship), with SM and veteran SM placings. */
+    public const SM_COLUMNS = [
+        'type', 'race_name', 'city', 'date', 'organizer', 'distance', 'gender', 'course_measurer', 'date_of_measurement',
+        'placing', 'smplacing', 'agegroup', 'agegroupplacing', 'vsmagegroupplacing', 'firstname', 'lastname', 'country', 'club', 'birthdate', 'yb', 'result', 'netto',
+    ];
+
     /** Road distances that need a course measured by a federation measurer. */
     private const MEASURED_DISTANCES = [5000, 10000, 21097, 21100, 42195, 42200, 50000, 100000];
 
     public static function csv(Event $event): string
     {
-        $lines = [implode(';', self::COLUMNS)];
+        $columns = $event->races()->where('championship', 'SM')->exists() ? self::SM_COLUMNS : self::COLUMNS;
+        $lines = [implode(';', $columns)];
         foreach (self::rows($event) as $row) {
-            $lines[] = implode(';', array_map(fn ($value) => str_replace([';', "\r", "\n"], ' ', (string) $value), $row));
+            $lines[] = implode(';', array_map(fn ($column) => str_replace([';', "\r", "\n"], ' ', (string) ($row[$column] ?? '')), $columns));
         }
 
         return "\xEF\xBB\xBF".implode("\r\n", $lines)."\r\n";
@@ -53,12 +60,10 @@ final class SfifExport
     {
         $timing = EventResults::for($event)->results;
         $year = $event->date->year;
-        $dmPlacings = [];
+        $championship = [];
         foreach (ResultList::for($event) as $classResults) {
-            if ($classResults->raceClass->race?->championship === 'DM') {
-                foreach ($classResults->rows as $resultRow) {
-                    $dmPlacings[$resultRow->bib] = $resultRow->championshipPlacing;
-                }
+            foreach ($classResults->rows as $resultRow) {
+                $championship[$resultRow->bib] = $resultRow;
             }
         }
         $groups = [];
@@ -98,12 +103,20 @@ final class SfifExport
                 <=> [$statusOrder[$b['status'] ?? ''] ?? 0, $b['seconds'], $b['finishAt'], $b['registration']->bib]);
 
             $placings = self::placings(array_filter($entries, fn ($e) => ! $e['status']), fn ($e) => 'all');
-            $ageGroupOf = fn ($e) => $e['class']->race?->age_groups ? self::ageGroup($e['registration'], $e['gender'], $year) : null;
+            // The SM template has age groups for every veteran when the race has veteran SM placings.
+            $ageGroupOf = fn ($e) => $e['class']->race?->age_groups || ($e['class']->race?->championship === 'SM' && $e['class']->race->championship_veterans)
+                ? self::ageGroup($e['registration'], $e['gender'], $year)
+                : null;
             $agePlacings = self::placings(array_filter($entries, fn ($e) => ! $e['status']), $ageGroupOf);
 
             foreach ($entries as $index => $entry) {
-                $dm = $dmPlacings[$entry['registration']->bib] ?? null;
-                $rows[] = self::row($event, $entry, $placings[$index] ?? null, $agePlacings[$index] ?? null, $ageGroupOf($entry), $dm ? "DM {$dm}" : '');
+                $resultRow = $entry['status'] ? null : ($championship[$entry['registration']->bib] ?? null);
+                $kind = $entry['class']->race?->championship;
+                $rows[] = self::row($event, $entry, $placings[$index] ?? null, $agePlacings[$index] ?? null, $ageGroupOf($entry)) + [
+                    'extra' => $kind === 'DM' && $resultRow?->championshipPlacing ? "DM {$resultRow->championshipPlacing}" : '',
+                    'smplacing' => $kind === 'SM' ? $resultRow?->championshipPlacing : null,
+                    'vsmagegroupplacing' => $kind === 'SM' ? $resultRow?->veteranPlacing : null,
+                ];
             }
         }
 
@@ -139,7 +152,7 @@ final class SfifExport
         return $registration->birth_date ? AgeGroup::for($registration->birth_date->year, $gender, $year) : null;
     }
 
-    private static function row(Event $event, array $entry, ?int $placing, ?int $agePlacing, ?string $ageGroup, string $extra): array
+    private static function row(Event $event, array $entry, ?int $placing, ?int $agePlacing, ?string $ageGroup): array
     {
         /** @var RaceClass $class */
         $class = $entry['class'];
@@ -148,7 +161,7 @@ final class SfifExport
         $race = $class->race;
         $measured = $race?->type === 'Väg' && in_array($class->distance_meters, self::MEASURED_DISTANCES, true);
 
-        return array_combine(self::COLUMNS, [
+        return array_combine(array_diff(self::COLUMNS, ['extra']), [
             $race?->type ?? 'Väg',
             $race?->name ?? $event->name,
             $event->city,
@@ -161,7 +174,6 @@ final class SfifExport
             $placing,
             $entry['status'] ? '' : $ageGroup,
             $entry['status'] || ! $ageGroup ? '' : $agePlacing,
-            $extra,
             $registration->first_name,
             $registration->last_name,
             $registration->country,
