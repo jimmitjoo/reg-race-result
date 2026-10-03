@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\UtcDateTime;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ class Registration extends Model
 
     protected function casts(): array
     {
-        return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime'];
+        return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime', 'manual_finish_at' => UtcDateTime::class.':ms'];
     }
 
     public function markPaid(): void
