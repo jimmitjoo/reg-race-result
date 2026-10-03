@@ -24,6 +24,11 @@ class Event extends Model
         return $this->belongsTo(Organizer::class);
     }
 
+    public function races(): HasMany
+    {
+        return $this->hasMany(Race::class);
+    }
+
     public function raceClasses(): HasMany
     {
         return $this->hasMany(RaceClass::class);

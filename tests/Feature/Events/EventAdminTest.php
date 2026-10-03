@@ -2,6 +2,7 @@
 
 use App\Models\Event;
 use App\Models\Organizer;
+use App\Models\Race;
 use App\Models\RaceClass;
 use App\Models\User;
 use Livewire\Volt\Volt;
@@ -60,7 +61,10 @@ it('adds a class with its start time in the event timezone and the minimum time 
     $event = Event::factory()->create(['organizer_id' => $user->organizer_id, 'date' => '2026-10-03', 'timezone' => 'Europe/Stockholm']);
     $this->actingAs($user);
 
+    $race = Race::factory()->for($event)->create();
+
     Volt::test('events.show', ['event' => $event])
+        ->set('raceId', $race->id)
         ->set('className', 'Kvinnor 10 km')
         ->set('distanceMeters', 10000)
         ->set('gender', 'K')
@@ -130,4 +134,76 @@ it('forbids users who do not belong to an organizer', function () {
     $this->actingAs(User::factory()->create(['organizer_id' => null]))
         ->get(route('events.index'))
         ->assertForbidden();
+});
+
+it('creates a race with price steps and an on-site price in major units', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $this->actingAs($user);
+
+    $page = Volt::test('events.show', ['event' => $event])
+        ->set('raceName', 'Lilla Sylvesterloppet')
+        ->set('onsitePrice', '150')
+        ->call('saveRace')
+        ->assertHasNoErrors();
+
+    $race = Race::sole();
+    expect($race)->name->toBe('Lilla Sylvesterloppet')->onsite_price->toBe(15000);
+
+    $page->call('addPriceStep', $race->id, '2026-11-30', '99.50')->assertHasNoErrors();
+    expect($race->priceSteps()->sole())->amount->toBe(9950)->until->toDateString()->toBe('2026-11-30');
+
+    $page->call('removePriceStep', $race->priceSteps()->sole()->id);
+    expect($race->priceSteps()->count())->toBe(0);
+});
+
+it('puts a class in a race of the event', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $race = Race::factory()->for($event)->create();
+    $this->actingAs($user);
+
+    Volt::test('events.show', ['event' => $event])
+        ->set('raceId', $race->id)
+        ->set('className', 'P11 1.3 km')
+        ->set('startTime', '10:04:30')
+        ->call('saveClass')
+        ->assertHasNoErrors();
+
+    expect(RaceClass::sole())->race_id->toBe($race->id)->event_id->toBe($event->id);
+});
+
+it('does not accept a race from another event', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $this->actingAs($user);
+
+    Volt::test('events.show', ['event' => $event])
+        ->set('raceId', Race::factory()->create()->id)
+        ->set('className', 'X')
+        ->set('startTime', '10:00')
+        ->call('saveClass')
+        ->assertHasErrors(['raceId']);
+});
+
+it('shows races with their prices', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $race = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet', 'onsite_price' => 35000]);
+    $race->priceSteps()->create(['until' => '2026-11-30', 'amount' => 25000]);
+
+    $this->actingAs($user)
+        ->get(route('events.show', $event))
+        ->assertSee('Sylvesterloppet')
+        ->assertSee('250')
+        ->assertSee('350');
+});
+
+it('preselects the race when there is one', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $race = Race::factory()->for($event)->create();
+    $this->actingAs($user);
+
+    Volt::test('events.show', ['event' => $event])->assertSet('raceId', $race->id);
 });

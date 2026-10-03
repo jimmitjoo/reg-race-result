@@ -4,9 +4,14 @@ Anmälan, tidtagning och resultat för Högby IF:s lopp. Se [issues](https://git
 
 ## Utveckling
 
-Allt körs via Docker, ingen lokal PHP krävs.
+Allt körs via Docker, ingen lokal PHP krävs. Bygg dev-imagen en gång (Composer + PHP med `intl`):
 
 ```sh
-docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app composer:latest ./vendor/bin/pest   # tester
-docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app node:22 npm run build                # frontend
+docker build -t reg-race-result-dev docker/dev
+```
+
+```sh
+docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app reg-race-result-dev ./vendor/bin/pest   # PHP-tester
+docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app node:22 npm test                        # JS-tester
+docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app node:22 npm run build                   # frontend
 ```
