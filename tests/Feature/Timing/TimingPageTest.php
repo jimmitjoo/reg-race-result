@@ -7,7 +7,7 @@ use App\Models\User;
 it('shows the timing page to signed in users', function () {
     $event = Event::factory()->create(['name' => 'Ekerumsloppet 2026']);
 
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->create(['organizer_id' => $event->organizer_id]))
         ->get(route('timing.show', $event))
         ->assertOk()
         ->assertSee('Ekerumsloppet 2026')
@@ -23,7 +23,7 @@ it('imports lines sent by the browser and tells how many were new', function () 
     $event = Event::factory()->create();
     $lines = "704\t2024-12-31 11:09:58.877\t1\t4\r\n318\t2024-12-31 11:09:59.626\t1\t4\r\n";
 
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->create(['organizer_id' => $event->organizer_id]))
         ->postJson(route('timing.reads.store', $event), ['reader' => '241', 'lines' => $lines])
         ->assertOk()
         ->assertJson(['inserted' => 2, 'duplicates' => 0, 'rejected' => []]);
@@ -35,15 +35,19 @@ it('imports lines sent by the browser and tells how many were new', function () 
 });
 
 it('accepts an empty batch', function () {
-    $this->actingAs(User::factory()->create())
-        ->postJson(route('timing.reads.store', Event::factory()->create()), ['reader' => '240', 'lines' => ''])
+    $event = Event::factory()->create();
+
+    $this->actingAs(User::factory()->create(['organizer_id' => $event->organizer_id]))
+        ->postJson(route('timing.reads.store', $event), ['reader' => '240', 'lines' => ''])
         ->assertOk()
         ->assertJson(['inserted' => 0]);
 });
 
 it('validates the reader name', function () {
-    $this->actingAs(User::factory()->create())
-        ->postJson(route('timing.reads.store', Event::factory()->create()), ['reader' => '../etc', 'lines' => ''])
+    $event = Event::factory()->create();
+
+    $this->actingAs(User::factory()->create(['organizer_id' => $event->organizer_id]))
+        ->postJson(route('timing.reads.store', $event), ['reader' => '../etc', 'lines' => ''])
         ->assertUnprocessable();
 });
 

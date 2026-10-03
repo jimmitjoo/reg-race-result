@@ -19,6 +19,8 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
+    Volt::route('events', 'events.index')->name('events.index');
+    Volt::route('events/{event}', 'events.show')->name('events.show');
     Route::get('events/{event}/timing', [TimingController::class, 'show'])->name('timing.show');
     Route::post('events/{event}/reads', [TimingController::class, 'storeReads'])->name('timing.reads.store');
 });
