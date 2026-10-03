@@ -13,7 +13,7 @@ return [
     'gender_m' => 'Man',
     'gender_k' => 'Kvinna',
     'club' => 'Förening eller ort',
-    'club_help' => 'Skriv din förening, eller din ort om du inte springer för en förening.',
+    'club_help' => 'Börja skriva så får du förslag från Friidrottsförbundets föreningslista. Springer du inte för en förening skriver du din ort.',
     'email' => 'E-post',
     'phone' => 'Telefon',
     'submit' => 'Anmäl',
