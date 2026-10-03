@@ -207,3 +207,46 @@ it('preselects the race when there is one', function () {
 
     Volt::test('events.show', ['event' => $event])->assertSet('raceId', $race->id);
 });
+
+it('stores the city of a new event', function () {
+    $this->actingAs(organizerUser());
+
+    Volt::test('events.index')->set('name', 'Sylvesterloppet 2026')->set('date', '2026-12-31')->set('city', 'Kalmar')->call('create');
+
+    expect(Event::sole()->city)->toBe('Kalmar');
+});
+
+it('stores and edits the race type and course measurement', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $this->actingAs($user);
+
+    $page = Volt::test('events.show', ['event' => $event])
+        ->set('raceName', 'Sylvesterloppet')
+        ->set('raceType', 'Väg')
+        ->set('courseMeasurer', 'Carl-Gustaf Nilsson')
+        ->set('measuredOn', '2024-10-11')
+        ->call('saveRace')
+        ->assertHasNoErrors();
+
+    $race = Race::sole();
+    expect($race)->type->toBe('Väg')->course_measurer->toBe('Carl-Gustaf Nilsson')->measured_on->toDateString()->toBe('2024-10-11');
+
+    $page->call('editRace', $race->id)
+        ->assertSet('raceName', 'Sylvesterloppet')
+        ->set('raceType', 'Terräng')
+        ->set('onsitePrice', '350')
+        ->call('saveRace')
+        ->assertHasNoErrors();
+
+    expect($race->fresh())->type->toBe('Terräng')->onsite_price->toBe(35000)
+        ->and(Race::count())->toBe(1);
+});
+
+it('only accepts SFIF race types', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $this->actingAs($user);
+
+    Volt::test('events.show', ['event' => $event])->set('raceName', 'X')->set('raceType', 'Bana')->call('saveRace')->assertHasErrors(['raceType']);
+});

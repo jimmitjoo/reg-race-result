@@ -32,4 +32,6 @@ return [
     'status_dns' => 'DNS',
     'status_dnf' => 'DNF',
     'status_dq' => 'DQ',
+    'export_sfif' => 'Exportera till Friidrottsförbundet',
+    'export_sfif_help' => 'Skicka filen till resultat@friidrott.se inom 5 dagar, med tävlingsledarens namn och e-post.',
 ];

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PublicRegistrationController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TimingController;
@@ -26,6 +27,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('events/{event}/start', 'events.start')->name('start.show');
     Volt::route('events/{event}/results', 'events.results')->name('results.show');
     Volt::route('events/{event}/missing', 'events.missing')->name('missing.show');
+    Route::get('events/{event}/exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
     Volt::route('events/{event}/uncollected', 'events.uncollected')->name('uncollected.show');
     Route::get('events/{event}/timing', [TimingController::class, 'show'])->name('timing.show');
     Route::post('events/{event}/reads', [TimingController::class, 'storeReads'])->name('timing.reads.store');

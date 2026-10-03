@@ -41,4 +41,12 @@ return [
     'race_name' => 'Lopp',
     'race_name_example' => 'Lilla Sylvesterloppet',
     'choose_race' => 'Välj lopp',
+    'city' => 'Ort',
+    'city_example' => 'Kalmar',
+    'edit_race' => 'Ändra lopp',
+    'race_type' => 'Typ',
+    'course_measurer' => 'Banmätare',
+    'measured_on' => 'Mätdatum',
+    'measured_by' => 'mätt av :name :date',
+    'measurement_help' => 'Banmätare och mätdatum krävs av Friidrottsförbundet för väglopp på 5, 10, 21,1 och 42,2 km. Mätningen gäller i 5 år.',
 ];

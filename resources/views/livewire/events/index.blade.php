@@ -6,6 +6,7 @@ use Livewire\Volt\Component;
 new class extends Component {
     public string $name = '';
     public string $date = '';
+    public string $city = '';
 
     public function mount(): void
     {
@@ -22,6 +23,7 @@ new class extends Component {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date'],
+            'city' => ['nullable', 'string', 'max:100'],
         ]);
 
         $event = $this->organizer()->events()->create($data + ['timezone' => $this->organizer()->timezone]);
@@ -53,7 +55,10 @@ new class extends Component {
     <form wire:submit="create" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
         <flux:heading>{{ __('events.new') }}</flux:heading>
         <flux:input wire:model="name" :label="__('events.name')" :placeholder="__('events.name_example')" />
-        <flux:input wire:model="date" type="date" :label="__('events.date')" />
+        <div class="grid gap-4 sm:grid-cols-2">
+            <flux:input wire:model="date" type="date" :label="__('events.date')" />
+            <flux:input wire:model="city" :label="__('events.city')" :placeholder="__('events.city_example')" />
+        </div>
         <div><flux:button type="submit" variant="primary">{{ __('events.create') }}</flux:button></div>
     </form>
 </div>

@@ -9,8 +9,12 @@ use Livewire\Volt\Component;
 new class extends Component {
     public Event $event;
 
+    public ?int $editingRaceId = null;
     public string $raceName = '';
     public string $onsitePrice = '';
+    public string $raceType = 'Väg';
+    public string $courseMeasurer = '';
+    public string $measuredOn = '';
 
     public ?int $editingId = null;
     public ?int $raceId = null;
@@ -35,20 +39,50 @@ new class extends Component {
         ];
     }
 
+    public function editRace(int $id): void
+    {
+        $race = $this->event->races()->findOrFail($id);
+
+        $this->editingRaceId = $race->id;
+        $this->raceName = $race->name;
+        $this->onsitePrice = $race->onsite_price === null ? '' : (string) ($race->onsite_price / 100);
+        $this->raceType = $race->type;
+        $this->courseMeasurer = $race->course_measurer ?? '';
+        $this->measuredOn = $race->measured_on?->toDateString() ?? '';
+    }
+
+    public function cancelRace(): void
+    {
+        $this->reset('editingRaceId', 'raceName', 'onsitePrice', 'raceType', 'courseMeasurer', 'measuredOn');
+        $this->resetValidation();
+    }
+
     public function saveRace(): void
     {
         $this->validate([
             'raceName' => ['required', 'string', 'max:255'],
             'onsitePrice' => ['nullable', 'regex:/^\d[\d ]*([.,]\d{1,2})?$/'],
+            'raceType' => ['required', Rule::in(App\Models\Race::TYPES)],
+            'courseMeasurer' => ['nullable', 'string', 'max:100'],
+            'measuredOn' => ['nullable', 'date'],
         ]);
 
-        $race = $this->event->races()->create([
+        $attributes = [
             'name' => $this->raceName,
             'onsite_price' => $this->onsitePrice === '' ? null : Money::toMinor($this->onsitePrice),
-        ]);
+            'type' => $this->raceType,
+            'course_measurer' => $this->courseMeasurer ?: null,
+            'measured_on' => $this->measuredOn ?: null,
+        ];
 
-        $this->raceId ??= $race->id;
-        $this->reset('raceName', 'onsitePrice');
+        if ($this->editingRaceId) {
+            $this->event->races()->findOrFail($this->editingRaceId)->update($attributes);
+        } else {
+            $race = $this->event->races()->create($attributes);
+            $this->raceId ??= $race->id;
+        }
+
+        $this->cancelRace();
     }
 
     public function addPriceStep(int $raceId, string $until, string $amount): void
@@ -120,7 +154,7 @@ new class extends Component {
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
             <flux:heading size="xl">{{ $event->name }}</flux:heading>
-            <flux:subheading>{{ $event->date->toDateString() }} · {{ $event->timezone }}</flux:subheading>
+            <flux:subheading>{{ $event->date->toDateString() }}@if ($event->city) · {{ $event->city }}@endif · {{ $event->timezone }}</flux:subheading>
         </div>
         <div class="flex flex-wrap gap-2">
             <flux:button :href="route('timing.show', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
@@ -133,7 +167,11 @@ new class extends Component {
 
     @foreach ($races as $race)
         <section wire:key="race-{{ $race->id }}" class="flex flex-col gap-3">
-            <flux:heading size="lg">{{ $race->name }}</flux:heading>
+            <div class="flex items-center gap-3">
+                <flux:heading size="lg">{{ $race->name }}</flux:heading>
+                <span class="text-sm text-zinc-500">{{ $race->type }}@if ($race->course_measurer) · {{ __('events.measured_by', ['name' => $race->course_measurer, 'date' => $race->measured_on?->toDateString()]) }}@endif</span>
+                <flux:button size="sm" variant="ghost" class="ms-auto" wire:click="editRace({{ $race->id }})">{{ __('events.edit') }}</flux:button>
+            </div>
 
             <div class="flex flex-col gap-2 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800" x-data="{ until: '', amount: '' }">
                 <flux:heading size="sm">{{ __('events.prices') }}</flux:heading>
@@ -170,12 +208,27 @@ new class extends Component {
     @endforeach
 
     <form wire:submit="saveRace" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-        <flux:heading>{{ __('events.new_race') }}</flux:heading>
+        <flux:heading>{{ $editingRaceId ? __('events.edit_race') : __('events.new_race') }}</flux:heading>
         <div class="grid gap-4 sm:grid-cols-2">
             <flux:input wire:model="raceName" :label="__('events.race_name')" :placeholder="__('events.race_name_example')" />
             <flux:input wire:model="onsitePrice" :label="__('events.onsite_price_label', ['currency' => $currency])" />
         </div>
-        <div><flux:button type="submit">{{ __('events.create') }}</flux:button></div>
+        <div class="grid gap-4 sm:grid-cols-3">
+            <flux:select wire:model="raceType" :label="__('events.race_type')">
+                @foreach (App\Models\Race::TYPES as $type)
+                    <option value="{{ $type }}">{{ $type }}</option>
+                @endforeach
+            </flux:select>
+            <flux:input wire:model="courseMeasurer" :label="__('events.course_measurer')" />
+            <flux:input wire:model="measuredOn" type="date" :label="__('events.measured_on')" />
+        </div>
+        <flux:text class="text-sm">{{ __('events.measurement_help') }}</flux:text>
+        <div class="flex gap-2">
+            <flux:button type="submit">{{ $editingRaceId ? __('events.save') : __('events.create') }}</flux:button>
+            @if ($editingRaceId)
+                <flux:button wire:click="cancelRace">{{ __('events.cancel') }}</flux:button>
+            @endif
+        </div>
     </form>
 
     <form wire:submit="saveClass" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
