@@ -35,4 +35,6 @@ return [
     'export_sfif' => 'Export for the athletics federation',
     'export_sfif_help' => 'Send the file to resultat@friidrott.se within 5 days, with the race director\'s name and email.',
     'export_pdf' => 'Result list (PDF)',
+    'age_group' => 'Age group',
+    'championship_placing' => ':name pos',
 ];

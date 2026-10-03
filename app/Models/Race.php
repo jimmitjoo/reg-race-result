@@ -18,7 +18,17 @@ class Race extends Model
 
     protected function casts(): array
     {
-        return ['measured_on' => 'immutable_date', 'age_groups' => 'boolean'];
+        return ['measured_on' => 'immutable_date', 'age_groups' => 'boolean', 'championship_districts' => 'array', 'championship_veterans' => 'boolean'];
+    }
+
+    /** Whether a runner of this club counts in the race's championship (DM: club in a chosen district; SM: any federation club). */
+    public function eligibleForChampionship(?Club $club): bool
+    {
+        return match ($this->championship) {
+            'SM' => $club !== null,
+            'DM' => $club !== null && in_array($club->district, $this->championship_districts ?? [], true),
+            default => false,
+        };
     }
 
     public function event(): BelongsTo

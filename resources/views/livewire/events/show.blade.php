@@ -21,6 +21,9 @@ new class extends Component {
     public string $courseMeasurer = '';
     public string $measuredOn = '';
     public bool $ageGroups = false;
+    public string $championship = '';
+    public array $championshipDistricts = [];
+    public bool $championshipVeterans = false;
 
     public ?int $editingId = null;
     public ?int $raceId = null;
@@ -46,6 +49,7 @@ new class extends Component {
             'races' => $this->event->races()->with(['priceSteps', 'raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get(),
             'unassigned' => $this->event->raceClasses()->whereNull('race_id')->orderBy('start_at')->get(),
             'currency' => $this->event->organizer->currency,
+            'districts' => App\Models\Club::whereNotNull('district')->distinct()->orderBy('district')->pluck('district'),
         ];
     }
 
@@ -77,11 +81,14 @@ new class extends Component {
         $this->courseMeasurer = $race->course_measurer ?? '';
         $this->measuredOn = $race->measured_on?->toDateString() ?? '';
         $this->ageGroups = $race->age_groups;
+        $this->championship = $race->championship ?? '';
+        $this->championshipDistricts = $race->championship_districts ?? [];
+        $this->championshipVeterans = $race->championship_veterans;
     }
 
     public function cancelRace(): void
     {
-        $this->reset('editingRaceId', 'raceName', 'onsitePrice', 'raceType', 'courseMeasurer', 'measuredOn', 'ageGroups');
+        $this->reset('editingRaceId', 'raceName', 'onsitePrice', 'raceType', 'courseMeasurer', 'measuredOn', 'ageGroups', 'championship', 'championshipDistricts', 'championshipVeterans');
         $this->resetValidation();
     }
 
@@ -94,6 +101,9 @@ new class extends Component {
             'courseMeasurer' => ['nullable', 'string', 'max:100'],
             'measuredOn' => ['nullable', 'date'],
             'ageGroups' => ['boolean'],
+            'championship' => ['nullable', 'in:DM,SM'],
+            'championshipDistricts' => ['array', 'required_if:championship,DM'],
+            'championshipVeterans' => ['boolean'],
         ]);
 
         $attributes = [
@@ -103,6 +113,9 @@ new class extends Component {
             'course_measurer' => $this->courseMeasurer ?: null,
             'measured_on' => $this->measuredOn ?: null,
             'age_groups' => $this->ageGroups,
+            'championship' => $this->championship ?: null,
+            'championship_districts' => $this->championship === 'DM' ? array_values($this->championshipDistricts) : null,
+            'championship_veterans' => $this->championship ? $this->championshipVeterans : false,
         ];
 
         if ($this->editingRaceId) {
@@ -213,7 +226,7 @@ new class extends Component {
         <section wire:key="race-{{ $race->id }}" class="flex flex-col gap-3">
             <div class="flex items-center gap-3">
                 <flux:heading size="lg">{{ $race->name }}</flux:heading>
-                <span class="text-sm text-zinc-500">{{ $race->type }}@if ($race->course_measurer) · {{ __('events.measured_by', ['name' => $race->course_measurer, 'date' => $race->measured_on?->toDateString()]) }}@endif</span>
+                <span class="text-sm text-zinc-500">{{ $race->type }}@if ($race->championship) · {{ $race->championship }}{{ $race->championship_veterans ? ' / V'.$race->championship : '' }}@endif @if ($race->course_measurer) · {{ __('events.measured_by', ['name' => $race->course_measurer, 'date' => $race->measured_on?->toDateString()]) }}@endif</span>
                 <flux:button size="sm" variant="ghost" class="ms-auto" wire:click="editRace({{ $race->id }})">{{ __('events.edit') }}</flux:button>
             </div>
 
@@ -268,6 +281,23 @@ new class extends Component {
         </div>
         <flux:text class="text-sm">{{ __('events.measurement_help') }}</flux:text>
         <flux:checkbox wire:model="ageGroups" :label="__('events.age_groups')" :description="__('events.age_groups_help')" />
+        <flux:select wire:model.live="championship" :label="__('events.championship')">
+            <option value="">{{ __('events.championship_none') }}</option>
+            <option value="DM">{{ __('events.championship_dm') }}</option>
+            <option value="SM">{{ __('events.championship_sm') }}</option>
+        </flux:select>
+        @if ($championship === 'DM')
+            <flux:checkbox.group wire:model="championshipDistricts" :label="__('events.championship_districts')" :description="__('events.championship_districts_help')">
+                <div class="grid grid-cols-2 gap-1 sm:grid-cols-3">
+                    @foreach ($districts as $district)
+                        <flux:checkbox :value="$district" :label="$district" />
+                    @endforeach
+                </div>
+            </flux:checkbox.group>
+        @endif
+        @if ($championship)
+            <flux:checkbox wire:model="championshipVeterans" :label="__('events.championship_veterans', ['name' => 'V'.$championship])" />
+        @endif
         <div class="flex gap-2">
             <flux:button type="submit">{{ $editingRaceId ? __('events.save') : __('events.create') }}</flux:button>
             @if ($editingRaceId)

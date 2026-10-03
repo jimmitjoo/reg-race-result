@@ -58,18 +58,24 @@
 
     @foreach ($classes as $results)
         @continue($results->rows === [])
+        @php($race = $results->timed ? $results->raceClass->race : null)
+        @php($extraWidth = ($race?->age_groups ? 9 : 0) + ($race?->championship ? 8 : 0) + ($race?->championship_veterans ? 9 : 0))
+        @php($w = $extraWidth ? ['plac' => 5, 'first' => 12, 'last' => 14, 'born' => 5, 'time' => 9, 'bib' => 7, 'country' => 6] : ['plac' => 6, 'first' => 15, 'last' => 18, 'born' => 6, 'time' => 10, 'bib' => 8, 'country' => 8])
         <h2>{{ $results->raceClass->name }} <span class="start">{{ $results->raceClass->start_at->setTimezone($event->timezone)->format('H:i:s') }}</span></h2>
         <table class="results">
             <thead>
                 <tr>
-                    <th class="num" style="width: 6%">{{ __('results.placing') }}</th>
-                    <th style="width: 15%">{{ __('pdf.first_name') }}</th>
-                    <th style="width: 18%">{{ __('pdf.last_name') }}</th>
-                    <th style="width: 6%">{{ __('results.born') }}</th>
-                    <th style="width: 29%">{{ __('results.club') }}</th>
-                    <th class="result" style="width: 10%">{{ $results->timed ? __('results.time') : __('results.untimed') }}</th>
-                    <th class="num" style="width: 8%">{{ __('results.bib') }}</th>
-                    <th style="width: 8%">{{ __('pdf.country') }}</th>
+                    <th class="num" style="width: {{ $w['plac'] }}%">{{ __('results.placing') }}</th>
+                    <th style="width: {{ $w['first'] }}%">{{ __('pdf.first_name') }}</th>
+                    <th style="width: {{ $w['last'] }}%">{{ __('pdf.last_name') }}</th>
+                    <th style="width: {{ $w['born'] }}%">{{ __('results.born') }}</th>
+                    <th style="width: {{ 100 - array_sum($w) - $extraWidth }}%">{{ __('results.club') }}</th>
+                    <th class="result" style="width: {{ $w['time'] }}%">{{ $results->timed ? __('results.time') : __('results.untimed') }}</th>
+                    <th class="num" style="width: {{ $w['bib'] }}%">{{ __('results.bib') }}</th>
+                    <th style="width: {{ $w['country'] }}%">{{ __('pdf.country') }}</th>
+                    @if ($race?->age_groups)<th style="width: 9%">{{ __('results.age_group') }}</th>@endif
+                    @if ($race?->championship)<th style="width: 8%">{{ __('results.championship_placing', ['name' => $race->championship]) }}</th>@endif
+                    @if ($race?->championship_veterans)<th style="width: 9%">{{ __('results.championship_placing', ['name' => 'V'.$race->championship]) }}</th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -83,6 +89,9 @@
                         <td class="result">{{ $row->time }}</td>
                         <td class="num">{{ $row->bib }}</td>
                         <td>{{ $row->country }}</td>
+                        @if ($race?->age_groups)<td>{{ $row->ageGroup ? $row->ageGroup.' '.$row->ageGroupPlacing : '' }}</td>@endif
+                        @if ($race?->championship)<td>{{ $row->championshipPlacing }}</td>@endif
+                        @if ($race?->championship_veterans)<td>{{ $row->veteranGroup ? $row->veteranPlacing.' '.$row->veteranGroup : '' }}</td>@endif
                     </tr>
                 @endforeach
             </tbody>

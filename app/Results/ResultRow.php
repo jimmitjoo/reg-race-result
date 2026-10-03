@@ -14,5 +14,10 @@ final readonly class ResultRow
         public string $firstName = '',
         public string $lastName = '',
         public ?string $country = null,
+        public ?string $ageGroup = null,
+        public ?int $ageGroupPlacing = null,
+        public ?int $championshipPlacing = null,
+        public ?string $veteranGroup = null,
+        public ?int $veteranPlacing = null,
     ) {}
 }

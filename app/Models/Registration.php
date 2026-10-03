@@ -25,6 +25,11 @@ class Registration extends Model
         }
     }
 
+    public function clubRecord(): BelongsTo
+    {
+        return $this->belongsTo(Club::class, 'club_id');
+    }
+
     public function raceClass(): BelongsTo
     {
         return $this->belongsTo(RaceClass::class);

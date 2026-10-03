@@ -22,7 +22,7 @@ final class ResultList
         $timing = EventResults::for($event)->results;
 
         return $event->raceClasses()
-            ->with('registrations')
+            ->with(['race', 'registrations.clubRecord'])
             ->orderBy('start_at')
             ->orderBy('name')
             ->get()
@@ -50,13 +50,31 @@ final class ResultList
 
         usort($finishers, fn ($a, $b) => [$a[1]->elapsedSeconds, $a[1]->finishAt] <=> [$b[1]->elapsedSeconds, $b[1]->finishAt]);
 
+        $race = $class->race;
+        $year = $class->event->date->year;
+        $groupOf = fn (Registration $r) => $r->birth_date ? AgeGroup::for($r->birth_date->year, $r->gender ?? $class->gender ?? '', $year) : null;
+        $eligible = fn (Registration $r) => $race?->eligibleForChampionship($r->clubRecord) ?? false;
+
+        $seconds = array_map(fn ($finisher) => $finisher[1]->elapsedSeconds, $finishers);
+        $registrations = array_column($finishers, 0);
+        $placings = self::placeWithin($registrations, $seconds, fn () => 'all');
+        $agePlacings = $race?->age_groups ? self::placeWithin($registrations, $seconds, $groupOf) : [];
+        $championship = $race?->championship ? self::placeWithin($registrations, $seconds, fn ($r) => $eligible($r) ? 'all' : null) : [];
+        $veteranGroupOf = fn ($r) => $race?->championship_veterans && $eligible($r) && AgeGroup::isVeteran($groupOf($r)) ? $groupOf($r) : null;
+        $veterans = self::placeWithin($registrations, $seconds, $veteranGroupOf);
+
         $rows = [];
-        $placing = 0;
-        $previous = null;
         foreach ($finishers as $index => [$registration, $result]) {
-            $placing = $result->elapsedSeconds === $previous ? $placing : $index + 1;
-            $previous = $result->elapsedSeconds;
-            $rows[] = self::row($registration, $placing, self::time($result->elapsedSeconds));
+            $rows[] = self::row(
+                $registration,
+                $placings[$index],
+                self::time($result->elapsedSeconds),
+                ageGroup: isset($agePlacings[$index]) ? $groupOf($registration) : null,
+                ageGroupPlacing: $agePlacings[$index] ?? null,
+                championshipPlacing: $championship[$index] ?? null,
+                veteranGroup: isset($veterans[$index]) ? $veteranGroupOf($registration) : null,
+                veteranPlacing: $veterans[$index] ?? null,
+            );
         }
 
         $byBib = fn ($a, $b) => $a->bib <=> $b->bib;
@@ -64,6 +82,34 @@ final class ResultList
         usort($out['dq'], $byBib);
 
         return [...$rows, ...$out['dnf'], ...$out['dq']];
+    }
+
+    /**
+     * Placing within groups (null group = not placed), equal times sharing a placing.
+     *
+     * @param  list<Registration>  $registrations  sorted by time
+     * @param  list<int>  $seconds
+     * @return array<int, int> placing by index
+     */
+    private static function placeWithin(array $registrations, array $seconds, callable $groupOf): array
+    {
+        $placings = [];
+        $groups = [];
+        foreach ($registrations as $index => $registration) {
+            $group = $groupOf($registration);
+            if ($group === null) {
+                continue;
+            }
+            $state = $groups[$group] ?? ['count' => 0, 'placing' => 0, 'seconds' => null];
+            $state['count']++;
+            if ($seconds[$index] !== $state['seconds']) {
+                $state = ['count' => $state['count'], 'placing' => $state['count'], 'seconds' => $seconds[$index]];
+            }
+            $groups[$group] = $state;
+            $placings[$index] = $state['placing'];
+        }
+
+        return $placings;
     }
 
     private static function participants(RaceClass $class): array
@@ -76,8 +122,16 @@ final class ResultList
             ->all();
     }
 
-    private static function row(Registration $registration, ?int $placing, ?string $time): ResultRow
-    {
+    private static function row(
+        Registration $registration,
+        ?int $placing,
+        ?string $time,
+        ?string $ageGroup = null,
+        ?int $ageGroupPlacing = null,
+        ?int $championshipPlacing = null,
+        ?string $veteranGroup = null,
+        ?int $veteranPlacing = null,
+    ): ResultRow {
         return new ResultRow(
             $placing,
             $registration->bib,
@@ -88,6 +142,11 @@ final class ResultList
             $registration->first_name,
             $registration->last_name,
             $registration->country,
+            $ageGroup,
+            $ageGroupPlacing,
+            $championshipPlacing,
+            $veteranGroup,
+            $veteranPlacing,
         );
     }
 

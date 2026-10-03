@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Models\Event;
 use App\Models\RaceClass;
 use App\Models\Registration;
+use App\Results\AgeGroup;
 use App\Results\ResultList;
 use App\Timing\EventResults;
 use App\Timing\ResultStatus;
@@ -52,6 +53,14 @@ final class SfifExport
     {
         $timing = EventResults::for($event)->results;
         $year = $event->date->year;
+        $dmPlacings = [];
+        foreach (ResultList::for($event) as $classResults) {
+            if ($classResults->raceClass->race?->championship === 'DM') {
+                foreach ($classResults->rows as $resultRow) {
+                    $dmPlacings[$resultRow->bib] = $resultRow->championshipPlacing;
+                }
+            }
+        }
         $groups = [];
 
         $classes = $event->raceClasses()->with(['race', 'registrations'])->where('timed', true)->get();
@@ -93,7 +102,8 @@ final class SfifExport
             $agePlacings = self::placings(array_filter($entries, fn ($e) => ! $e['status']), $ageGroupOf);
 
             foreach ($entries as $index => $entry) {
-                $rows[] = self::row($event, $entry, $placings[$index] ?? null, $agePlacings[$index] ?? null, $ageGroupOf($entry));
+                $dm = $dmPlacings[$entry['registration']->bib] ?? null;
+                $rows[] = self::row($event, $entry, $placings[$index] ?? null, $agePlacings[$index] ?? null, $ageGroupOf($entry), $dm ? "DM {$dm}" : '');
             }
         }
 
@@ -124,27 +134,12 @@ final class SfifExport
         return $placings;
     }
 
-    /** M35/K35 … for veterans, P/F12–17 and P/F19 for youth, M/K22 for juniors; null for seniors and children under 12. */
     private static function ageGroup(Registration $registration, string $gender, int $year): ?string
     {
-        if (! $registration->birth_date || ! in_array($gender, ['M', 'K'], true)) {
-            return null;
-        }
-
-        $age = $year - $registration->birth_date->year;
-        $youth = $gender === 'M' ? 'P' : 'F';
-
-        return match (true) {
-            $age >= 35 => $gender.(intdiv($age, 5) * 5),
-            $age >= 23 => null,
-            $age >= 20 => "{$gender}22",
-            $age >= 18 => "{$youth}19",
-            $age >= 12 => $youth.$age,
-            default => null,
-        };
+        return $registration->birth_date ? AgeGroup::for($registration->birth_date->year, $gender, $year) : null;
     }
 
-    private static function row(Event $event, array $entry, ?int $placing, ?int $agePlacing, ?string $ageGroup): array
+    private static function row(Event $event, array $entry, ?int $placing, ?int $agePlacing, ?string $ageGroup, string $extra): array
     {
         /** @var RaceClass $class */
         $class = $entry['class'];
@@ -166,7 +161,7 @@ final class SfifExport
             $placing,
             $entry['status'] ? '' : $ageGroup,
             $entry['status'] || ! $ageGroup ? '' : $agePlacing,
-            '',
+            $extra,
             $registration->first_name,
             $registration->last_name,
             $registration->country,
