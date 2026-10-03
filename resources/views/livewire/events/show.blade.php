@@ -9,6 +9,11 @@ use Livewire\Volt\Component;
 new class extends Component {
     public Event $event;
 
+    public string $city = '';
+    public string $raceDirector = '';
+    public string $weather = '';
+    public string $contactEmail = '';
+
     public ?int $editingRaceId = null;
     public string $raceName = '';
     public string $onsitePrice = '';
@@ -28,6 +33,10 @@ new class extends Component {
 
     public function mount(): void
     {
+        $this->city = $this->event->city ?? '';
+        $this->raceDirector = $this->event->race_director ?? '';
+        $this->weather = $this->event->weather ?? '';
+        $this->contactEmail = $this->event->contact_email ?? '';
         $this->raceId = $this->event->races()->orderBy('name')->value('id');
     }
 
@@ -38,6 +47,23 @@ new class extends Component {
             'unassigned' => $this->event->raceClasses()->whereNull('race_id')->orderBy('start_at')->get(),
             'currency' => $this->event->organizer->currency,
         ];
+    }
+
+    public function saveDetails(): void
+    {
+        $this->validate([
+            'city' => ['nullable', 'string', 'max:100'],
+            'raceDirector' => ['nullable', 'string', 'max:100'],
+            'weather' => ['nullable', 'string', 'max:100'],
+            'contactEmail' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        $this->event->update([
+            'city' => $this->city ?: null,
+            'race_director' => $this->raceDirector ?: null,
+            'weather' => $this->weather ?: null,
+            'contact_email' => $this->contactEmail ?: null,
+        ]);
     }
 
     public function editRace(int $id): void
@@ -168,6 +194,17 @@ new class extends Component {
             <flux:button :href="route('uncollected.show', $event)" icon="squares-2x2" wire:navigate>{{ __('results.uncollected') }}</flux:button>
         </div>
     </div>
+
+    <form wire:submit="saveDetails" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+        <flux:heading>{{ __('events.details') }}</flux:heading>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <flux:input wire:model="city" :label="__('events.city')" />
+            <flux:input wire:model="raceDirector" :label="__('events.race_director')" />
+            <flux:input wire:model="weather" :label="__('events.weather')" :placeholder="__('events.weather_example')" />
+            <flux:input wire:model="contactEmail" type="email" :label="__('events.contact_email')" />
+        </div>
+        <div><flux:button type="submit">{{ __('events.save') }}</flux:button></div>
+    </form>
 
     @foreach ($races as $race)
         <section wire:key="race-{{ $race->id }}" class="flex flex-col gap-3">

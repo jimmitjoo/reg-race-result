@@ -51,4 +51,9 @@ return [
     'measurement_help' => 'Banmätare och mätdatum krävs av Friidrottsförbundet för väglopp på 5, 10, 21,1 och 42,2 km. Mätningen gäller i 5 år.',
     'age_groups' => 'Åldersklasser i resultatet',
     'age_groups_help' => 'Loppet delar ut placeringar i åldersklasser (M35, K40, F15 …). Då skickas de med till Friidrottsförbundet.',
+    'details' => 'Uppgifter till resultatlistan',
+    'race_director' => 'Tävlingsledare',
+    'weather' => 'Väder',
+    'weather_example' => '13 grader och sol',
+    'contact_email' => 'E-post för synpunkter',
 ];

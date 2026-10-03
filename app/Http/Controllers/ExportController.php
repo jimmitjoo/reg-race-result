@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ResultsPdf;
 use App\Exports\SfifExport;
 use App\Models\Event;
 use Illuminate\Http\Response;
@@ -14,5 +15,10 @@ class ExportController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="'.SfifExport::filename($event).'"',
         ]);
+    }
+
+    public function pdf(Event $event): Response
+    {
+        return ResultsPdf::download($event);
     }
 }
