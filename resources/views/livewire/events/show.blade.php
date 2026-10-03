@@ -15,6 +15,7 @@ new class extends Component {
     public string $raceType = 'Väg';
     public string $courseMeasurer = '';
     public string $measuredOn = '';
+    public bool $ageGroups = false;
 
     public ?int $editingId = null;
     public ?int $raceId = null;
@@ -49,11 +50,12 @@ new class extends Component {
         $this->raceType = $race->type;
         $this->courseMeasurer = $race->course_measurer ?? '';
         $this->measuredOn = $race->measured_on?->toDateString() ?? '';
+        $this->ageGroups = $race->age_groups;
     }
 
     public function cancelRace(): void
     {
-        $this->reset('editingRaceId', 'raceName', 'onsitePrice', 'raceType', 'courseMeasurer', 'measuredOn');
+        $this->reset('editingRaceId', 'raceName', 'onsitePrice', 'raceType', 'courseMeasurer', 'measuredOn', 'ageGroups');
         $this->resetValidation();
     }
 
@@ -65,6 +67,7 @@ new class extends Component {
             'raceType' => ['required', Rule::in(App\Models\Race::TYPES)],
             'courseMeasurer' => ['nullable', 'string', 'max:100'],
             'measuredOn' => ['nullable', 'date'],
+            'ageGroups' => ['boolean'],
         ]);
 
         $attributes = [
@@ -73,6 +76,7 @@ new class extends Component {
             'type' => $this->raceType,
             'course_measurer' => $this->courseMeasurer ?: null,
             'measured_on' => $this->measuredOn ?: null,
+            'age_groups' => $this->ageGroups,
         ];
 
         if ($this->editingRaceId) {
@@ -223,6 +227,7 @@ new class extends Component {
             <flux:input wire:model="measuredOn" type="date" :label="__('events.measured_on')" />
         </div>
         <flux:text class="text-sm">{{ __('events.measurement_help') }}</flux:text>
+        <flux:checkbox wire:model="ageGroups" :label="__('events.age_groups')" :description="__('events.age_groups_help')" />
         <div class="flex gap-2">
             <flux:button type="submit">{{ $editingRaceId ? __('events.save') : __('events.create') }}</flux:button>
             @if ($editingRaceId)

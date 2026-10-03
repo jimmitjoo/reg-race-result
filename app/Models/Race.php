@@ -18,7 +18,7 @@ class Race extends Model
 
     protected function casts(): array
     {
-        return ['measured_on' => 'immutable_date'];
+        return ['measured_on' => 'immutable_date', 'age_groups' => 'boolean'];
     }
 
     public function event(): BelongsTo

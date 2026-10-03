@@ -13,6 +13,7 @@ use App\Timing\ResultStatus;
  * Result file for Svenska Friidrottsförbundet (friidrottsstatistik.se), per the
  * "Specifikation resultatlistor för långlopp" (2024-10-24): one CSV for the whole event,
  * placing per distance and gender, DNS/DNF/DQ in the result column, emailed to resultat@friidrott.se.
+ * Age groups only for races that award age group placings ("eventuella åldersklassplaceringar").
  */
 final class SfifExport
 {
@@ -88,10 +89,11 @@ final class SfifExport
                 <=> [$statusOrder[$b['status'] ?? ''] ?? 0, $b['seconds'], $b['finishAt'], $b['registration']->bib]);
 
             $placings = self::placings(array_filter($entries, fn ($e) => ! $e['status']), fn ($e) => 'all');
-            $agePlacings = self::placings(array_filter($entries, fn ($e) => ! $e['status']), fn ($e) => self::ageGroup($e['registration'], $e['gender'], $year));
+            $ageGroupOf = fn ($e) => $e['class']->race?->age_groups ? self::ageGroup($e['registration'], $e['gender'], $year) : null;
+            $agePlacings = self::placings(array_filter($entries, fn ($e) => ! $e['status']), $ageGroupOf);
 
             foreach ($entries as $index => $entry) {
-                $rows[] = self::row($event, $entry, $placings[$index] ?? null, $agePlacings[$index] ?? null, self::ageGroup($entry['registration'], $entry['gender'], $year));
+                $rows[] = self::row($event, $entry, $placings[$index] ?? null, $agePlacings[$index] ?? null, $ageGroupOf($entry));
             }
         }
 

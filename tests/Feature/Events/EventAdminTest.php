@@ -226,14 +226,16 @@ it('stores and edits the race type and course measurement', function () {
         ->set('raceType', 'Väg')
         ->set('courseMeasurer', 'Carl-Gustaf Nilsson')
         ->set('measuredOn', '2024-10-11')
+        ->set('ageGroups', true)
         ->call('saveRace')
         ->assertHasNoErrors();
 
     $race = Race::sole();
-    expect($race)->type->toBe('Väg')->course_measurer->toBe('Carl-Gustaf Nilsson')->measured_on->toDateString()->toBe('2024-10-11');
+    expect($race)->age_groups->toBeTrue()->type->toBe('Väg')->course_measurer->toBe('Carl-Gustaf Nilsson')->measured_on->toDateString()->toBe('2024-10-11');
 
     $page->call('editRace', $race->id)
         ->assertSet('raceName', 'Sylvesterloppet')
+        ->assertSet('ageGroups', true)
         ->set('raceType', 'Terräng')
         ->set('onsitePrice', '350')
         ->call('saveRace')

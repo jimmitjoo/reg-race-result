@@ -49,4 +49,6 @@ return [
     'measured_on' => 'Measured on',
     'measured_by' => 'measured by :name :date',
     'measurement_help' => 'The federation requires the course measurer and date for road races of 5, 10, 21.1 and 42.2 km. A measurement is valid for 5 years.',
+    'age_groups' => 'Age groups in the results',
+    'age_groups_help' => 'The race awards age group placings (M35, K40, F15 …). They are then included in the federation file.',
 ];

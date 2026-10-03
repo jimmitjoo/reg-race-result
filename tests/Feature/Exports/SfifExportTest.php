@@ -59,7 +59,8 @@ it('writes a finisher row', function () {
 });
 
 it('places within gender per distance, women before men, sorted by time, and adds age groups with their own placing', function () {
-    [$event, , $women, $men] = sfifEvent();
+    [$event, $race, $women, $men] = sfifEvent();
+    $race->update(['age_groups' => true]);
     finisher($men, 1, '10:31:00.000', ['birth_date' => '1992-01-01']);
     finisher($women, 2, '10:40:00.000', ['birth_date' => '1984-11-16']);
     finisher($women, 3, '10:38:00.000', ['birth_date' => '1995-01-01']);
@@ -132,4 +133,11 @@ it('downloads the file for the organizer', function () {
         ->assertOk()
         ->assertHeader('content-type', 'text/csv; charset=UTF-8')
         ->assertDownload('261231 Kalmar Sylvesterloppet.csv');
+});
+
+it('leaves age groups empty for races without age group placings', function () {
+    [$event, , $women] = sfifEvent();
+    finisher($women, 1, '10:40:00.000', ['birth_date' => '1984-11-16']);
+
+    expect(sfifRows($event)[0])->agegroup->toBe('')->agegroupplacing->toBe('');
 });
