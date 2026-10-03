@@ -187,13 +187,13 @@ new class extends Component {
             <flux:subheading>{{ $event->date->toDateString() }}@if ($event->city) · {{ $event->city }}@endif · {{ $event->timezone }}</flux:subheading>
         </div>
         <div class="flex flex-wrap gap-2">
-            <flux:button :href="route('chips.show', $event)" icon="tag" wire:navigate>{{ __('chips.title') }}</flux:button>
-            <flux:button :href="route('timing.show', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
-            <flux:button :href="route('start.show', $event)" icon="flag" wire:navigate>{{ __('results.start') }}</flux:button>
-            <flux:button :href="route('results.show', $event)" icon="trophy" wire:navigate>{{ __('results.title') }}</flux:button>
-            <flux:button :href="route('missing.show', $event)" icon="question-mark-circle" wire:navigate>{{ __('results.missing') }}</flux:button>
-            <flux:button :href="route('uncollected.show', $event)" icon="squares-2x2" wire:navigate>{{ __('results.uncollected') }}</flux:button>
-            <flux:button :href="route('prizes.show', $event)" icon="gift" wire:navigate>{{ __('prizes.title') }}</flux:button>
+            <flux:button :href="route('events.chips', $event)" icon="tag" wire:navigate>{{ __('chips.title') }}</flux:button>
+            <flux:button :href="route('events.timing', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
+            <flux:button :href="route('events.start', $event)" icon="flag" wire:navigate>{{ __('results.start') }}</flux:button>
+            <flux:button :href="route('events.results', $event)" icon="trophy" wire:navigate>{{ __('results.title') }}</flux:button>
+            <flux:button :href="route('events.missing', $event)" icon="question-mark-circle" wire:navigate>{{ __('results.missing') }}</flux:button>
+            <flux:button :href="route('events.uncollected', $event)" icon="squares-2x2" wire:navigate>{{ __('results.uncollected') }}</flux:button>
+            <flux:button :href="route('events.prizes', $event)" icon="gift" wire:navigate>{{ __('prizes.title') }}</flux:button>
         </div>
     </div>
 

@@ -66,7 +66,7 @@ it('downloads a PDF named after the event', function () {
     [$event] = pdfEvent();
 
     $response = $this->actingAs(User::factory()->create(['organizer_id' => $event->organizer_id]))
-        ->get(route('exports.pdf', $event));
+        ->get(route('events.exports.pdf', $event));
 
     $response->assertOk()->assertHeader('content-type', 'application/pdf');
     expect($response->headers->get('content-disposition'))->toContain('Sylvesterloppet 2026 Resultat.pdf')

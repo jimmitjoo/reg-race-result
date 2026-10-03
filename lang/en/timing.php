@@ -18,4 +18,9 @@ return [
     'all_sent' => 'Everything is sent',
     'sending' => 'Sending …',
     'unsent_warning' => 'Some reads have not been sent yet. Do not close the page.',
+    'upload_title' => 'Upload file',
+    'upload_help' => 'Fallback if the page could not read the folder during the race: choose the RFIDServer file, e.g. 192.168.1.241.txt. Reads already stored are skipped.',
+    'upload' => 'Upload',
+    'uploaded' => 'Reader :reader: :inserted new reads, :duplicates already stored.',
+    'upload_bad_name' => 'The file must be named after the reader IP address, e.g. 192.168.1.241.txt.',
 ];

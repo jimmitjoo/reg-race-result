@@ -20,7 +20,7 @@ it('shows the results per class', function () {
     Registration::factory()->for($class)->create(['bib' => 32, 'first_name' => 'Beatrice', 'last_name' => 'Lejnegård', 'status' => 'dnf']);
     signedInWith($event);
 
-    $this->get(route('results.show', $event))
+    $this->get(route('events.results', $event))
         ->assertOk()
         ->assertSee('Kvinnor 10 km')
         ->assertSee('Beatrice Lejnegård')

@@ -129,7 +129,7 @@ it('downloads the file for the organizer', function () {
     finisher($women, 1, '10:40:00.000');
 
     $this->actingAs(User::factory()->create(['organizer_id' => $event->organizer_id]))
-        ->get(route('exports.sfif', $event))
+        ->get(route('events.exports.sfif', $event))
         ->assertOk()
         ->assertHeader('content-type', 'text/csv; charset=UTF-8')
         ->assertDownload('261231 Kalmar Sylvesterloppet.csv');

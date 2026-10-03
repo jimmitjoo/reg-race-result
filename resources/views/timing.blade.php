@@ -4,7 +4,7 @@
         x-data="timing(@js([
             'eventId' => $event->id,
             'eventFolder' => $event->name,
-            'url' => route('timing.reads.store', $event),
+            'url' => route('events.timing.reads', $event),
             'csrf' => csrf_token(),
             't' => __('timing'),
         ]))"
@@ -54,6 +54,19 @@
                 </p>
                 <p x-show="online && waiting() > 0" class="text-sm">{{ __('timing.sending') }}</p>
             </div>
+        </section>
+        <section class="flex flex-col gap-3 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+            <flux:heading>{{ __('timing.upload_title') }}</flux:heading>
+            <flux:text class="text-sm">{{ __('timing.upload_help') }}</flux:text>
+            @if (session('upload'))
+                <flux:callout variant="success" icon="check-circle" :heading="session('upload')" />
+            @endif
+            <form method="POST" action="{{ route('events.timing.upload', $event) }}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-2">
+                @csrf
+                <flux:input type="file" name="file" accept=".txt" />
+                <flux:button type="submit">{{ __('timing.upload') }}</flux:button>
+            </form>
+            <flux:error name="file" />
         </section>
     </div>
 
