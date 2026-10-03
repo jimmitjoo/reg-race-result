@@ -56,4 +56,11 @@ return [
     'weather' => 'Väder',
     'weather_example' => '13 grader och sol',
     'contact_email' => 'E-post för synpunkter',
+    'championship' => 'Mästerskap',
+    'championship_none' => 'Inget',
+    'championship_dm' => 'DM (distriktsmästerskap)',
+    'championship_sm' => 'SM (svenska mästerskap)',
+    'championship_districts' => 'Distrikt som räknas',
+    'championship_districts_help' => 'Löpare vars förening hör till de här distrikten i Friidrottsförbundets föreningslista. Östsvenska = Blekinge, Småland och Östergötland.',
+    'championship_veterans' => 'Även veteranplaceringar (:name)',
 ];

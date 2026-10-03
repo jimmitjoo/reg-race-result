@@ -35,4 +35,6 @@ return [
     'export_sfif' => 'Exportera till Friidrottsförbundet',
     'export_sfif_help' => 'Skicka filen till resultat@friidrott.se inom 5 dagar, med tävlingsledarens namn och e-post.',
     'export_pdf' => 'Resultatlista (PDF)',
+    'age_group' => 'Åldersklass',
+    'championship_placing' => ':name plac',
 ];

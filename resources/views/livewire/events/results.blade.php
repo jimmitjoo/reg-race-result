@@ -35,6 +35,7 @@ new class extends Component {
                 <span class="font-mono text-sm text-zinc-500">{{ $results->raceClass->start_at->setTimezone($event->timezone)->format('H:i:s') }}</span>
             </div>
 
+            @php($race = $results->timed ? $results->raceClass->race : null)
             @if ($results->rows === [])
                 <flux:text>{{ __('results.no_results') }}</flux:text>
             @else
@@ -46,7 +47,10 @@ new class extends Component {
                             <th class="py-1 pe-2">{{ __('results.born') }}</th>
                             <th class="py-1 pe-2">{{ __('results.club') }}</th>
                             <th class="py-1 pe-2 text-right">{{ $results->timed ? __('results.time') : __('results.untimed') }}</th>
-                            <th class="py-1 text-right">{{ __('results.bib') }}</th>
+                            <th class="py-1 pe-2 text-right">{{ __('results.bib') }}</th>
+                            @if ($race?->age_groups)<th class="py-1 pe-2">{{ __('results.age_group') }}</th>@endif
+                            @if ($race?->championship)<th class="py-1 pe-2">{{ __('results.championship_placing', ['name' => $race->championship]) }}</th>@endif
+                            @if ($race?->championship_veterans)<th class="py-1">{{ __('results.championship_placing', ['name' => 'V'.$race->championship]) }}</th>@endif
                         </tr>
                     </thead>
                     <tbody>
@@ -57,7 +61,10 @@ new class extends Component {
                                 <td class="py-1 pe-2">{{ $row->birthYear }}</td>
                                 <td class="py-1 pe-2">{{ $row->club }}</td>
                                 <td class="py-1 pe-2 text-right font-mono">{{ $row->time }}</td>
-                                <td class="py-1 text-right font-mono">{{ $row->bib }}</td>
+                                <td class="py-1 pe-2 text-right font-mono">{{ $row->bib }}</td>
+                                @if ($race?->age_groups)<td class="py-1 pe-2">{{ $row->ageGroup ? $row->ageGroup.' '.$row->ageGroupPlacing : '' }}</td>@endif
+                                @if ($race?->championship)<td class="py-1 pe-2">{{ $row->championshipPlacing }}</td>@endif
+                                @if ($race?->championship_veterans)<td class="py-1">{{ $row->veteranGroup ? $row->veteranPlacing.' '.$row->veteranGroup : '' }}</td>@endif
                             </tr>
                         @endforeach
                     </tbody>
