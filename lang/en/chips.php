@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'Chips',
+    'status_title' => 'Check',
+    'all_have_chips' => 'All bibs have chips',
+    'missing_chips' => ':count bibs have no chip:',
+    'no_bibs' => 'No bibs assigned yet.',
+    'import_title' => 'Import chip list',
+    'import_help' => 'Paste the list from the bib supplier or the race sheet (one line per bib), or choose a CSV file. Then choose which column is the chip and which is the bib.',
+    'contents' => 'Chip list',
+    'file' => 'or file (CSV/text)',
+    'preview' => 'Preview',
+    'chip_column' => 'Chip column',
+    'bib_column' => 'Bib column',
+    'column' => 'Column :number',
+    'import' => 'Import',
+    'imported' => ':count chips imported.',
+    'different_columns' => 'Choose two different columns.',
+    'bibs_title' => 'Assign bibs',
+    'bibs_help' => 'Registrations without a bib get the next free number from the first number upwards, in registration order.',
+    'first_bib' => 'From number',
+    'assign' => 'Assign',
+    'assigned' => ':count bibs assigned.',
+    'without_bib' => ':count without bib',
+];
