@@ -8,7 +8,9 @@
                 'event' => $event->name,
             ]) }}
         </flux:text>
-        @if (! $registration->paid_at)
+        @if ($registration->paid_at)
+            <flux:callout variant="success" icon="check-circle" :heading="__('registration.paid')" />
+        @else
             <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('registration.unpaid')" />
         @endif
     </div>

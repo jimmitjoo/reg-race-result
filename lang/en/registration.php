@@ -21,6 +21,7 @@ return [
     'min_age' => 'Half marathon and longer: you must turn 17 this year.',
     'confirmation_title' => 'Thank you for registering!',
     'confirmation_text' => ':name is registered for :class at :event.',
+    'paid' => 'The registration is paid.',
     'unpaid' => 'The registration has not been paid yet.',
     'publication_notice' => 'Name, year of birth, club and results are published in start and result lists.',
 ];

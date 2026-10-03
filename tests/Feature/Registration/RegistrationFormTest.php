@@ -5,10 +5,16 @@ use App\Models\Organizer;
 use App\Models\Race;
 use App\Models\RaceClass;
 use App\Models\Registration;
+use App\Payments\StripeCheckout;
 use Illuminate\Support\Facades\URL;
 use Livewire\Volt\Volt;
 
-beforeEach(fn () => $this->travelTo(now()->setTimezone('Europe/Stockholm')->setDate(2026, 11, 15)->setTime(12, 0)));
+beforeEach(function () {
+    $this->travelTo(now()->setTimezone('Europe/Stockholm')->setDate(2026, 11, 15)->setTime(12, 0));
+    $this->mock(StripeCheckout::class)
+        ->shouldReceive('create')
+        ->andReturn(['id' => 'cs_test', 'url' => 'https://checkout.stripe.com/test']);
+});
 
 function openEvent(): array
 {
@@ -53,13 +59,13 @@ it('only finds an event under its own organizer', function () {
     $this->get('/hogby-if/finns-inte')->assertNotFound();
 });
 
-it('registers a runner with the price valid today and shows a confirmation', function () {
+it('registers a runner with the price valid today and sends them to payment', function () {
     [, $event, , $class] = openEvent();
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
         ->call('register')
         ->assertHasNoErrors()
-        ->assertRedirectContains('/hogby-if/sylvesterloppet-2026/registrations/');
+        ->assertRedirect('https://checkout.stripe.com/test');
 
     expect(Registration::sole())
         ->race_class_id->toBe($class->id)

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PublicRegistrationController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TimingController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -27,6 +28,8 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::post('stripe/webhook', StripeWebhookController::class)->name('stripe.webhook');
 
 // Public pages by slug. Registered last so that fixed paths (settings, events, login …) win.
 // Later the organizer can also come from a custom domain (#43).
