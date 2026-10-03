@@ -187,6 +187,7 @@ new class extends Component {
             <flux:subheading>{{ $event->date->toDateString() }}@if ($event->city) · {{ $event->city }}@endif · {{ $event->timezone }}</flux:subheading>
         </div>
         <div class="flex flex-wrap gap-2">
+            <flux:button :href="route('chips.show', $event)" icon="tag" wire:navigate>{{ __('chips.title') }}</flux:button>
             <flux:button :href="route('timing.show', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
             <flux:button :href="route('start.show', $event)" icon="flag" wire:navigate>{{ __('results.start') }}</flux:button>
             <flux:button :href="route('results.show', $event)" icon="trophy" wire:navigate>{{ __('results.title') }}</flux:button>

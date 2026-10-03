@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'Chip',
+    'status_title' => 'Kontroll',
+    'all_have_chips' => 'Alla nummerlappar har chip',
+    'missing_chips' => ':count nummerlappar saknar chip:',
+    'no_bibs' => 'Inga startnummer är tilldelade än.',
+    'import_title' => 'Läs in chiplista',
+    'import_help' => 'Klistra in listan från nummerlappsleverantören eller loppets dokument (en rad per nummerlapp), eller välj en CSV-fil. Välj sedan vilken kolumn som är chip och vilken som är startnummer.',
+    'contents' => 'Chiplista',
+    'file' => 'eller fil (CSV/text)',
+    'preview' => 'Förhandsgranska',
+    'chip_column' => 'Kolumn med chip',
+    'bib_column' => 'Kolumn med startnummer',
+    'column' => 'Kolumn :number',
+    'import' => 'Läs in',
+    'imported' => ':count chip inlästa.',
+    'different_columns' => 'Välj två olika kolumner.',
+    'bibs_title' => 'Tilldela startnummer',
+    'bibs_help' => 'Anmälda utan startnummer får nästa lediga nummer från startnumret och uppåt, i anmälningsordning.',
+    'first_bib' => 'Från nummer',
+    'assign' => 'Tilldela',
+    'assigned' => ':count startnummer tilldelade.',
+    'without_bib' => ':count utan startnummer',
+];
