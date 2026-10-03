@@ -10,6 +10,7 @@ final readonly class Entry
         public string $bib,
         public string $chip,
         public CarbonImmutable $startAt,
+        public int $minTimeSeconds,
         public bool $dns = false,
     ) {}
 }
