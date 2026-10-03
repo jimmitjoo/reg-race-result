@@ -3,6 +3,7 @@
 use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\RaceClass;
+use App\Payments\StripeCheckout;
 use App\Support\Money;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
@@ -86,11 +87,23 @@ new #[Layout('components.layouts.public')] class extends Component {
             'price' => $price,
         ]);
 
-        $this->redirect(URL::signedRoute('public.registration', [
+        $confirmationUrl = URL::signedRoute('public.registration', [
             'organizer' => $this->raceEvent->organizer->slug,
             'event' => $this->raceEvent->slug,
             'registration' => $registration,
-        ]));
+        ]);
+
+        if ($price === 0) {
+            $registration->markPaid();
+            $this->redirect($confirmationUrl);
+
+            return;
+        }
+
+        $eventUrl = route('public.event', ['organizer' => $this->raceEvent->organizer->slug, 'event' => $this->raceEvent->slug]);
+        $session = app(StripeCheckout::class)->create($registration, $confirmationUrl, $eventUrl);
+        $registration->update(['stripe_checkout_session_id' => $session['id']]);
+        $this->redirect($session['url']);
     }
 }; ?>
 

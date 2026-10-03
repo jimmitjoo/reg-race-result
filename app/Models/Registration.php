@@ -17,6 +17,13 @@ class Registration extends Model
         return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime'];
     }
 
+    public function markPaid(): void
+    {
+        if (! $this->paid_at) {
+            $this->update(['paid_at' => now()]);
+        }
+    }
+
     public function raceClass(): BelongsTo
     {
         return $this->belongsTo(RaceClass::class);
