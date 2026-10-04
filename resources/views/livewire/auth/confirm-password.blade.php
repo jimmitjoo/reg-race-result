@@ -34,8 +34,8 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
 <div class="flex flex-col gap-6">
     <x-auth-header
-        title="Confirm password"
-        description="This is a secure area of the application. Please confirm your password before continuing."
+        :title="__('account.confirm_password')"
+        :description="__('account.confirm_description')"
     />
 
     <!-- Session Status -->
@@ -47,15 +47,15 @@ new #[Layout('components.layouts.auth')] class extends Component {
             <flux:input
                 wire:model="password"
                 id="password"
-                label="{{ __('Password') }}"
+                label="{{ __('account.password') }}"
                 type="password"
                 name="password"
                 required
                 autocomplete="new-password"
-                placeholder="Password"
+                :placeholder="__('account.password')"
             />
         </div>
 
-        <flux:button variant="primary" type="submit" class="w-full">{{ __('Confirm') }}</flux:button>
+        <flux:button variant="primary" type="submit" class="w-full">{{ __('account.confirm') }}</flux:button>
     </form>
 </div>
