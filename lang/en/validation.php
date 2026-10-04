@@ -4,6 +4,7 @@
 
 return [
     'attributes' => [
+        'acceptTerms' => 'the terms',
         'firstName' => 'first name',
         'lastName' => 'last name',
         'birthDate' => 'date of birth',

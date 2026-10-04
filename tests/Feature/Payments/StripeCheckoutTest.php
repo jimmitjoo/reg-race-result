@@ -33,6 +33,7 @@ function submitRegistration(RaceClass $class)
         ->set('birthDate', '1991-04-03')
         ->set('gender', 'K')
         ->set('email', 'anna@example.com')
+        ->set('acceptTerms', true)
         ->call('register');
 }
 
