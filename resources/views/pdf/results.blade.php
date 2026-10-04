@@ -47,7 +47,7 @@
                 <tr>
                     <td>{{ $prize->name }}</td>
                     <td>{{ $prize->winner->bib }}</td>
-                    <td>{{ $prize->winner->first_name }} {{ $prize->winner->last_name }}@if ($prize->winner->club), {{ $prize->winner->club }}@endif</td>
+                    <td>@if ($prize->winner->hidden_at){{ __('privacy.anonymous') }}@else{{ $prize->winner->first_name }} {{ $prize->winner->last_name }}@if ($prize->winner->club), {{ $prize->winner->club }}@endif @endif</td>
                 </tr>
             @endforeach
         </table>

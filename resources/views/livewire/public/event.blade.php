@@ -25,6 +25,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     public string $club = '';
     public string $email = '';
     public string $phone = '';
+    public bool $acceptTerms = false;
 
     public function mount(string $organizer, string $event): void
     {
@@ -60,6 +61,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             'club' => ['nullable', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'acceptTerms' => ['accepted'],
         ]);
 
         $class = RaceClass::with('race')->findOrFail((int) $this->raceClassId);
@@ -90,6 +92,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             'email' => $this->email,
             'phone' => $this->phone ?: null,
             'price' => $price,
+            'terms_accepted_at' => now(),
         ]);
 
         $confirmationUrl = URL::signedRoute('public.registration', [
@@ -171,7 +174,10 @@ new #[Layout('components.layouts.public')] class extends Component {
             <flux:input wire:model="phone" type="tel" :label="__('registration.phone')" autocomplete="tel" />
         </div>
 
-        <flux:text class="text-sm">{{ __('registration.publication_notice') }}</flux:text>
+        <flux:text class="text-sm">{{ __('registration.publication_notice') }}
+            <flux:link :href="route('public.terms', $event->organizer->slug)" target="_blank">{{ __('privacy.read_terms') }}</flux:link>
+        </flux:text>
+        <flux:checkbox wire:model="acceptTerms" :label="__('privacy.accept_terms')" />
 
         <div><flux:button type="submit" variant="primary">{{ __('registration.submit') }}</flux:button></div>
     </form>
