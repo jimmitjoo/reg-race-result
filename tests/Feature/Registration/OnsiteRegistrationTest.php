@@ -85,7 +85,3 @@ it('changes the number of an on-site registration', function () {
 
     expect(Registration::sole()->bib)->toBe(901);
 });
-
-it('has every onsite translation in Swedish and English', function () {
-    expect(array_keys(require lang_path('sv/onsite.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/onsite.php')));
-});

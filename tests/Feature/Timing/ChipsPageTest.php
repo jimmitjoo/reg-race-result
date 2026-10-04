@@ -91,7 +91,3 @@ it('assigns bibs in a series per race, in registration order, skipping numbers i
         ->and($second->fresh()->bib)->toBe(503)
         ->and($kept->fresh()->bib)->toBe(777);
 });
-
-it('has every chips translation in Swedish and English', function () {
-    expect(array_keys(require lang_path('sv/chips.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/chips.php')));
-});

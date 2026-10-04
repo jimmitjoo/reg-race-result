@@ -7,13 +7,9 @@ use App\Http\Controllers\TimingController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
-
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// The admin starts at the events; signing in is required there.
+Route::redirect('/', '/events')->name('home');
+Route::redirect('dashboard', '/events')->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
