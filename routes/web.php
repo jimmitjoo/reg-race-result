@@ -52,6 +52,7 @@ Route::get('{organizer}/terms', function (string $organizer) {
 })->name('public.terms');
 Volt::route('{organizer}/{event}', 'public.event')->name('public.event');
 Volt::route('{organizer}/{event}/start-list', 'public.start-list')->name('public.start-list');
+Volt::route('{organizer}/{event}/results', 'public.results')->name('public.results');
 Route::get('{organizer}/{event}/registrations/{registration}', [PublicRegistrationController::class, 'show'])
     ->middleware('signed')
     ->name('public.registration');
