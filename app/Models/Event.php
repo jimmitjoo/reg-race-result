@@ -17,7 +17,7 @@ class Event extends Model
 
     protected function casts(): array
     {
-        return ['date' => 'immutable_date'];
+        return ['date' => 'immutable_date', 'results_public_at' => 'immutable_datetime'];
     }
 
     protected static function booted(): void
@@ -26,7 +26,8 @@ class Event extends Model
             if (! $event->slug) {
                 $base = Str::slug($event->name);
                 $slug = $base;
-                for ($n = 2; static::where('organizer_id', $event->organizer_id)->where('slug', $slug)->exists(); $n++) {
+                // 'terms' is a public page of the organizer, so no event may take that slug.
+                for ($n = 2; $slug === 'terms' || static::where('organizer_id', $event->organizer_id)->where('slug', $slug)->exists(); $n++) {
                     $slug = "{$base}-{$n}";
                 }
                 $event->slug = $slug;

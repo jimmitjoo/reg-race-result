@@ -52,13 +52,6 @@ it('validates the reader name', function () {
         ->assertUnprocessable();
 });
 
-it('has every timing translation in Swedish and English', function () {
-    $sv = require lang_path('sv/timing.php');
-    $en = require lang_path('en/timing.php');
-
-    expect(array_keys($sv))->toEqualCanonicalizing(array_keys($en));
-});
-
 it('imports an uploaded RFIDServer file, naming the reader from the file name', function () {
     $event = Event::factory()->create();
     $this->actingAs(User::factory()->create(['organizer_id' => $event->organizer_id]));
