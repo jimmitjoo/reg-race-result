@@ -164,6 +164,10 @@ return [
     ],
     'attributes' => [
         'acceptTerms' => 'villkoren',
+        'appPassword' => 'applikationslösenord',
+        'username' => 'användarnamn',
+        'url' => 'adress',
+        'parentPageId' => 'föräldrasida',
         'firstName' => 'förnamn',
         'lastName' => 'efternamn',
         'birthDate' => 'födelsedatum',

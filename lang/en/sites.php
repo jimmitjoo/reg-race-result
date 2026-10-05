@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'title' => 'Websites',
+    'help' => 'WordPress sites where results can be published. Create an application password in WordPress under Users → Profile → Application Passwords.',
+    'none' => 'No websites yet.',
+    'name' => 'Name',
+    'url' => 'Address',
+    'username' => 'WordPress username',
+    'app_password' => 'Application password',
+    'parent_page' => 'Parent page for results (page ID, optional)',
+    'parent_page_help' => 'If set, a results page is created under it, e.g. under Results. Otherwise only the PDF is uploaded.',
+    'add' => 'Add',
+    'test' => 'Test connection',
+    'connection_ok' => 'The connection works.',
+    'connection_failed' => 'Could not connect: :message',
+    'remove' => 'Remove',
+    'publish_title' => 'Publish on websites',
+    'publish' => 'Publish on :site',
+    'published' => 'Published :date',
+    'pdf' => 'PDF',
+    'page' => 'Results page',
+    'publish_failed' => 'Publishing on :site failed: :message',
+    'no_sites' => 'Add the club\'s WordPress sites under Websites to publish here.',
+    'page_pdf_link' => 'Results :event (PDF)',
+    'page_live_link' => 'Search the results',
+];

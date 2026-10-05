@@ -19,6 +19,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
+    Volt::route('sites', 'sites.index')->name('sites.index');
     Volt::route('events', 'events.index')->name('events.index');
     Volt::route('events/{event}', 'events.show')->name('events.show');
     Route::prefix('events/{event}')->name('events.')->group(function () {

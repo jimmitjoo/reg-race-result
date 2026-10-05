@@ -14,6 +14,7 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('account.admin')" class="grid">
                     <flux:navlist.item icon="flag" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>{{ __('events.title') }}</flux:navlist.item>
+                    <flux:navlist.item icon="globe-alt" :href="route('sites.index')" :current="request()->routeIs('sites.*')" wire:navigate>{{ __('sites.title') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 

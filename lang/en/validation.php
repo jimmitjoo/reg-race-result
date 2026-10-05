@@ -5,6 +5,10 @@
 return [
     'attributes' => [
         'acceptTerms' => 'the terms',
+        'appPassword' => 'application password',
+        'username' => 'username',
+        'url' => 'address',
+        'parentPageId' => 'parent page',
         'firstName' => 'first name',
         'lastName' => 'last name',
         'birthDate' => 'date of birth',
