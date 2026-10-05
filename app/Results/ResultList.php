@@ -132,16 +132,19 @@ final class ResultList
         ?string $veteranGroup = null,
         ?int $veteranPlacing = null,
     ): ResultRow {
+        // A runner who asked not to be shown keeps the placing but loses the name (GDPR, #13).
+        $hidden = $registration->hidden_at !== null;
+
         return new ResultRow(
             $placing,
             $registration->bib,
-            trim("{$registration->first_name} {$registration->last_name}"),
-            $registration->birth_date?->format('y'),
-            $registration->club,
+            $hidden ? __('privacy.anonymous') : trim("{$registration->first_name} {$registration->last_name}"),
+            $hidden ? null : $registration->birth_date?->format('y'),
+            $hidden ? null : $registration->club,
             $time,
-            $registration->first_name,
-            $registration->last_name,
-            $registration->country,
+            $hidden ? __('privacy.anonymous') : $registration->first_name,
+            $hidden ? '' : $registration->last_name,
+            $hidden ? null : $registration->country,
             $ageGroup,
             $ageGroupPlacing,
             $championshipPlacing,

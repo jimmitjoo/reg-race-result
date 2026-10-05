@@ -4,16 +4,13 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PublicRegistrationController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TimingController;
+use App\Models\Organizer;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
-
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// The admin starts at the events; signing in is required there.
+Route::redirect('/', '/events')->name('home');
+Route::redirect('dashboard', '/events')->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
@@ -22,6 +19,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
+    Volt::route('sites', 'sites.index')->name('sites.index');
     Volt::route('events', 'events.index')->name('events.index');
     Volt::route('events/{event}', 'events.show')->name('events.show');
     Route::prefix('events/{event}')->name('events.')->group(function () {
@@ -32,6 +30,7 @@ Route::middleware(['auth'])->group(function () {
         Volt::route('chips', 'events.chips')->name('chips');
         Volt::route('prizes', 'events.prizes')->name('prizes');
         Volt::route('onsite', 'events.onsite')->name('onsite');
+        Volt::route('registrations', 'events.registrations')->name('registrations');
         Route::get('exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
         Route::get('exports/pdf', [ExportController::class, 'pdf'])->name('exports.pdf');
         Route::get('timing', [TimingController::class, 'show'])->name('timing');
@@ -46,8 +45,15 @@ Route::post('stripe/webhook', StripeWebhookController::class)->name('stripe.webh
 
 // Public pages by slug. Registered last so that fixed paths (settings, events, login …) win.
 // Later the organizer can also come from a custom domain (#43).
+Route::get('{organizer}/terms', function (string $organizer) {
+    $organizer = Organizer::where('slug', $organizer)->firstOrFail();
+    $email = $organizer->events()->whereNotNull('contact_email')->latest('date')->value('contact_email');
+
+    return view('public.terms', ['organizer' => $organizer, 'email' => $email]);
+})->name('public.terms');
 Volt::route('{organizer}/{event}', 'public.event')->name('public.event');
 Volt::route('{organizer}/{event}/start-list', 'public.start-list')->name('public.start-list');
+Volt::route('{organizer}/{event}/results', 'public.results')->name('public.results');
 Route::get('{organizer}/{event}/registrations/{registration}', [PublicRegistrationController::class, 'show'])
     ->middleware('signed')
     ->name('public.registration');

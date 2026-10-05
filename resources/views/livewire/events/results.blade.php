@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Event;
+use App\Publishing\WordPressPublisher;
 use App\Results\ResultList;
+use Illuminate\Http\Client\RequestException;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -9,7 +11,28 @@ new class extends Component {
 
     public function with(): array
     {
-        return ['classes' => ResultList::for($this->event)];
+        return [
+            'classes' => ResultList::for($this->event),
+            'sites' => App\Models\WordPressSite::where('organizer_id', $this->event->organizer_id)->orderBy('name')->get(),
+            'publications' => App\Models\EventPublication::where('event_id', $this->event->id)->get()->keyBy('wordpress_site_id'),
+            'publicUrl' => route('public.results', ['organizer' => $this->event->organizer->slug, 'event' => $this->event->slug]),
+        ];
+    }
+
+    public function publish(int $siteId): void
+    {
+        $site = App\Models\WordPressSite::where('organizer_id', $this->event->organizer_id)->findOrFail($siteId);
+
+        try {
+            WordPressPublisher::publish($this->event, $site);
+        } catch (RequestException $e) {
+            $this->addError('publish', __('sites.publish_failed', ['site' => $site->name, 'message' => $e->response->json('message') ?? $e->getMessage()]));
+        }
+    }
+
+    public function togglePublic(): void
+    {
+        $this->event->update(['results_public_at' => $this->event->results_public_at ? null : now()]);
     }
 }; ?>
 
@@ -27,6 +50,36 @@ new class extends Component {
             <flux:text class="text-xs">{{ __('results.export_sfif_help') }}</flux:text>
         </div>
     </div>
+
+    <section class="flex flex-col gap-2 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+        <div>
+            <flux:button size="sm" :variant="$event->results_public_at ? 'filled' : 'primary'" icon="signal" wire:click="togglePublic">
+                {{ $event->results_public_at ? __('live.hide_public') : __('live.make_public') }}
+            </flux:button>
+        </div>
+        @if ($event->results_public_at)
+            <flux:text class="text-sm">{{ __('live.public_since') }} <flux:link :href="$publicUrl" target="_blank">{{ $publicUrl }}</flux:link></flux:text>
+            <flux:text class="text-sm">{{ __('live.embed') }}</flux:text>
+            <code class="block rounded bg-zinc-100 p-2 text-xs dark:bg-zinc-800">&lt;iframe src="{{ $publicUrl }}" style="width:100%;height:900px;border:0"&gt;&lt;/iframe&gt;</code>
+        @endif
+    </section>
+
+    <section class="flex flex-col gap-2 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+        <flux:heading>{{ __('sites.publish_title') }}</flux:heading>
+        <flux:error name="publish" />
+        @forelse ($sites as $site)
+            <div wire:key="publish-{{ $site->id }}" class="flex flex-wrap items-center gap-3">
+                <flux:button size="sm" icon="arrow-up-tray" wire:click="publish({{ $site->id }})">{{ __('sites.publish', ['site' => $site->name]) }}</flux:button>
+                @if ($publication = $publications->get($site->id))
+                    <span class="text-sm text-zinc-500">{{ __('sites.published', ['date' => $publication->updated_at->setTimezone($event->timezone)->format('Y-m-d H:i')]) }}</span>
+                    <flux:link :href="$publication->media_url" target="_blank" class="text-sm">{{ __('sites.pdf') }}</flux:link>
+                    @if ($publication->page_url)<flux:link :href="$publication->page_url" target="_blank" class="text-sm">{{ __('sites.page') }}</flux:link>@endif
+                @endif
+            </div>
+        @empty
+            <flux:text class="text-sm">{{ __('sites.no_sites') }}</flux:text>
+        @endforelse
+    </section>
 
     @foreach ($classes as $results)
         <section wire:key="results-{{ $results->raceClass->id }}" class="flex flex-col gap-2">

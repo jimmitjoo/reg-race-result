@@ -29,7 +29,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                     'class' => $class,
                     'runners' => $class->registrations->filter(fn ($r) => $search === ''
                         || (string) $r->bib === $search
-                        || str_contains(mb_strtolower("{$r->first_name} {$r->last_name}"), $search)),
+                        || (! $r->hidden_at && str_contains(mb_strtolower("{$r->first_name} {$r->last_name}"), $search))),
                 ])
                 ->filter(fn ($row) => $row['runners']->isNotEmpty()),
         ];
@@ -51,8 +51,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                 @foreach ($runners as $runner)
                     <tr class="border-t border-zinc-100 dark:border-zinc-800">
                         <td class="w-16 py-1 font-mono">{{ $runner->bib }}</td>
-                        <td class="py-1">{{ $runner->first_name }} {{ $runner->last_name }}</td>
-                        <td class="py-1 text-zinc-500">{{ $runner->club }}</td>
+                        <td class="py-1">{{ $runner->hidden_at ? __('privacy.anonymous') : $runner->first_name.' '.$runner->last_name }}</td>
+                        <td class="py-1 text-zinc-500">{{ $runner->hidden_at ? '' : $runner->club }}</td>
                     </tr>
                 @endforeach
             </table>
