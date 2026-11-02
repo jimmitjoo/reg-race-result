@@ -47,7 +47,8 @@ Route::middleware(['auth'])->group(function () {
 
 require __DIR__.'/auth.php';
 
-Route::post('stripe/webhook', StripeWebhookController::class)->name('stripe.webhook');
+Route::post('stripe/webhook', [StripeWebhookController::class, 'platform'])->name('stripe.webhook');
+Route::post('stripe/connect/webhook', [StripeWebhookController::class, 'connect'])->name('stripe.connect-webhook');
 
 // Public pages by slug. Registered last so that fixed paths (settings, events, login …) win.
 // Later the organizer can also come from a custom domain (#43).

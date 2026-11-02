@@ -8,7 +8,7 @@ use Stripe\StripeClient;
 
 /**
  * Stripe Checkout (Stripe's hosted payment page). Card details never touch our server.
- * When the organizer has a connected account the payment goes straight to it.
+ * When the organizer has a connected account the payment goes straight to it (direct charge), minus the platform fee.
  */
 class StripeCheckout
 {
@@ -38,8 +38,9 @@ class StripeCheckout
     {
         $class = $registration->raceClass;
         $event = $class->event;
+        $fee = $event->organizer->stripe_account_id ? $event->organizer->platformFee($registration->price) : 0;
 
-        return [
+        return array_filter([
             'mode' => 'payment',
             'customer_email' => $registration->email,
             'client_reference_id' => (string) $registration->id,
@@ -55,7 +56,8 @@ class StripeCheckout
             ]],
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
-        ];
+            'payment_intent_data' => $fee ? ['application_fee_amount' => $fee] : null,
+        ]);
     }
 
     private function options(Registration $registration): array
