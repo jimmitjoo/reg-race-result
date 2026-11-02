@@ -10,4 +10,6 @@ return [
     'continue' => 'Continue in Stripe',
     'fee' => 'Platform fee per registration: :fee',
     'no_fee' => 'none',
+    'example' => 'Example: a registration of :price paid with a standard card gives Stripe about :stripe and the platform :platform. The club gets :club.',
+    'responsibility' => 'Stripe fees, refunds and disputes are taken from the club\'s Stripe account. Stripe\'s fee is not returned on a refund. If you refund the full amount in Stripe, the runner is removed from the start list here.',
 ];

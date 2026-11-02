@@ -10,4 +10,6 @@ return [
     'continue' => 'Fortsätt i Stripe',
     'fee' => 'Plattformsavgift per anmälan: :fee',
     'no_fee' => 'ingen',
+    'example' => 'Exempel: en anmälan för :price betald med ett vanligt kort ger Stripe cirka :stripe och plattformen :platform. Klubben får :club.',
+    'responsibility' => 'Stripes avgifter, återbetalningar och tvister dras från klubbens Stripe-konto. Stripes avgift kommer inte tillbaka vid återbetalning. Återbetalar ni hela beloppet i Stripe tas löparen bort från startlistan här.',
 ];

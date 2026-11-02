@@ -31,7 +31,13 @@ class StripeCheckout
             return false;
         }
 
-        return $session->payment_status === 'paid';
+        if ($session->payment_status !== 'paid') {
+            return false;
+        }
+        // Remembered so that a refund in the club's Stripe dashboard finds the registration.
+        $registration->update(['stripe_payment_intent_id' => $session->payment_intent]);
+
+        return true;
     }
 
     public function params(Registration $registration, string $successUrl, string $cancelUrl): array

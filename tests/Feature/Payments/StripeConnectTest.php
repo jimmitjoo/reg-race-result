@@ -144,3 +144,43 @@ it('does not take online registrations for paid races until the account can take
     $this->actingAs(User::factory()->create(['organizer_id' => $class->event->organizer_id]))
         ->get(route('events.show', $class->event))->assertSee(__('events.registration_needs_stripe'));
 });
+
+it('stops online payments when the club disconnects the platform in Stripe', function () {
+    $organizer = Organizer::factory()->create(['stripe_account_id' => 'acct_kalmar']);
+
+    connectWebhook(['id' => 'evt_1', 'type' => 'account.application.deauthorized', 'account' => 'acct_kalmar', 'data' => ['object' => ['id' => 'ca_1', 'object' => 'application']]])->assertOk();
+
+    expect($organizer->fresh())->stripe_account_id->toBeNull()->and($organizer->fresh()->canTakePayments())->toBeFalse();
+});
+
+it('takes a runner refunded in full in Stripe out of the participants, but not on a partial refund', function () {
+    $class = connectEvent();
+    $registration = Registration::factory()->for($class)->unpaid()->create(['stripe_checkout_session_id' => 'cs_1', 'first_name' => 'Anna']);
+    connectWebhook(['id' => 'evt_1', 'type' => 'checkout.session.completed', 'account' => 'acct_kalmar', 'data' => ['object' => paidSession($registration)['object'] + ['payment_intent' => 'pi_1']]]);
+    expect($registration->fresh()->stripe_payment_intent_id)->toBe('pi_1');
+
+    $refund = fn (bool $full, string $account = 'acct_kalmar') => connectWebhook(['id' => 'evt_r', 'type' => 'charge.refunded', 'account' => $account, 'data' => ['object' => ['id' => 'ch_1', 'object' => 'charge', 'payment_intent' => 'pi_1', 'refunded' => $full]]])->assertOk();
+
+    $refund(false);
+    $refund(true, 'acct_someone_else');
+    expect($registration->fresh()->refunded_at)->toBeNull()->and($class->event->registrations()->count())->toBe(1);
+
+    $refund(true);
+    expect($registration->fresh()->refunded_at)->not->toBeNull()->and($class->event->registrations()->count())->toBe(0);
+
+    $this->actingAs(User::factory()->create(['organizer_id' => $class->event->organizer_id]));
+    Volt::test('events.registrations', ['event' => $class->event])->assertDontSee('Anna')
+        ->set('status', 'all')->assertSee('Anna')->assertSee(__('registrations.refunded'));
+});
+
+it('shows what the club gets from a registration after the fees', function () {
+    $organizer = Organizer::factory()->create(['fee_basis_points' => 0, 'fee_fixed' => 500]);
+    $this->actingAs(User::factory()->create(['organizer_id' => $organizer->id]));
+
+    Volt::test('payments.index')->assertSee(__('payments.example', [
+        'price' => App\Support\Money::format(30000, 'SEK'),
+        'stripe' => App\Support\Money::format(630, 'SEK'),
+        'platform' => App\Support\Money::format(500, 'SEK'),
+        'club' => App\Support\Money::format(28870, 'SEK'),
+    ]));
+});

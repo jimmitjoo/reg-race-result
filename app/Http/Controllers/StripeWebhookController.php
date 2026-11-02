@@ -40,9 +40,23 @@ class StripeWebhookController extends Controller
         $object = $event->data->object;
         $account = $event->account ?? null;
 
-        if ($event->type === 'account.updated' && $account) {
-            $organizer = Organizer::where('stripe_account_id', $account)->first();
-            $organizer && StripeConnect::apply($organizer, $object);
+        $organizer = $account ? Organizer::where('stripe_account_id', $account)->first() : null;
+
+        if ($event->type === 'account.updated' && $organizer) {
+            StripeConnect::apply($organizer, $object);
+        }
+
+        // The club disconnected the platform in Stripe: no more online payments until it connects again.
+        if ($event->type === 'account.application.deauthorized' && $organizer) {
+            $organizer->update(['stripe_account_id' => null, 'stripe_details_submitted' => false, 'stripe_charges_enabled' => false]);
+        }
+
+        // Refunded in full in the club's dashboard; a partial refund leaves the runner in.
+        if ($event->type === 'charge.refunded' && $organizer && $object->refunded && $object->payment_intent) {
+            Registration::where('stripe_payment_intent_id', $object->payment_intent)
+                ->whereNull('refunded_at')
+                ->whereHas('raceClass.event', fn ($q) => $q->where('organizer_id', $organizer->id))
+                ->update(['refunded_at' => now()]);
         }
 
         if (in_array($event->type, self::PAID_EVENTS, true) && $object->payment_status === 'paid') {
@@ -53,7 +67,7 @@ class StripeWebhookController extends Controller
 
             // The payment must have been made on the account of the registration's own organizer.
             if ($registration && $registration->raceClass->event->organizer->stripe_account_id === $account) {
-                $registration->markPaid('stripe');
+                $registration->markPaid('stripe', $object->payment_intent ?? null);
             }
         }
 
