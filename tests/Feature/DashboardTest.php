@@ -1,27 +1,19 @@
 <?php
 
-namespace Tests\Feature;
-
+use App\Models\Organizer;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-class DashboardTest extends TestCase
-{
-    use RefreshDatabase;
+it('sends the start page and dashboard to the events', function () {
+    $this->get('/')->assertRedirect('/events');
+    $this->get('/dashboard')->assertRedirect('/events');
+});
 
-    public function test_guests_are_redirected_to_the_login_page(): void
-    {
-        $response = $this->get('/dashboard');
-        $response->assertRedirect('/login');
-    }
+it('asks guests to sign in for the events', function () {
+    $this->get('/events')->assertRedirect(route('login'));
+});
 
-    public function test_authenticated_users_can_visit_the_dashboard(): void
-    {
-        $user = User::factory()->create();
-        $this->actingAs($user);
+it('shows the events to signed in organizer users', function () {
+    $user = User::factory()->create(['organizer_id' => Organizer::factory()->create()->id]);
 
-        $response = $this->get('/dashboard');
-        $response->assertStatus(200);
-    }
-}
+    $this->actingAs($user)->get('/events')->assertOk();
+});

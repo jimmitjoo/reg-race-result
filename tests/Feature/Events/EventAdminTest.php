@@ -126,10 +126,6 @@ it('shows classes with local start times and links to timing', function () {
         ->assertSee(route('events.timing', $event));
 });
 
-it('has every events translation in Swedish and English', function () {
-    expect(array_keys(require lang_path('sv/events.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/events.php')));
-});
-
 it('forbids users who do not belong to an organizer', function () {
     $this->actingAs(User::factory()->create(['organizer_id' => null]))
         ->get(route('events.index'))

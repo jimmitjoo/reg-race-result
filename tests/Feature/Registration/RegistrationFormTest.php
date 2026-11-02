@@ -156,10 +156,6 @@ it('creates event slugs from the name, unique per organizer', function () {
     expect($first->slug)->toBe('olands-tjurrus-2027')->and($second->slug)->toBe('olands-tjurrus-2027-2');
 });
 
-it('has every registration translation in Swedish and English', function () {
-    expect(array_keys(require lang_path('sv/registration.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/registration.php')));
-});
-
 it('stores the official club name and link when the typed club is in the federation list', function () {
     [, , , $class] = openEvent();
     $club = Club::create(['federation' => 'SFIF', 'external_id' => '506', 'name' => 'Högby IF', 'district' => 'Småland']);

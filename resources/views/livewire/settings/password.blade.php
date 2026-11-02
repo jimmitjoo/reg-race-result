@@ -40,12 +40,12 @@ new class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout heading="Update password" subheading="Ensure your account is using a long, random password to stay secure">
+    <x-settings.layout :heading="__('account.update_password')" :subheading="__('account.update_password_description')">
         <form wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"
                 id="update_password_current_passwordpassword"
-                label="{{ __('Current password') }}"
+                label="{{ __('account.current_password') }}"
                 type="password"
                 name="current_password"
                 required
@@ -54,7 +54,7 @@ new class extends Component {
             <flux:input
                 wire:model="password"
                 id="update_password_password"
-                label="{{ __('New password') }}"
+                label="{{ __('account.new_password') }}"
                 type="password"
                 name="password"
                 required
@@ -63,7 +63,7 @@ new class extends Component {
             <flux:input
                 wire:model="password_confirmation"
                 id="update_password_password_confirmation"
-                label="{{ __('Confirm Password') }}"
+                label="{{ __('account.confirm_password') }}"
                 type="password"
                 name="password_confirmation"
                 required
@@ -72,11 +72,11 @@ new class extends Component {
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full">{{ __('Save') }}</flux:button>
+                    <flux:button variant="primary" type="submit" class="w-full">{{ __('account.save') }}</flux:button>
                 </div>
 
                 <x-action-message class="me-3" on="password-updated">
-                    {{ __('Saved.') }}
+                    {{ __('account.saved') }}
                 </x-action-message>
             </div>
         </form>

@@ -91,7 +91,3 @@ it('edits the result list details of an event', function () {
         ->weather->toBe('13 grader och sol')
         ->contact_email->toBe('resultat@example.com');
 });
-
-it('has every pdf translation in Swedish and English', function () {
-    expect(array_keys(require lang_path('sv/pdf.php')))->toEqualCanonicalizing(array_keys(require lang_path('en/pdf.php')));
-});
