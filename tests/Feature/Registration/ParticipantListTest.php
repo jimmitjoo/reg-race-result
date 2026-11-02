@@ -24,7 +24,7 @@ it('shows paid registrations with contact details by default, without a cap', fu
     [$event, , $women] = participantEvent();
     Registration::factory()->for($women)->create(['bib' => 1, 'first_name' => 'Åsa', 'email' => 'asa@example.com', 'phone' => '070-123', 'price' => 25000, 'payment_method' => 'stripe']);
     Registration::factory()->for($women)->unpaid()->create(['first_name' => 'Ulla']);
-    Registration::factory()->for($women)->count(240)->sequence(fn ($s) => ['bib' => 1000 + $s->index])->create();
+    Registration::factory()->for($women)->count(240)->sequence(fn ($s) => ['bib' => 1000 + $s->index, 'first_name' => 'Löpare', 'last_name' => (string) $s->index, 'email' => "lopare{$s->index}@example.com"])->create();
 
     Volt::test('events.registrations', ['event' => $event])
         ->assertSee('asa@example.com')->assertSee('070-123')->assertSee(__('registrations.method.stripe'))
