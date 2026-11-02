@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PublicRegistrationController;
+use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TimingController;
 use App\Models\Organizer;
@@ -20,6 +21,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
     Volt::route('club', 'club.create')->name('club.create');
+    Volt::route('payments', 'payments.index')->name('payments.index');
+    Route::get('payments/return', [StripeConnectController::class, 'back'])->name('payments.return');
+    Route::get('payments/refresh', [StripeConnectController::class, 'refresh'])->name('payments.refresh');
     Volt::route('sites', 'sites.index')->name('sites.index');
     Volt::route('events', 'events.index')->name('events.index');
     Volt::route('events/{event}', 'events.show')->name('events.show');
