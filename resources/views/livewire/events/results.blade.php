@@ -9,7 +9,15 @@ new class extends Component {
 
     public function with(): array
     {
-        return ['classes' => ResultList::for($this->event)];
+        return [
+            'classes' => ResultList::for($this->event),
+            'publicUrl' => route('public.results', ['organizer' => $this->event->organizer->slug, 'event' => $this->event->slug]),
+        ];
+    }
+
+    public function togglePublic(): void
+    {
+        $this->event->update(['results_public_at' => $this->event->results_public_at ? null : now()]);
     }
 }; ?>
 
@@ -27,6 +35,19 @@ new class extends Component {
             <flux:text class="text-xs">{{ __('results.export_sfif_help') }}</flux:text>
         </div>
     </div>
+
+    <section class="flex flex-col gap-2 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+        <div>
+            <flux:button size="sm" :variant="$event->results_public_at ? 'filled' : 'primary'" icon="signal" wire:click="togglePublic">
+                {{ $event->results_public_at ? __('live.hide_public') : __('live.make_public') }}
+            </flux:button>
+        </div>
+        @if ($event->results_public_at)
+            <flux:text class="text-sm">{{ __('live.public_since') }} <flux:link :href="$publicUrl" target="_blank">{{ $publicUrl }}</flux:link></flux:text>
+            <flux:text class="text-sm">{{ __('live.embed') }}</flux:text>
+            <code class="block rounded bg-zinc-100 p-2 text-xs dark:bg-zinc-800">&lt;iframe src="{{ $publicUrl }}" style="width:100%;height:900px;border:0"&gt;&lt;/iframe&gt;</code>
+        @endif
+    </section>
 
     @foreach ($classes as $results)
         <section wire:key="results-{{ $results->raceClass->id }}" class="flex flex-col gap-2">
