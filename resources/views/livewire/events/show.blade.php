@@ -212,10 +212,10 @@ new class extends Component {
         <div>
             <flux:heading size="xl">{{ $event->name }}</flux:heading>
             <flux:subheading>{{ $event->date->toDateString() }}@if ($event->city) · {{ $event->city }}@endif · {{ $event->timezone }}</flux:subheading>
+            <flux:button :href="route('events.registrations', $event)" icon="users" variant="primary" class="mt-3" wire:navigate>{{ __('registrations.title') }}</flux:button>
         </div>
         <div class="flex flex-wrap gap-2">
             <flux:button :href="route('events.chips', $event)" icon="tag" wire:navigate>{{ __('chips.title') }}</flux:button>
-            <flux:button :href="route('events.registrations', $event)" icon="users" wire:navigate>{{ __('registrations.title') }}</flux:button>
             <flux:button :href="route('events.onsite', $event)" icon="user-plus" wire:navigate>{{ __('onsite.title') }}</flux:button>
             <flux:button :href="route('events.timing', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
             <flux:button :href="route('events.start', $event)" icon="flag" wire:navigate>{{ __('results.start') }}</flux:button>
