@@ -57,7 +57,7 @@ class StripeCheckout
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'payment_intent_data' => $fee ? ['application_fee_amount' => $fee] : null,
-        ]);
+        ], fn ($value) => $value !== null);
     }
 
     private function options(Registration $registration): array

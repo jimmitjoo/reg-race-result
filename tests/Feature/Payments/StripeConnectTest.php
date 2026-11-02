@@ -60,8 +60,10 @@ it('connects a Stripe account and shows the status Stripe reports, not the retur
     Volt::test('payments.index')->assertSee(__('payments.incomplete'));
 
     StripeConnect::apply($organizer->fresh(), (object) ['details_submitted' => true, 'charges_enabled' => true]);
+    $organizer->update(['fee_basis_points' => 250, 'fee_fixed' => 300]);
     $this->actingAs($user->fresh());
-    Volt::test('payments.index')->assertSee(__('payments.ready'));
+    Volt::test('payments.index')->assertSee(__('payments.ready'))
+        ->assertSee(__('payments.fee', ['fee' => Illuminate\Support\Number::percentage(2.5, maxPrecision: 2, locale: 'sv').' + '.App\Support\Money::format(300, 'SEK')]));
 });
 
 it('keeps the return routes behind sign-in', function () {
