@@ -33,6 +33,7 @@ return [
     'registration_open' => 'Registration open until :date, now :price',
     'registration_closed' => 'Registration closed: add a price to open it',
     'registration_ended' => 'Registration closed since :date',
+    'registration_needs_stripe' => 'Registration opens when Stripe is connected (Payments)',
     'free_help' => 'A free race opens with a price of 0.',
     'price_until' => 'Until :date',
     'price_until_label' => 'Valid until',

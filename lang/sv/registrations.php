@@ -6,6 +6,7 @@ return [
     'status' => 'Betalning',
     'paid' => 'Betald',
     'unpaid' => 'Obetald',
+    'refunded' => 'Återbetald',
     'hidden' => 'Dold',
     'hide_name' => 'Dölj namn',
     'show_name' => 'Visa namn',

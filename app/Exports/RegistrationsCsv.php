@@ -14,7 +14,7 @@ final class RegistrationsCsv
     public static function query(Event $event, string $status = 'paid', ?int $raceId = null, string $search = ''): HasManyThrough
     {
         return $event->allRegistrations()->with('raceClass')
-            ->when($status === 'paid', fn ($q) => $q->whereNotNull('registrations.paid_at'))
+            ->when($status === 'paid', fn ($q) => $q->whereNotNull('registrations.paid_at')->whereNull('registrations.refunded_at'))
             ->when($status === 'unpaid', fn ($q) => $q->whereNull('registrations.paid_at'))
             ->when($raceId, fn ($q) => $q->where('race_classes.race_id', $raceId))
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
@@ -43,7 +43,7 @@ final class RegistrationsCsv
             $r->raceClass->name, $r->bib === null ? null : (string) $r->bib, $r->first_name, $r->last_name,
             $r->birth_date?->toDateString(), $r->gender, $r->club, $r->email,
             $r->phone, $r->price === null ? null : number_format($r->price / 100, 2, ',', ''), $r->payment_method ? __("registrations.method.{$r->payment_method}") : null,
-            $r->paid_at?->setTimezone($timezone)->format('Y-m-d H:i'), $r->created_at->setTimezone($timezone)->format('Y-m-d H:i'),
+            $r->refunded_at ? __('registrations.refunded') : $r->paid_at?->setTimezone($timezone)->format('Y-m-d H:i'), $r->created_at->setTimezone($timezone)->format('Y-m-d H:i'),
         ];
     }
 

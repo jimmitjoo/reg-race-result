@@ -36,11 +36,14 @@ new #[Layout('components.layouts.public')] class extends Component {
     public function with(): array
     {
         $now = now();
+        $canPay = $this->raceEvent->organizer->canTakePayments();
 
         return [
             'event' => $this->raceEvent,
             'races' => $this->raceEvent->races()->with(['raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get()
-                ->map(fn ($race) => ['race' => $race, 'price' => $race->priceAt($now)]),
+                ->map(fn ($race) => ['race' => $race, 'price' => $race->priceAt($now)])
+                // A paid race waits until the organizer's Stripe account can take payments.
+                ->map(fn ($r) => $r + ['soon' => $r['price'] > 0 && ! $canPay]),
             'currency' => $this->raceEvent->organizer->currency,
             'clubs' => Club::orderBy('name')->pluck('name'),
         ];
@@ -67,7 +70,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         $class = RaceClass::with('race')->findOrFail((int) $this->raceClassId);
         $price = $class->race?->priceAt(now());
 
-        if ($price === null) {
+        if ($price === null || ($price > 0 && ! $this->raceEvent->organizer->canTakePayments())) {
             $this->addError('raceClassId', __('registration.class_not_open'));
 
             return;
@@ -130,11 +133,11 @@ new #[Layout('components.layouts.public')] class extends Component {
 
     <section class="flex flex-col gap-3">
         <flux:heading size="lg">{{ __('registration.classes') }}</flux:heading>
-        @foreach ($races as ['race' => $race, 'price' => $price])
+        @foreach ($races as ['race' => $race, 'price' => $price, 'soon' => $soon])
             <div wire:key="race-{{ $race->id }}" class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                 <div class="flex justify-between font-semibold">
                     <span>{{ $race->name }}</span>
-                    <span>{{ $price === null ? __('registration.closed') : Money::format($price, $currency) }}</span>
+                    <span>{{ match (true) { $price === null => __('registration.closed'), $soon => __('registration.opens_soon'), default => Money::format($price, $currency) } }}</span>
                 </div>
                 <ul class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                     @foreach ($race->raceClasses as $class)
@@ -149,8 +152,8 @@ new #[Layout('components.layouts.public')] class extends Component {
         <flux:heading size="lg">{{ __('registration.title') }}</flux:heading>
 
         <flux:select wire:model="raceClassId" :label="__('registration.class')" :placeholder="__('registration.choose_class')">
-            @foreach ($races as ['race' => $race, 'price' => $price])
-                @if ($price !== null)
+            @foreach ($races as ['race' => $race, 'price' => $price, 'soon' => $soon])
+                @if ($price !== null && ! $soon)
                     @foreach ($race->raceClasses->filter(fn ($class) => ! $class->gender || ! $gender || $class->gender === $gender) as $class)
                         <option value="{{ $class->id }}">{{ $race->name }} – {{ $class->name }} ({{ Money::format($price, $currency) }})</option>
                     @endforeach

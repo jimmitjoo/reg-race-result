@@ -31,7 +31,7 @@ new class extends Component {
         $status = in_array($this->status, RegistrationsCsv::STATUSES, true) ? $this->status : 'paid';
         $filters = ['status' => $status, 'race' => $this->race ?: null, 'search' => trim($this->search) ?: null];
         $counts = $this->event->allRegistrations()->toBase()
-            ->selectRaw('registrations.race_class_id, count(*) as total, count(registrations.paid_at) as paid')
+            ->selectRaw('registrations.race_class_id, count(*) as total, sum(case when registrations.paid_at is not null and registrations.refunded_at is null then 1 else 0 end) as paid')
             ->groupBy('registrations.race_class_id')->get()->keyBy('race_class_id');
 
         return [
@@ -136,7 +136,9 @@ new class extends Component {
                         <td class="py-1 pe-3">{{ $registration->price === null ? '' : Money::format($registration->price, $currency) }}</td>
                         <td class="py-1 pe-3">{{ $registration->payment_method ? __("registrations.method.{$registration->payment_method}") : '' }}</td>
                         <td class="py-1 pe-3">
-                            @if ($registration->paid_at)
+                            @if ($registration->refunded_at)
+                                <flux:badge size="sm" color="zinc">{{ __('registrations.refunded') }}</flux:badge>
+                            @elseif ($registration->paid_at)
                                 {{ $registration->paid_at->setTimezone($event->timezone)->format('Y-m-d H:i') }}
                             @else
                                 <flux:badge size="sm" color="amber">{{ __('registrations.unpaid') }}</flux:badge>

@@ -250,7 +250,9 @@ new class extends Component {
             <div class="flex flex-col gap-2 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
                 <flux:heading size="sm">{{ __('events.prices') }}</flux:heading>
                 @php($price = $race->priceAt(now()))
-                @if ($price !== null)
+                @if ($price > 0 && ! $event->organizer->canTakePayments())
+                    <flux:badge color="amber" class="self-start">{{ __('events.registration_needs_stripe') }}</flux:badge>
+                @elseif ($price !== null)
                     <flux:badge color="green" class="self-start">{{ __('events.registration_open', ['date' => $race->priceSteps->last()->until->toDateString(), 'price' => Money::format($price, $currency)]) }}</flux:badge>
                 @elseif ($race->priceSteps->isNotEmpty())
                     <flux:badge color="zinc" class="self-start">{{ __('events.registration_ended', ['date' => $race->priceSteps->last()->until->toDateString()]) }}</flux:badge>

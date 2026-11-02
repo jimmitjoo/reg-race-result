@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         // Stripe signs its webhooks instead.
-        $middleware->validateCsrfTokens(except: ['stripe/webhook']);
+        $middleware->validateCsrfTokens(except: ['stripe/webhook', 'stripe/connect/webhook']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

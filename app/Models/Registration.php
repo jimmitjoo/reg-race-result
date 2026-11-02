@@ -15,13 +15,13 @@ class Registration extends Model
 
     protected function casts(): array
     {
-        return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime', 'manual_finish_at' => UtcDateTime::class.':ms', 'terms_accepted_at' => 'immutable_datetime', 'hidden_at' => 'immutable_datetime'];
+        return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime', 'refunded_at' => 'immutable_datetime', 'manual_finish_at' => UtcDateTime::class.':ms', 'terms_accepted_at' => 'immutable_datetime', 'hidden_at' => 'immutable_datetime'];
     }
 
-    public function markPaid(string $method): void
+    public function markPaid(string $method, ?string $paymentIntent = null): void
     {
         if (! $this->paid_at) {
-            $this->update(['paid_at' => now(), 'payment_method' => $method]);
+            $this->update(['paid_at' => now(), 'payment_method' => $method, 'stripe_payment_intent_id' => $paymentIntent ?? $this->stripe_payment_intent_id]);
         }
     }
 

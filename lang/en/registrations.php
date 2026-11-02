@@ -6,6 +6,7 @@ return [
     'status' => 'Payment',
     'paid' => 'Paid',
     'unpaid' => 'Unpaid',
+    'refunded' => 'Refunded',
     'hidden' => 'Hidden',
     'hide_name' => 'Hide name',
     'show_name' => 'Show name',

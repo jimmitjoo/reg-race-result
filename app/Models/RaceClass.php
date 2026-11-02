@@ -32,6 +32,6 @@ class RaceClass extends Model
     // Paid only, like Event::registrations().
     public function registrations(): HasMany
     {
-        return $this->hasMany(Registration::class)->whereNotNull('registrations.paid_at');
+        return $this->hasMany(Registration::class)->whereNotNull('registrations.paid_at')->whereNull('registrations.refunded_at');
     }
 }
