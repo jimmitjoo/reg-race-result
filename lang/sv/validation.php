@@ -163,6 +163,7 @@ return [
     'custom' => [
     ],
     'attributes' => [
+        'acceptTerms' => 'villkoren',
         'firstName' => 'förnamn',
         'lastName' => 'efternamn',
         'birthDate' => 'födelsedatum',

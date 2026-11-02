@@ -38,7 +38,8 @@ function fillForm($page, RaceClass $class)
         ->set('gender', 'K')
         ->set('club', 'Högby IF')
         ->set('email', 'anna@example.com')
-        ->set('phone', '070-123 45 67');
+        ->set('phone', '070-123 45 67')
+        ->set('acceptTerms', true);
 }
 
 it('shows the event with its open classes and current prices to anyone', function () {
