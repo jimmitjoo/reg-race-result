@@ -100,7 +100,7 @@ it('marks the registration paid on the confirmation page when Stripe says it is 
 
 it('marks the registration paid from the Stripe webhook', function () {
     $class = paidEvent();
-    $registration = Registration::factory()->for($class)->create(['stripe_checkout_session_id' => 'cs_test_123']);
+    $registration = Registration::factory()->for($class)->unpaid()->create(['stripe_checkout_session_id' => 'cs_test_123']);
 
     [$payload, $signature] = signedStripeEvent([
         'id' => 'evt_1', 'object' => 'event', 'type' => 'checkout.session.completed',
@@ -115,7 +115,7 @@ it('marks the registration paid from the Stripe webhook', function () {
 
 it('ignores unpaid sessions and unknown registrations in the webhook', function () {
     $class = paidEvent();
-    $registration = Registration::factory()->for($class)->create(['stripe_checkout_session_id' => 'cs_test_123']);
+    $registration = Registration::factory()->for($class)->unpaid()->create(['stripe_checkout_session_id' => 'cs_test_123']);
 
     foreach ([['paid' => 'unpaid', 'id' => (string) $registration->id], ['paid' => 'paid', 'id' => '999999']] as $case) {
         [$payload, $signature] = signedStripeEvent([

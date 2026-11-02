@@ -23,7 +23,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         return [
             'event' => $this->raceEvent,
             'classes' => $this->raceEvent->raceClasses()->orderBy('start_at')->orderBy('name')
-                ->with(['registrations' => fn ($q) => $q->whereNotNull('paid_at')->orderBy('bib')->orderBy('last_name')])
+                ->with(['registrations' => fn ($q) => $q->orderBy('bib')->orderBy('last_name')])
                 ->get()
                 ->map(fn ($class) => [
                     'class' => $class,

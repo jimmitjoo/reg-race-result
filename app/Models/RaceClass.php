@@ -29,8 +29,9 @@ class RaceClass extends Model
         return $this->belongsTo(Race::class);
     }
 
+    // Paid only, like Event::registrations().
     public function registrations(): HasMany
     {
-        return $this->hasMany(Registration::class);
+        return $this->hasMany(Registration::class)->whereNotNull('registrations.paid_at');
     }
 }
