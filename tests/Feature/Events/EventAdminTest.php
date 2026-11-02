@@ -127,10 +127,10 @@ it('shows classes with local start times and links to timing', function () {
         ->assertSee(route('events.timing', $event));
 });
 
-it('forbids users who do not belong to an organizer', function () {
+it('sends users who do not belong to an organizer to the club step', function () {
     $this->actingAs(User::factory()->create(['organizer_id' => null]))
         ->get(route('events.index'))
-        ->assertForbidden();
+        ->assertRedirect(route('club.create'));
 });
 
 it('creates a race with price steps and an on-site price in major units', function () {

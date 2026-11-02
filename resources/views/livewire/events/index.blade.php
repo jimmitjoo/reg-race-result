@@ -10,12 +10,15 @@ new class extends Component {
 
     public function mount(): void
     {
-        abort_unless(auth()->user()->organizer_id, 403);
+        if (! auth()->user()->organizer_id) {
+            $this->redirectRoute('club.create', navigate: true);
+        }
     }
 
     public function with(): array
     {
-        return ['events' => $this->organizer()->events()->orderByDesc('date')->get()];
+        // No organizer yet: mount() sends the user to the club step.
+        return ['events' => $this->organizer()?->events()->orderByDesc('date')->get() ?? collect()];
     }
 
     public function create(): void
@@ -31,7 +34,7 @@ new class extends Component {
         $this->redirectRoute('events.show', $event, navigate: true);
     }
 
-    private function organizer(): App\Models\Organizer
+    private function organizer(): ?App\Models\Organizer
     {
         return auth()->user()->organizer;
     }

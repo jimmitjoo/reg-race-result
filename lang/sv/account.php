@@ -54,4 +54,9 @@ return [
     'cancel' => 'Avbryt',
     'admin' => 'Admin',
     'full_name' => 'För- och efternamn',
+    'club_title' => 'Er klubb',
+    'club_description' => 'Vilken klubb arrangerar loppen?',
+    'club_name' => 'Klubbens namn',
+    'club_help' => 'Skriv namnet som i Friidrottsförbundets föreningslista.',
+    'club_create' => 'Fortsätt',
 ];
