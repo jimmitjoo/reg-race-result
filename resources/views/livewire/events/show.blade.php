@@ -226,6 +226,8 @@ new class extends Component {
         </div>
     </div>
 
+    <flux:input :value="route('public.event', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" readonly copyable :label="__('events.public_link')" />
+
     <form wire:submit="saveDetails" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
         <flux:heading>{{ __('events.details') }}</flux:heading>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -247,6 +249,15 @@ new class extends Component {
 
             <div class="flex flex-col gap-2 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
                 <flux:heading size="sm">{{ __('events.prices') }}</flux:heading>
+                @php($price = $race->priceAt(now()))
+                @if ($price !== null)
+                    <flux:badge color="green" class="self-start">{{ __('events.registration_open', ['date' => $race->priceSteps->last()->until->toDateString(), 'price' => Money::format($price, $currency)]) }}</flux:badge>
+                @elseif ($race->priceSteps->isNotEmpty())
+                    <flux:badge color="zinc" class="self-start">{{ __('events.registration_ended', ['date' => $race->priceSteps->last()->until->toDateString()]) }}</flux:badge>
+                @else
+                    <flux:badge color="amber" class="self-start">{{ __('events.registration_closed') }}</flux:badge>
+                    <flux:text class="text-sm">{{ __('events.free_help') }}</flux:text>
+                @endif
                 @foreach ($race->priceSteps as $step)
                     <div wire:key="step-{{ $step->id }}" class="flex items-center gap-4 text-sm">
                         <span class="min-w-48">{{ __('events.price_until', ['date' => $step->until->toDateString()]) }}</span>

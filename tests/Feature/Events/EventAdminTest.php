@@ -5,6 +5,7 @@ use App\Models\Organizer;
 use App\Models\Race;
 use App\Models\RaceClass;
 use App\Models\User;
+use App\Support\Money;
 use Livewire\Volt\Volt;
 
 function organizerUser(?Organizer $organizer = null): User
@@ -280,4 +281,22 @@ it('rejects a start time like 25:00 instead of failing', function () {
             ->call('saveClass')
             ->assertHasErrors(['startTime']);
     }
+});
+
+it('shows the public link and whether registration is open per race', function () {
+    $this->travelTo('2026-11-15 12:00:00');
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $open = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet']);
+    $open->priceSteps()->createMany([['until' => '2026-11-30', 'amount' => 25000], ['until' => '2026-12-30', 'amount' => 30000]]);
+    $ended = Race::factory()->for($event)->create(['name' => 'Gamla loppet']);
+    $ended->priceSteps()->create(['until' => '2026-11-01', 'amount' => 10000]);
+    Race::factory()->for($event)->create(['name' => 'Utan pris']);
+
+    $this->actingAs($user)
+        ->get(route('events.show', $event))
+        ->assertSee(route('public.event', ['organizer' => $event->organizer->slug, 'event' => $event->slug]))
+        ->assertSee(__('events.registration_open', ['date' => '2026-12-30', 'price' => Money::format(25000, 'SEK')]))
+        ->assertSee(__('events.registration_ended', ['date' => '2026-11-01']))
+        ->assertSee(__('events.registration_closed'));
 });
