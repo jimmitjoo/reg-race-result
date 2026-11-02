@@ -1,6 +1,6 @@
 # reg-race-result
 
-Anmälan, tidtagning och resultat för Högby IF:s lopp. Se [issues](https://github.com/jimmitjoo/reg-race-result/issues) och användarguiden för tävlingsdagen (länkad från #2).
+Anmälan, tidtagning och resultat för klubbars lopp, med Högby IF som första arrangör. Se [issues](https://github.com/jimmitjoo/reg-race-result/issues) och användarguiden för tävlingsdagen (länkad från #2).
 
 ## Utveckling
 
@@ -15,3 +15,11 @@ docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app reg-race-result-dev ./
 docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app node:22 npm test                        # JS-tester
 docker run --rm -u $(id -u):$(id -g) -v $PWD:/app -w /app node:22 npm run build                   # frontend
 ```
+
+## Ny arrangör
+
+```sh
+php artisan organizer:create "Kalmar Löparklubb" anna@example.com
+```
+
+Skapar arrangören (SE, Europe/Stockholm, SEK, sv) och kopplar användaren, som får en länk för att välja lösenord.
