@@ -6,7 +6,6 @@ use App\Models\Organizer;
 use App\Models\RaceClass;
 use App\Payments\StripeCheckout;
 use App\Support\Money;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -104,11 +103,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             'terms_accepted_at' => now(),
         ]);
 
-        $confirmationUrl = URL::signedRoute('public.registration', [
-            'organizer' => $this->raceEvent->organizer->slug,
-            'event' => $this->raceEvent->slug,
-            'registration' => $registration,
-        ]);
+        $confirmationUrl = $registration->confirmationUrl();
 
         if ($price === 0) {
             $registration->markPaid('free');

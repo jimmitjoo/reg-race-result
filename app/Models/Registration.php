@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Casts\UtcDateTime;
+use App\Mail\RegistrationReceipt;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 
 class Registration extends Model
 {
@@ -18,11 +21,23 @@ class Registration extends Model
         return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime', 'refunded_at' => 'immutable_datetime', 'manual_finish_at' => UtcDateTime::class.':ms', 'terms_accepted_at' => 'immutable_datetime', 'hidden_at' => 'immutable_datetime'];
     }
 
+    /** Webhook, reconciliation and the confirmation page can race; only the one that marks it paid sends the receipt. */
     public function markPaid(string $method, ?string $paymentIntent = null): void
     {
-        if (! $this->paid_at) {
-            $this->update(['paid_at' => now(), 'payment_method' => $method, 'stripe_payment_intent_id' => $paymentIntent ?? $this->stripe_payment_intent_id]);
+        $marked = static::whereKey($this->id)->whereNull('paid_at')
+            ->update(['paid_at' => now(), 'payment_method' => $method, 'stripe_payment_intent_id' => $paymentIntent ?? $this->stripe_payment_intent_id]);
+        $this->refresh();
+
+        if ($marked && $this->email) {
+            Mail::to($this->email)->send(new RegistrationReceipt($this));
         }
+    }
+
+    public function confirmationUrl(): string
+    {
+        $event = $this->raceClass->event;
+
+        return URL::signedRoute('public.registration', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $this]);
     }
 
     public function clubRecord(): BelongsTo
