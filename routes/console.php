@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('clubs:sync')->weekly();
 Schedule::command('registrations:prune-contacts')->daily();
+Schedule::command('payments:reconcile')->everyTenMinutes();

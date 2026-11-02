@@ -33,6 +33,7 @@ return [
     'registration_open' => 'Anmälan öppen t.o.m. :date, nu :price',
     'registration_closed' => 'Anmälan stängd: lägg till ett pris för att öppna',
     'registration_ended' => 'Anmälan stängd sedan :date',
+    'registration_needs_stripe' => 'Anmälan öppnar när Stripe är kopplat (Betalningar)',
     'free_help' => 'Ett gratislopp öppnar med ett pris på 0 kr.',
     'price_until' => 'T.o.m. :date',
     'price_until_label' => 'Gäller t.o.m.',

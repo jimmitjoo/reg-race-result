@@ -18,6 +18,7 @@ return [
     'phone' => 'Phone',
     'submit' => 'Register',
     'class_not_open' => 'This class is not open for registration.',
+    'opens_soon' => 'Registration opens soon',
     'wrong_gender' => 'This class is for another gender.',
     'min_age' => 'Half marathon and longer: you must turn 17 this year.',
     'confirmation_title' => 'Thank you for registering!',
