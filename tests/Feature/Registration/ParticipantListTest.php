@@ -62,7 +62,7 @@ it('downloads the filtered rows as CSV for Swedish Excel', function () {
         ->assertHeader('content-type', 'text/csv; charset=UTF-8')
         ->assertDownload('Anmälningar Sylvesterloppet 2026.csv');
 
-    $csv = $response->streamedContent() ?: $response->getContent();
+    $csv = $response->getContent();
     expect(substr($csv, 0, 3))->toBe("\xEF\xBB\xBF");
     $lines = explode("\r\n", rtrim(substr($csv, 3), "\r\n"));
     expect($lines)->toHaveCount(2)

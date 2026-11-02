@@ -154,5 +154,5 @@ new class extends Component {
         </table>
     </div>
 
-    {{ $registrations->links() }}
+    {{ $registrations->links('livewire::simple-tailwind') }}
 </div>
