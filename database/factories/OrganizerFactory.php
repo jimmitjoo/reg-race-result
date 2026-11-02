@@ -17,6 +17,14 @@ class OrganizerFactory extends Factory
             'timezone' => 'Europe/Stockholm',
             'currency' => 'SEK',
             'locale' => 'sv',
+            'stripe_account_id' => 'acct_'.fake()->unique()->bothify('????????'),
+            'stripe_details_submitted' => true,
+            'stripe_charges_enabled' => true,
         ];
+    }
+
+    public function unconnected(): static
+    {
+        return $this->state(['stripe_account_id' => null, 'stripe_details_submitted' => false, 'stripe_charges_enabled' => false]);
     }
 }

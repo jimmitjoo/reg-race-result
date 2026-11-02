@@ -14,6 +14,23 @@ class Organizer extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return ['stripe_details_submitted' => 'boolean', 'stripe_charges_enabled' => 'boolean'];
+    }
+
+    /** Online payments go to the organizer's own connected Stripe account, or not at all (#47). */
+    public function canTakePayments(): bool
+    {
+        return $this->stripe_account_id && $this->stripe_charges_enabled;
+    }
+
+    /** The platform's part of a registration price, in minor units. */
+    public function platformFee(int $price): int
+    {
+        return min($price, (int) round($price * $this->fee_basis_points / 10000) + $this->fee_fixed);
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
