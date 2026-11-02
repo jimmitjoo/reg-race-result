@@ -44,7 +44,8 @@ function paidSession(Registration $registration): array
 
 it('connects a Stripe account and shows the status Stripe reports, not the return visit', function () {
     $organizer = Organizer::factory()->unconnected()->create();
-    $this->actingAs(User::factory()->create(['organizer_id' => $organizer->id]));
+    $user = User::factory()->create(['organizer_id' => $organizer->id]);
+    $this->actingAs($user);
     $stripe = $this->mock(StripeConnect::class);
     $stripe->shouldReceive('onboardingUrl')->once()->andReturnUsing(function (Organizer $o) {
         $o->update(['stripe_account_id' => 'acct_new']);
@@ -59,6 +60,7 @@ it('connects a Stripe account and shows the status Stripe reports, not the retur
     Volt::test('payments.index')->assertSee(__('payments.incomplete'));
 
     StripeConnect::apply($organizer->fresh(), (object) ['details_submitted' => true, 'charges_enabled' => true]);
+    $this->actingAs($user->fresh());
     Volt::test('payments.index')->assertSee(__('payments.ready'));
 });
 
