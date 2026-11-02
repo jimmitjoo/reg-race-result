@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'title' => 'Webbplatser',
+    'help' => 'WordPress-sajter där resultaten kan publiceras. Skapa ett applikationslösenord i WordPress under Användare → Profil → Applikationslösenord.',
+    'none' => 'Inga webbplatser än.',
+    'name' => 'Namn',
+    'url' => 'Adress',
+    'username' => 'Användarnamn i WordPress',
+    'app_password' => 'Applikationslösenord',
+    'parent_page' => 'Föräldrasida för resultat (sid-ID, frivilligt)',
+    'parent_page_help' => 'Finns den skapas en resultatsida under den, t.ex. under Tävlingsresultat. Annars laddas bara PDF:en upp.',
+    'add' => 'Lägg till',
+    'test' => 'Testa anslutningen',
+    'connection_ok' => 'Anslutningen fungerar.',
+    'connection_failed' => 'Kunde inte ansluta: :message',
+    'remove' => 'Ta bort',
+    'publish_title' => 'Publicera på webbplatser',
+    'publish' => 'Publicera på :site',
+    'published' => 'Publicerad :date',
+    'pdf' => 'PDF',
+    'page' => 'Resultatsida',
+    'publish_failed' => 'Publiceringen på :site misslyckades: :message',
+    'no_sites' => 'Lägg till klubbens WordPress-sajter under Webbplatser för att publicera här.',
+    'page_pdf_link' => 'Resultat :event (PDF)',
+    'page_live_link' => 'Sök i resultaten',
+];
