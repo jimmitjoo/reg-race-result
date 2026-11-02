@@ -90,7 +90,7 @@ new class extends Component {
         $race = $this->event->races()->findOrFail($raceId);
         $this->validate(["firstBib.{$raceId}" => ['required', 'integer', 'min:1']]);
 
-        $used = array_flip($this->event->registrations()->whereNotNull('bib')->pluck('bib')->all());
+        $used = array_flip($this->event->allRegistrations()->whereNotNull('bib')->pluck('bib')->all());
         $next = (int) $this->firstBib[$raceId];
         $count = 0;
 

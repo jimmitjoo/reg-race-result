@@ -13,7 +13,7 @@ new class extends Component {
         $search = trim($this->search);
 
         return [
-            'registrations' => $this->event->registrations()->with('raceClass')
+            'registrations' => $this->event->allRegistrations()->with('raceClass')
                 ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
                     ->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
@@ -27,7 +27,7 @@ new class extends Component {
 
     public function toggleHidden(int $id): void
     {
-        $registration = $this->event->registrations()->findOrFail($id);
+        $registration = $this->event->allRegistrations()->findOrFail($id);
         $registration->update(['hidden_at' => $registration->hidden_at ? null : now()]);
     }
 }; ?>

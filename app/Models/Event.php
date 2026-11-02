@@ -50,7 +50,13 @@ class Event extends Model
         return $this->hasMany(RaceClass::class);
     }
 
+    // Only paid registrations are participants: an abandoned Stripe Checkout leaves an unpaid row (#64).
     public function registrations(): HasManyThrough
+    {
+        return $this->allRegistrations()->whereNotNull('registrations.paid_at');
+    }
+
+    public function allRegistrations(): HasManyThrough
     {
         return $this->hasManyThrough(Registration::class, RaceClass::class);
     }

@@ -85,7 +85,7 @@ new class extends Component {
 
     private function bibIsUsable(int $bib, RaceClass $class, ?int $ignore = null): bool
     {
-        if ($this->event->registrations()->where('bib', $bib)->when($ignore, fn ($q) => $q->where('registrations.id', '!=', $ignore))->exists()) {
+        if ($this->event->allRegistrations()->where('bib', $bib)->when($ignore, fn ($q) => $q->where('registrations.id', '!=', $ignore))->exists()) {
             $this->addError('bib', __('onsite.bib_taken', ['bib' => $bib]));
 
             return false;

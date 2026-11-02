@@ -17,6 +17,12 @@ class RegistrationFactory extends Factory
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'status' => 'registered',
+            'paid_at' => now(),
         ];
+    }
+
+    public function unpaid(): static
+    {
+        return $this->state(['paid_at' => null]);
     }
 }

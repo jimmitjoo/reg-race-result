@@ -25,6 +25,10 @@ new class extends Component {
     public array $championshipDistricts = [];
     public bool $championshipVeterans = false;
 
+    // New price step per race, keyed by race id.
+    public array $priceUntil = [];
+    public array $priceAmount = [];
+
     public ?int $editingId = null;
     public ?int $raceId = null;
     public string $className = '';
@@ -128,14 +132,24 @@ new class extends Component {
         $this->cancelRace();
     }
 
-    public function addPriceStep(int $raceId, string $until, string $amount): void
+    public function addPriceStep(int $raceId): void
     {
-        validator(compact('until', 'amount'), [
-            'until' => ['required', 'date'],
-            'amount' => ['required', 'regex:/^\d[\d ]*([.,]\d{1,2})?$/'],
-        ])->validate();
+        // "250 kr" is how people write a price.
+        $this->priceAmount[$raceId] = trim(preg_replace('/[^\d ,.]/', '', $this->priceAmount[$raceId] ?? ''));
 
-        $this->event->races()->findOrFail($raceId)->priceSteps()->create(['until' => $until, 'amount' => Money::toMinor($amount)]);
+        $this->validate([
+            "priceUntil.{$raceId}" => ['required', 'date'],
+            "priceAmount.{$raceId}" => ['required', 'regex:/^\d[\d ]*([.,]\d{1,2})?$/'],
+        ], [], [
+            "priceUntil.{$raceId}" => __('events.price_until_label'),
+            "priceAmount.{$raceId}" => __('events.amount', ['currency' => $this->event->organizer->currency]),
+        ]);
+
+        $this->event->races()->findOrFail($raceId)->priceSteps()->create([
+            'until' => $this->priceUntil[$raceId],
+            'amount' => Money::toMinor($this->priceAmount[$raceId]),
+        ]);
+        unset($this->priceUntil[$raceId], $this->priceAmount[$raceId]);
     }
 
     public function removePriceStep(int $id): void
@@ -171,7 +185,7 @@ new class extends Component {
             'distanceMeters' => ['nullable', 'integer', 'min:1'],
             'gender' => ['nullable', 'in:M,K'],
             'timed' => ['boolean'],
-            'startTime' => ['required', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+            'startTime' => ['required', 'regex:/^([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/'],
             'minTimeMinutes' => ['integer', 'min:0'],
         ]);
 
@@ -231,7 +245,7 @@ new class extends Component {
                 <flux:button size="sm" variant="ghost" class="ms-auto" wire:click="editRace({{ $race->id }})">{{ __('events.edit') }}</flux:button>
             </div>
 
-            <div class="flex flex-col gap-2 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800" x-data="{ until: '', amount: '' }">
+            <div class="flex flex-col gap-2 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
                 <flux:heading size="sm">{{ __('events.prices') }}</flux:heading>
                 @foreach ($race->priceSteps as $step)
                     <div wire:key="step-{{ $step->id }}" class="flex items-center gap-4 text-sm">
@@ -247,9 +261,9 @@ new class extends Component {
                     </div>
                 @endif
                 <div class="flex flex-wrap items-end gap-2">
-                    <flux:input x-model="until" type="date" size="sm" :label="__('events.price_until_label')" />
-                    <flux:input x-model="amount" size="sm" :label="__('events.amount', ['currency' => $currency])" />
-                    <flux:button size="sm" x-on:click="$wire.addPriceStep({{ $race->id }}, until, amount).then(() => { until = ''; amount = '' })">{{ __('events.add_price_step') }}</flux:button>
+                    <flux:input wire:model="priceUntil.{{ $race->id }}" type="date" size="sm" :label="__('events.price_until_label')" />
+                    <flux:input wire:model="priceAmount.{{ $race->id }}" size="sm" :label="__('events.amount', ['currency' => $currency])" />
+                    <flux:button size="sm" wire:click="addPriceStep({{ $race->id }})">{{ __('events.add_price_step') }}</flux:button>
                 </div>
             </div>
 
