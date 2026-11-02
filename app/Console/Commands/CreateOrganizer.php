@@ -6,7 +6,6 @@ use App\Models\Organizer;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 class CreateOrganizer extends Command
@@ -26,38 +25,14 @@ class CreateOrganizer extends Command
             return self::FAILURE;
         }
 
-        $organizer = Organizer::create([
-            'name' => $this->argument('name'),
-            'slug' => self::slug($this->argument('name')),
-            'country' => 'SE',
-            'timezone' => 'Europe/Stockholm',
-            'currency' => 'SEK',
-            'locale' => 'sv',
-        ]);
-
-        $user ??= new User(['name' => Str::before($email, '@'), 'email' => $email, 'password' => Str::password()]);
-        $user->organizer_id = $organizer->id;
-        $user->email_verified_at ??= now();
-        $user->save();
+        $user ??= User::create(['name' => Str::before($email, '@'), 'email' => $email, 'password' => Str::password()]);
+        $user->forceFill(['email_verified_at' => $user->email_verified_at ?? now()])->save();
+        $organizer = Organizer::open($this->argument('name'), $user);
 
         Password::sendResetLink(['email' => $email]);
 
         $this->info("{$organizer->name} created at /{$organizer->slug}, password link sent to {$email}.");
 
         return self::SUCCESS;
-    }
-
-    /** The public pages live at /{organizer}, so the slug may not be a path of the app itself (/events, /login …). */
-    public static function slug(string $name): string
-    {
-        $taken = collect(Route::getRoutes()->getRoutes())->map(fn ($route) => Str::before($route->uri(), '/'))->all();
-        $base = Str::slug($name) ?: 'arrangor';
-        $slug = $base;
-
-        for ($n = 2; in_array($slug, $taken, true) || Organizer::where('slug', $slug)->exists(); $n++) {
-            $slug = "{$base}-{$n}";
-        }
-
-        return $slug;
     }
 }

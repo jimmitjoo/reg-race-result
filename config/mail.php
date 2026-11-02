@@ -108,6 +108,9 @@ return [
     |
     */
 
+    // Told when a club signs up by itself (#35).
+    'platform_address' => env('MAIL_PLATFORM_ADDRESS', 'hej@lopning.se'),
+
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),

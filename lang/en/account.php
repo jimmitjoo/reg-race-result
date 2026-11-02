@@ -54,4 +54,9 @@ return [
     'cancel' => 'Cancel',
     'admin' => 'Admin',
     'full_name' => 'Full name',
+    'club_title' => 'Your club',
+    'club_description' => 'Which club organizes the races?',
+    'club_name' => 'Club name',
+    'club_help' => 'Write the name as in the federation club list.',
+    'club_create' => 'Continue',
 ];
