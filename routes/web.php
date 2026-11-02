@@ -32,6 +32,7 @@ Route::middleware(['auth'])->group(function () {
         Volt::route('onsite', 'events.onsite')->name('onsite');
         Volt::route('registrations', 'events.registrations')->name('registrations');
         Route::get('exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
+        Route::get('exports/registrations', [ExportController::class, 'registrations'])->name('exports.registrations');
         Route::get('exports/pdf', [ExportController::class, 'pdf'])->name('exports.pdf');
         Route::get('timing', [TimingController::class, 'show'])->name('timing');
         Route::post('reads', [TimingController::class, 'storeReads'])->name('timing.reads');

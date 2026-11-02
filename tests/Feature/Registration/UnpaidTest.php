@@ -59,6 +59,7 @@ it('still shows unpaid registrations in the admin list', function () {
     [$event] = unpaidEvent();
 
     Volt::test('events.registrations', ['event' => $event])
+        ->set('status', 'all')
         ->assertSee('Anna')
         ->assertSee('Ulla')
         ->assertSee(__('registrations.unpaid'));
