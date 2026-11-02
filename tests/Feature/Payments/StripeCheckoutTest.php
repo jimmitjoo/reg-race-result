@@ -11,12 +11,12 @@ use Livewire\Volt\Volt;
 
 beforeEach(function () {
     $this->travelTo(now()->setTimezone('Europe/Stockholm')->setDate(2026, 11, 15)->setTime(12, 0));
-    config(['services.stripe.webhook_secret' => 'whsec_test']);
+    config(['services.stripe.webhook_secret' => 'whsec_test', 'services.stripe.connect_webhook_secret' => 'whsec_test']);
 });
 
 function paidEvent(int $amount = 25000): RaceClass
 {
-    $organizer = Organizer::factory()->create(['slug' => 'hogby-if', 'currency' => 'SEK']);
+    $organizer = Organizer::factory()->create(['slug' => 'hogby-if', 'currency' => 'SEK', 'stripe_account_id' => 'acct_hogby']);
     $event = Event::factory()->create(['organizer_id' => $organizer->id, 'name' => 'Sylvesterloppet 2026', 'slug' => 'sylvesterloppet-2026', 'date' => '2026-12-31']);
     $race = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet']);
     $race->priceSteps()->create(['until' => '2026-12-30', 'amount' => $amount]);
@@ -103,11 +103,11 @@ it('marks the registration paid from the Stripe webhook', function () {
     $registration = Registration::factory()->for($class)->unpaid()->create(['stripe_checkout_session_id' => 'cs_test_123']);
 
     [$payload, $signature] = signedStripeEvent([
-        'id' => 'evt_1', 'object' => 'event', 'type' => 'checkout.session.completed',
+        'id' => 'evt_1', 'object' => 'event', 'type' => 'checkout.session.completed', 'account' => 'acct_hogby',
         'data' => ['object' => ['id' => 'cs_test_123', 'object' => 'checkout.session', 'payment_status' => 'paid', 'metadata' => ['registration_id' => (string) $registration->id]]],
     ]);
 
-    $this->call('POST', route('stripe.webhook'), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $signature, 'CONTENT_TYPE' => 'application/json'], $payload)
+    $this->call('POST', route('stripe.connect-webhook'), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $signature, 'CONTENT_TYPE' => 'application/json'], $payload)
         ->assertOk();
 
     expect($registration->fresh()->paid_at)->not->toBeNull();
@@ -119,10 +119,10 @@ it('ignores unpaid sessions and unknown registrations in the webhook', function 
 
     foreach ([['paid' => 'unpaid', 'id' => (string) $registration->id], ['paid' => 'paid', 'id' => '999999']] as $case) {
         [$payload, $signature] = signedStripeEvent([
-            'id' => 'evt_2', 'object' => 'event', 'type' => 'checkout.session.completed',
+            'id' => 'evt_2', 'object' => 'event', 'type' => 'checkout.session.completed', 'account' => 'acct_hogby',
             'data' => ['object' => ['id' => 'cs_test_123', 'object' => 'checkout.session', 'payment_status' => $case['paid'], 'metadata' => ['registration_id' => $case['id']]]],
         ]);
-        $this->call('POST', route('stripe.webhook'), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $signature, 'CONTENT_TYPE' => 'application/json'], $payload)->assertOk();
+        $this->call('POST', route('stripe.connect-webhook'), [], [], [], ['HTTP_STRIPE_SIGNATURE' => $signature, 'CONTENT_TYPE' => 'application/json'], $payload)->assertOk();
     }
 
     expect($registration->fresh()->paid_at)->toBeNull();
