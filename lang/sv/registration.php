@@ -18,6 +18,7 @@ return [
     'phone' => 'Telefon',
     'submit' => 'Anmäl',
     'class_not_open' => 'Klassen går inte att anmäla sig till.',
+    'wrong_gender' => 'Klassen är för ett annat kön.',
     'min_age' => 'Halvmaraton och längre: du måste fylla 17 år i år.',
     'confirmation_title' => 'Tack för din anmälan!',
     'confirmation_text' => ':name är anmäld till :class i :event.',

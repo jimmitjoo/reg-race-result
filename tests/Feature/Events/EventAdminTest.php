@@ -146,7 +146,7 @@ it('creates a race with price steps and an on-site price in major units', functi
     $race = Race::sole();
     expect($race)->name->toBe('Lilla Sylvesterloppet')->onsite_price->toBe(15000);
 
-    $page->call('addPriceStep', $race->id, '2026-11-30', '99.50')->assertHasNoErrors();
+    $page->set("priceUntil.{$race->id}", '2026-11-30')->set("priceAmount.{$race->id}", '99.50')->call('addPriceStep', $race->id)->assertHasNoErrors();
     expect($race->priceSteps()->sole())->amount->toBe(9950)->until->toDateString()->toBe('2026-11-30');
 
     $page->call('removePriceStep', $race->priceSteps()->sole()->id);
@@ -247,4 +247,37 @@ it('only accepts SFIF race types', function () {
     $this->actingAs($user);
 
     Volt::test('events.show', ['event' => $event])->set('raceName', 'X')->set('raceType', 'Bana')->call('saveRace')->assertHasErrors(['raceType']);
+});
+
+it('accepts a price written with kr, and shows an error for a missing date', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $race = Race::factory()->for($event)->create();
+    $this->actingAs($user);
+
+    $page = Volt::test('events.show', ['event' => $event])
+        ->set("priceAmount.{$race->id}", '250 kr')
+        ->call('addPriceStep', $race->id)
+        ->assertHasErrors(["priceUntil.{$race->id}"])
+        ->assertSee(__('validation.required', ['attribute' => __('events.price_until_label')]));
+    expect($race->priceSteps()->count())->toBe(0);
+
+    $page->set("priceUntil.{$race->id}", '2026-11-30')->call('addPriceStep', $race->id)->assertHasNoErrors();
+    expect($race->priceSteps()->sole()->amount)->toBe(25000);
+});
+
+it('rejects a start time like 25:00 instead of failing', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $race = Race::factory()->for($event)->create();
+    $this->actingAs($user);
+
+    foreach (['25:00', '10:75'] as $time) {
+        Volt::test('events.show', ['event' => $event])
+            ->set('raceId', $race->id)
+            ->set('className', 'X')
+            ->set('startTime', $time)
+            ->call('saveClass')
+            ->assertHasErrors(['startTime']);
+    }
 });

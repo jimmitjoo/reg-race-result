@@ -73,6 +73,12 @@ new #[Layout('components.layouts.public')] class extends Component {
             return;
         }
 
+        if ($class->gender && $class->gender !== $this->gender) {
+            $this->addError('raceClassId', __('registration.wrong_gender'));
+
+            return;
+        }
+
         $year = now()->setTimezone($this->raceEvent->timezone)->year;
         if ($class->distance_meters >= self::HALF_MARATHON_METERS && $year - (int) substr($this->birthDate, 0, 4) < 17) {
             $this->addError('birthDate', __('registration.min_age'));
@@ -145,7 +151,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         <flux:select wire:model="raceClassId" :label="__('registration.class')" :placeholder="__('registration.choose_class')">
             @foreach ($races as ['race' => $race, 'price' => $price])
                 @if ($price !== null)
-                    @foreach ($race->raceClasses as $class)
+                    @foreach ($race->raceClasses->filter(fn ($class) => ! $class->gender || ! $gender || $class->gender === $gender) as $class)
                         <option value="{{ $class->id }}">{{ $race->name }} – {{ $class->name }} ({{ Money::format($price, $currency) }})</option>
                     @endforeach
                 @endif
@@ -156,7 +162,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             <flux:input wire:model="firstName" :label="__('registration.first_name')" autocomplete="given-name" />
             <flux:input wire:model="lastName" :label="__('registration.last_name')" autocomplete="family-name" />
             <flux:input wire:model="birthDate" type="date" :label="__('registration.birth_date')" autocomplete="bday" />
-            <flux:select wire:model="gender" :label="__('registration.gender')" :placeholder="__('registration.gender')">
+            <flux:select wire:model.live="gender" :label="__('registration.gender')" :placeholder="__('registration.gender')">
                 <option value="K">{{ __('registration.gender_k') }}</option>
                 <option value="M">{{ __('registration.gender_m') }}</option>
             </flux:select>

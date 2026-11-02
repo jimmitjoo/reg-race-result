@@ -184,3 +184,18 @@ it('suggests the federation clubs in the form', function () {
 
     $this->get('/hogby-if/sylvesterloppet-2026')->assertSee('<datalist id="clubs">', false)->assertSee('<option value="Högby IF">', false);
 });
+
+it('does not let a man register in a women\'s class, and shows only fitting classes', function () {
+    [, $event, $race, $class] = openEvent();
+    $class->update(['gender' => 'K']);
+    RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => 'Män 10 km', 'gender' => 'M']);
+
+    fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
+        ->set('gender', 'M')
+        ->assertDontSee('Kvinnor 10 km (')
+        ->assertSee('Män 10 km (')
+        ->call('register')
+        ->assertHasErrors(['raceClassId']);
+
+    expect(Registration::count())->toBe(0);
+});
