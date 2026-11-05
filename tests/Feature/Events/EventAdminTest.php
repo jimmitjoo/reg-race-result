@@ -118,7 +118,8 @@ it('cannot edit a class of another event', function () {
 it('shows classes with local start times and links to timing', function () {
     $user = organizerUser();
     $event = Event::factory()->create(['organizer_id' => $user->organizer_id, 'timezone' => 'Europe/Stockholm']);
-    RaceClass::factory()->create(['event_id' => $event->id, 'name' => 'Män 10 km', 'start_at' => '2026-10-03 08:03:30']);
+    $class = RaceClass::factory()->create(['event_id' => $event->id, 'name' => 'Män 10 km', 'start_at' => '2026-10-03 08:03:30']);
+    $class->race->priceSteps()->create(['until' => '2026-10-01', 'amount' => 0]);
 
     $this->actingAs($user)
         ->get(route('events.show', $event))
@@ -140,12 +141,16 @@ it('creates a race with price steps and an on-site price in major units', functi
 
     $page = Volt::test('events.show', ['event' => $event])
         ->set('raceName', 'Lilla Sylvesterloppet')
-        ->set('onsitePrice', '150')
         ->call('saveRace')
         ->assertHasNoErrors();
 
     $race = Race::sole();
-    expect($race)->name->toBe('Lilla Sylvesterloppet')->onsite_price->toBe(15000);
+    expect($race)->name->toBe('Lilla Sylvesterloppet')->onsite_price->toBeNull();
+
+    $page->set("onsiteAmount.{$race->id}", '150 kr')->call('saveOnsitePrice', $race->id)->assertHasNoErrors();
+    expect($race->fresh()->onsite_price)->toBe(15000);
+    $page->call('removeOnsitePrice', $race->id);
+    expect($race->fresh()->onsite_price)->toBeNull();
 
     $page->set("priceUntil.{$race->id}", '2026-11-30')->set("priceAmount.{$race->id}", '99.50')->call('addPriceStep', $race->id)->assertHasNoErrors();
     expect($race->priceSteps()->sole())->amount->toBe(9950)->until->toDateString()->toBe('2026-11-30');
@@ -188,6 +193,7 @@ it('shows races with their prices', function () {
     $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
     $race = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet', 'onsite_price' => 35000]);
     $race->priceSteps()->create(['until' => '2026-11-30', 'amount' => 25000]);
+    RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id]);
 
     $this->actingAs($user)
         ->get(route('events.show', $event))
@@ -234,11 +240,10 @@ it('stores and edits the race type and course measurement', function () {
         ->assertSet('raceName', 'Sylvesterloppet')
         ->assertSet('ageGroups', true)
         ->set('raceType', 'Terräng')
-        ->set('onsitePrice', '350')
         ->call('saveRace')
         ->assertHasNoErrors();
 
-    expect($race->fresh())->type->toBe('Terräng')->onsite_price->toBe(35000)
+    expect($race->fresh())->type->toBe('Terräng')
         ->and(Race::count())->toBe(1);
 });
 
@@ -254,6 +259,7 @@ it('accepts a price written with kr, and shows an error for a missing date', fun
     $user = organizerUser();
     $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
     $race = Race::factory()->for($event)->create();
+    RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id]);
     $this->actingAs($user);
 
     $page = Volt::test('events.show', ['event' => $event])
@@ -283,7 +289,7 @@ it('rejects a start time like 25:00 instead of failing', function () {
     }
 });
 
-it('shows the public link and whether registration is open per race', function () {
+it('shows the public link and whether registration is open or ended per race', function () {
     $this->travelTo('2026-11-15 12:00:00');
     $user = organizerUser();
     $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
@@ -291,12 +297,43 @@ it('shows the public link and whether registration is open per race', function (
     $open->priceSteps()->createMany([['until' => '2026-11-30', 'amount' => 25000], ['until' => '2026-12-30', 'amount' => 30000]]);
     $ended = Race::factory()->for($event)->create(['name' => 'Gamla loppet']);
     $ended->priceSteps()->create(['until' => '2026-11-01', 'amount' => 10000]);
-    Race::factory()->for($event)->create(['name' => 'Utan pris']);
+    $event->races->each(fn ($race) => RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id]));
 
     $this->actingAs($user)
         ->get(route('events.show', $event))
         ->assertSee(route('public.event', ['organizer' => $event->organizer->slug, 'event' => $event->slug]))
         ->assertSee(__('events.registration_open', ['date' => '2026-12-30', 'price' => Money::format(25000, 'SEK')]))
-        ->assertSee(__('events.registration_ended', ['date' => '2026-11-01']))
+        ->assertSee(__('events.registration_ended', ['date' => '2026-11-01']));
+});
+
+it('walks a new event through race, classes and price before showing the race day tools', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $this->actingAs($user);
+
+    $page = Volt::test('events.show', ['event' => $event])
+        ->assertSee(__('events.setup_race_help'))
+        ->assertDontSee(__('events.new_class'))
+        ->assertDontSee(route('events.timing', $event));
+
+    $page->set('raceName', '10 km')->call('saveRace')->set('raceName', 'Barnloppet')->call('saveRace');
+    $first = Race::where('name', '10 km')->sole();
+    $page->assertSee(__('events.setup_class_help'))
+        ->assertDontSee(__('events.new_race'))
+        ->assertSet('raceId', $first->id);
+
+    $page->set('className', 'Kvinnor 10 km')->set('startTime', '10:00')->call('saveClass')->assertHasNoErrors()
+        ->assertSee(__('events.new_class_in', ['race' => 'Barnloppet']))
+        ->assertSet('raceId', Race::where('name', 'Barnloppet')->value('id'));
+
+    $page->set('className', 'Barn')->set('startTime', '09:00')->call('saveClass')
+        ->assertSee(__('events.setup_price_help'))
         ->assertSee(__('events.registration_closed'));
+
+    // A race with only an on-site price is set up too.
+    Race::where('name', 'Barnloppet')->update(['onsite_price' => 5000]);
+    $page->set("priceUntil.{$first->id}", '2026-12-30')->set("priceAmount.{$first->id}", '0')->call('addPriceStep', $first->id)
+        ->assertDontSee(__('events.setup_title'))
+        ->assertSee(route('events.timing', $event))
+        ->assertSee(__('events.new_race'));
 });
