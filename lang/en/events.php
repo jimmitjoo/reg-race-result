@@ -82,4 +82,7 @@ return [
     'setup_price' => 'Open registration',
     'setup_price_help' => 'Add a price with a last date. A free race opens with a price of 0. Then the race day tools appear here.',
     'onsite_help' => 'Optional. For runners who register on site on race day.',
+    'series_name' => 'Name of the event',
+    'series_name_help' => 'Editions with the old name follow. The link stays the same.',
+    'rename' => 'Rename',
 ];

@@ -11,6 +11,9 @@ new class extends Component {
     // Date of the next upplaga, keyed by series id.
     public array $editionDate = [];
 
+    public ?int $renamingId = null;
+    public string $seriesName = '';
+
     public function mount(): void
     {
         if (! auth()->user()->organizer_id) {
@@ -50,6 +53,29 @@ new class extends Component {
         $this->redirectRoute('events.show', $event, navigate: true);
     }
 
+    public function editSeries(int $id): void
+    {
+        $series = $this->organizer()->series()->findOrFail($id);
+        [$this->renamingId, $this->seriesName] = [$series->id, $series->name];
+    }
+
+    public function cancelRename(): void
+    {
+        $this->reset('renamingId', 'seriesName');
+        $this->resetValidation();
+    }
+
+    public function saveSeries(): void
+    {
+        $series = $this->organizer()->series()->findOrFail($this->renamingId);
+        $this->seriesName = Series::nameFrom($this->seriesName);
+        // One name per arrangemang: typing a name makes the next upplaga of the one that has it.
+        $this->validate(['seriesName' => ['required', 'string', 'max:255', Illuminate\Validation\Rule::unique('series', 'name')->where('organizer_id', $series->organizer_id)->ignore($series->id)]], [], ['seriesName' => __('events.series_name')]);
+
+        $series->rename($this->seriesName);
+        $this->cancelRename();
+    }
+
     private function organizer(): ?App\Models\Organizer
     {
         return auth()->user()->organizer;
@@ -62,7 +88,18 @@ new class extends Component {
     <div class="flex flex-col gap-6">
         @forelse ($series as $s)
             <section wire:key="series-{{ $s->id }}" class="flex flex-col gap-2">
-                <flux:heading size="lg">{{ $s->name }}</flux:heading>
+                @if ($renamingId === $s->id)
+                    <form wire:submit="saveSeries" class="flex flex-wrap items-end gap-2">
+                        <flux:input wire:model="seriesName" size="sm" :label="__('events.series_name')" :description="__('events.series_name_help')" />
+                        <flux:button type="submit" size="sm" variant="primary">{{ __('events.save') }}</flux:button>
+                        <flux:button size="sm" wire:click="cancelRename">{{ __('events.cancel') }}</flux:button>
+                    </form>
+                @else
+                    <div class="flex items-center gap-2">
+                        <flux:heading size="lg">{{ $s->name }}</flux:heading>
+                        <flux:button size="xs" variant="ghost" wire:click="editSeries({{ $s->id }})">{{ __('events.rename') }}</flux:button>
+                    </div>
+                @endif
                 @foreach ($s->events as $event)
                     <a href="{{ route('events.show', $event) }}" wire:navigate
                        class="flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">

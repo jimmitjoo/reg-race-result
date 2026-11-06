@@ -117,3 +117,25 @@ it('links to the published results of earlier upplagor from the arrangemang\'s p
         ->assertSee(url('/hogby-if/sylvesterloppet-2024/results'))
         ->assertDontSee(url('/hogby-if/sylvesterloppet-2025/results'));
 });
+
+it('renames an arrangemang and the upplagor that have its name, keeping the link', function () {
+    $this->actingAs($user = seriesUser());
+    $series = Series::factory()->create(['organizer_id' => $user->organizer_id, 'name' => 'Kalmar Malkars 21KM']);
+    $series->addEdition('2025-06-28');
+    $series->addEdition('2026-06-27', ['name' => 'Malkars jubileum']);
+
+    Volt::test('events.index')->call('editSeries', $series->id)->assertSet('seriesName', 'Kalmar Malkars 21KM')
+        ->set('seriesName', 'Kalmar Malkars 2026')->call('saveSeries')->assertHasNoErrors();
+
+    expect($series->fresh())->name->toBe('Kalmar Malkars')->slug->toBe('kalmar-malkars-21km')
+        ->and($series->events()->orderBy('date')->pluck('name')->all())->toBe(['Kalmar Malkars 2025', 'Malkars jubileum']);
+});
+
+it('does not give two arrangemang the same name, or rename another organizer\'s', function () {
+    $this->actingAs($user = seriesUser());
+    Series::factory()->create(['organizer_id' => $user->organizer_id, 'name' => 'Sylvesterloppet']);
+    $series = Series::factory()->create(['organizer_id' => $user->organizer_id, 'name' => 'Nyårsloppet']);
+
+    Volt::test('events.index')->call('editSeries', $series->id)->set('seriesName', 'Sylvesterloppet')->call('saveSeries')->assertHasErrors(['seriesName' => 'unique']);
+    Volt::test('events.index')->call('editSeries', Series::factory()->create()->id)->assertNotFound();
+});
