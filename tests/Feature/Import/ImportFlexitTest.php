@@ -306,3 +306,22 @@ it('takes a first upplaga at another time of year for a race day', function () {
     expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2022-08-13'])
         ->and(Event::sole()->registrations()->count())->toBe(2);
 });
+
+it('keeps those ordered after the race day when the race was put off', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $dates = [['d' => '2019-06-15'], ['d' => '2020-06-13'], ['d' => '2021-06-19']];
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode([
+        'competitions' => [['id' => 1, 'arrangemang' => 'Öland Ultra Trail', 'race' => 'Öland Ultra', 'date' => '2020-06-13', 'name' => 'Öland Ultra Trail', 'active' => false, 'dates' => $dates]],
+        'classes' => [['id' => 1, 'competition' => 1, 'name' => '45 km Män', 'sort' => 1]],
+        'prices' => [],
+        'registrations' => [[
+            'class' => 1, 'first_name' => 'Juli', 'last_name' => 'Ek', 'birth' => '19800101', 'gender' => 'M', 'club' => null, 'email' => 'a@example.com', 'phone' => null,
+            'price' => 70000, 'method' => 'VI', 'paid_at' => '2020-07-20T10:00:00', 'ordered_at' => '2020-07-20T10:00:00', 'campaign' => 'Standard', 'standard' => true,
+        ]],
+    ]));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->assertSuccessful();
+
+    expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2020-06-13']);
+});
