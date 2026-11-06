@@ -152,7 +152,10 @@ class ImportFlexit extends Command
         return $out;
     }
 
-    /** "2,9 km, 1,5 km och 700 m" for the distances the main race does not have, else the word the class names start with ("DM"). */
+    /**
+     * "2,9 km, 1,5 km och 700 m" for the distances the main race does not have. At the same distance, what is
+     * left of the class name without it: all of it for one class ("13 år o yngre"), else the word they start with ("DM").
+     */
     private static function suffix(Collection $names, Collection $mainNames): string
     {
         $distances = fn (Collection $names) => $names->map(fn ($name) => self::distanceFrom($name))->filter()->unique()->sortDesc()->values()->all();
@@ -160,7 +163,11 @@ class ImportFlexit extends Command
         if ($own && $own !== $distances($mainNames)) {
             return collect($own)->map(fn ($m) => $m >= 1000 ? str_replace('.', ',', rtrim(rtrim(number_format($m / 1000, 1, '.', ''), '0'), '.')).' km' : "{$m} m")->join(', ', ' och ');
         }
-        $first = $names->map(fn ($name) => strtok($name, ' '))->unique();
+        $rest = $names->map(fn ($name) => self::clean(preg_replace('/\d+(?:[,.]\d+)?\s?k?m\b/iu', '', $name)))->filter()->values();
+        if ($rest->count() === 1 && $names->count() === 1) {
+            return $rest->first();
+        }
+        $first = $rest->map(fn ($name) => strtok($name, ' '))->unique();
 
         return $first->count() === 1 ? $first->first() : $names->first();
     }
