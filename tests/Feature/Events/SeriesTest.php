@@ -103,3 +103,17 @@ it('keeps the link of an upplaga that has the arrangemang\'s slug', function () 
 
     $this->get('/hogby-if/kalmarmilen')->assertOk()->assertSee('Kalmarmilen');
 });
+
+it('links to the published results of earlier upplagor from the arrangemang\'s page', function () {
+    $this->travelTo('2026-06-01 12:00:00');
+    $organizer = Organizer::factory()->create(['slug' => 'hogby-if']);
+    $series = Series::factory()->create(['organizer_id' => $organizer->id, 'name' => 'Sylvesterloppet']);
+    $series->addEdition('2024-12-31', ['results_public_at' => '2025-01-01 10:00:00']);
+    $series->addEdition('2025-12-31');
+    $series->addEdition('2026-12-31');
+
+    $this->get('/hogby-if/sylvesterloppet')->assertOk()
+        ->assertSee(__('registration.earlier_results'))
+        ->assertSee(url('/hogby-if/sylvesterloppet-2024/results'))
+        ->assertDontSee(url('/hogby-if/sylvesterloppet-2025/results'));
+});

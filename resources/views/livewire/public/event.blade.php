@@ -46,6 +46,9 @@ new #[Layout('components.layouts.public')] class extends Component {
                 // A paid race waits until the organizer's Stripe account can take payments.
                 ->map(fn ($r) => $r + ['soon' => $r['price'] > 0 && ! $canPay]),
             'currency' => $this->raceEvent->organizer->currency,
+            // Earlier upplagor of the arrangemang, for the runners who look up last year's time.
+            'earlier' => $this->raceEvent->series?->events()->whereKeyNot($this->raceEvent->id)->whereNotNull('results_public_at')
+                ->where('date', '<', $this->raceEvent->date)->orderByDesc('date')->get() ?? collect(),
             'clubs' => Club::orderBy('name')->pluck('name'),
         ];
     }
@@ -125,7 +128,12 @@ new #[Layout('components.layouts.public')] class extends Component {
     <div>
         <flux:heading size="xl">{{ $event->name }}</flux:heading>
         <flux:subheading>{{ $event->date->toDateString() }} · {{ $event->organizer->name }}</flux:subheading>
-        <flux:link :href="route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" class="text-sm">{{ __('onsite.start_list') }}</flux:link>
+        <div class="flex gap-4">
+            <flux:link :href="route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" class="text-sm">{{ __('onsite.start_list') }}</flux:link>
+            @if ($event->results_public_at)
+                <flux:link :href="route('public.results', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" class="text-sm">{{ __('live.title') }}</flux:link>
+            @endif
+        </div>
     </div>
 
     <section class="flex flex-col gap-3">
@@ -187,4 +195,17 @@ new #[Layout('components.layouts.public')] class extends Component {
 
         <div><flux:button type="submit" variant="primary">{{ __('registration.submit') }}</flux:button></div>
     </form>
+
+    @if ($earlier->isNotEmpty())
+        <section class="flex flex-col gap-2">
+            <flux:heading size="lg">{{ __('registration.earlier_results') }}</flux:heading>
+            <ul class="flex flex-col gap-1 text-sm">
+                @foreach ($earlier as $edition)
+                    <li wire:key="earlier-{{ $edition->id }}">
+                        <flux:link :href="route('public.results', ['organizer' => $event->organizer->slug, 'event' => $edition->slug])">{{ $edition->name }}</flux:link>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
 </div>
