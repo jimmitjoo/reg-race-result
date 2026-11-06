@@ -28,7 +28,7 @@ it('lets a new user register, name the club and create an event', function () {
         ->and($user->fresh()->organizer_id)->toBe($organizer->id);
 
     Volt::test('events.index')->set('name', 'Kalmarmilen')->set('date', '2027-05-01')->call('create')->assertHasNoErrors();
-    expect($organizer->events()->sole()->name)->toBe('Kalmarmilen');
+    expect($organizer->events()->sole()->name)->toBe('Kalmarmilen 2027');
 });
 
 it('tells the platform when a club signs up', function () {

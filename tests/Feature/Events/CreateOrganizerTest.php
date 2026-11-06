@@ -19,7 +19,7 @@ it('creates an organizer whose user can choose a password and create an event', 
 
     $this->actingAs($user)->get(route('events.index'))->assertOk();
     Volt::test('events.index')->set('name', 'Kalmarmilen')->set('date', '2027-05-01')->call('create')->assertHasNoErrors();
-    expect($organizer->events()->sole()->name)->toBe('Kalmarmilen');
+    expect($organizer->events()->sole()->name)->toBe('Kalmarmilen 2027');
 });
 
 it('connects an existing user without an organizer, but not one that has one', function () {
