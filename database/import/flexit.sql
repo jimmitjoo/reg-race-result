@@ -49,13 +49,15 @@ DECLARE @json nvarchar(max) = (SELECT
        AND (cl.IsActive = 1 OR EXISTS (SELECT 1 FROM Registration r WHERE r.ClassId = cl.ClassId))
      FOR JSON PATH) AS classes,
 
-    -- The standard price; campaigns (#85) are left out.
-    (SELECT pc.ClassId AS class, CONVERT(char(10), p.ToDate, 23) AS until, CAST(pc.Price * 100 AS int) AS amount
+    -- The standard price; campaigns (#85) are left out. Some competitions have two standard campaigns, one at 0 kr
+    -- (Sylvesterloppet 2019): the highest price of each period, in a fixed order, so every export gives the same.
+    (SELECT pc.ClassId AS class, CONVERT(char(10), p.ToDate, 23) AS until, CAST(MAX(pc.Price) * 100 AS int) AS amount
      FROM PriceClass pc
      JOIN Campaign k ON k.CampaignId = pc.CampaignId AND k.IsDefault = 1
      JOIN Period p ON p.PeriodId = pc.PeriodId
-     JOIN Competition c ON c.CompetitionId = p.CompetitionId
-     WHERE c.CompetitionId IN (SELECT id FROM @ids) AND pc.Price IS NOT NULL
+     WHERE p.CompetitionId IN (SELECT id FROM @ids) AND pc.Price IS NOT NULL
+     GROUP BY pc.ClassId, CONVERT(char(10), p.ToDate, 23)
+     ORDER BY pc.ClassId, until
      FOR JSON PATH) AS prices,
 
     -- Only the birth date leaves the database, never the last four digits of the personnummer.

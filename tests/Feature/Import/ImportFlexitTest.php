@@ -325,3 +325,23 @@ it('keeps those ordered after the race day when the race was put off', function 
 
     expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2020-06-13']);
 });
+
+it('gives the same races whatever order the export lists the classes in', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $data = json_decode(file_get_contents(flexitFile([])), true);
+    // Lilla Sylvesterloppet 2019: 400 m had a price of its own, beside the other children's classes.
+    $data['prices'] = array_values(array_filter($data['prices'], fn ($p) => $p['class'] !== 3));
+    array_push($data['prices'], ['class' => 3, 'until' => '2026-12-24', 'amount' => 10000], ['class' => 3, 'until' => '2026-12-29', 'amount' => 10000]);
+    // The old system's default sort order, so only the tie-break decides which is the main race.
+    $data['classes'] = array_map(fn ($c) => $c['competition'] === 11 ? ['sort' => 10] + $c : $c, $data['classes']);
+    $file = fn (array $data) => tap(tempnam(sys_get_temp_dir(), 'flexit'), fn ($path) => file_put_contents($path, json_encode($data)));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file($data)])->assertSuccessful();
+    $races = Race::orderBy('name')->pluck('name')->all();
+
+    $data['classes'] = array_reverse($data['classes']);
+    $data['prices'] = array_reverse($data['prices']);
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file($data)])->assertSuccessful();
+
+    expect(Race::orderBy('name')->pluck('name')->all())->toBe($races)->and(RaceClass::count())->toBe(4);
+});
