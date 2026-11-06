@@ -119,19 +119,23 @@ it('reads gender and distance from class names', function (string $name, ?string
     ['P/F11 1,3 km', null, 1300], ['P5/F5 400m', null, 400], ['Promenad 5 km', null, 5000], ['M/K 100 miles', null, 160934],
 ]);
 
-it('takes the active one when the old system has the same race twice on one day', function () {
+it('makes one race of two competitions of it on one day, counting a runner in both once', function () {
     Organizer::factory()->create(['slug' => 'hogby-if']);
-    $data = json_decode(file_get_contents(flexitFile([[], ['class' => 9, 'first_name' => 'Fel']])), true);
+    // Öland Ultra 2017: replaced halfway through registration, the early ones left in "Öland Ultra fel".
+    $data = json_decode(file_get_contents(flexitFile([[], ['class' => 9, 'first_name' => 'Tidig'], ['class' => 9]])), true);
     $data['competitions'][] = ['id' => 9, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2026-12-31', 'name' => 'Sylvesterloppet fel', 'active' => false];
     $data['classes'][] = ['id' => 9, 'competition' => 9, 'name' => '10 km Kvinnor', 'sort' => 1];
+    // At other prices than the replacement, as Öland Ultra's first competition was.
+    array_push($data['prices'], ['class' => 9, 'until' => '2026-12-24', 'amount' => 20000], ['class' => 9, 'until' => '2026-12-29', 'amount' => 25000]);
+    $data['registrations'][1]['ordered_at'] = '2026-09-01T10:00:00';
     $file = tempnam(sys_get_temp_dir(), 'flexit');
     file_put_contents($file, json_encode($data));
 
-    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
-        ->expectsOutputToContain('Sylvesterloppet fel (2026-12-31, 1 anmälningar, id 9)')
-        ->assertSuccessful();
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->assertSuccessful();
 
-    expect(Registration::pluck('first_name')->all())->toBe(['Anna']);
+    expect(Registration::orderBy('first_name')->pluck('first_name')->all())->toBe(['Anna', 'Tidig'])
+        ->and(RaceClass::where('name', '10 km Kvinnor')->count())->toBe(1)
+        ->and(Race::where('name', 'Sylvesterloppet')->sole()->priceSteps->map(fn ($s) => $s->amount)->all())->toBe([30000, 40000]);
 });
 
 it('puts classes with a price list of their own in a race of their own', function () {
