@@ -42,6 +42,8 @@ class ImportFlexit extends Command
 
     private array $twice = [];
 
+    private array $lastYear = [];
+
     // Registrations made by this run, to tell a runner who paid twice from one imported before.
     private array $created = [];
 
@@ -58,7 +60,9 @@ class ImportFlexit extends Command
 
         DB::beginTransaction();
 
-        foreach ($this->onePerRaceAndDay(collect($data['competitions'] ?? []), $registrations, $classes)->groupBy(fn ($c) => Series::nameFrom($c['arrangemang'])."\0".$c['date']) as $competitions) {
+        $competitions = $this->withoutLastYear(collect($data['competitions'] ?? []), $registrations, $classes);
+
+        foreach ($this->onePerRaceAndDay($competitions, $registrations, $classes)->groupBy(fn ($c) => Series::nameFrom($c['arrangemang'])."\0".$c['date']) as $competitions) {
             $event = $this->event($organizer, $competitions->first());
 
             foreach ($competitions as $competition) {
@@ -88,6 +92,34 @@ class ImportFlexit extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The old system kept last year's registrations in this year's competition (Lilla Böda Beachrun 2026 has
+     * 23 from June 2025), and copied whole competitions to a date a year on (Böda Beachrun kopia). A registration
+     * ordered on or before the upplaga before belongs to it: it is left out, and a competition with only those is too.
+     */
+    private function withoutLastYear(Collection $competitions, Collection $registrations, Collection $classes): Collection
+    {
+        return $competitions->filter(function (array $competition) use ($registrations, $classes) {
+            if (! ($competition['previous'] ?? null)) {
+                return true;
+            }
+            $old = fn (array $r) => substr($r['ordered_at'] ?? '', 0, 10) <= $competition['previous'];
+            $count = 0;
+            $kept = 0;
+            foreach ($classes->get($competition['id'], []) as $class) {
+                $all = collect($registrations->get($class['id'], []));
+                $count += $all->filter($old)->count();
+                $kept += $all->reject($old)->count();
+                $registrations[$class['id']] = $all->reject($old)->values();
+            }
+            if ($count) {
+                $this->lastYear[] = ($competition['name'] ?? $competition['race'])." ({$competition['date']}): {$count} anmälningar beställda senast {$competition['previous']}".($kept ? '' : ', hela tävlingen hoppades över');
+            }
+
+            return $kept > 0 || $count === 0;
+        })->values();
     }
 
     /**
@@ -280,6 +312,7 @@ class ImportFlexit extends Command
 
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
         $this->list('Klasser med ett eget pris i gamla systemet, nu i ett eget lopp (byt namn i admin om du vill):', $this->split);
+        $this->list('Anmälningar till förra upplagan, beställda senast den dagen. Inte importerade:', $this->lastYear);
         $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
         $this->list('Betalda två gånger i samma klass (samma namn och födelsedatum). En är importerad; betala tillbaka den andra i gamla systemet:', $this->twice);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);

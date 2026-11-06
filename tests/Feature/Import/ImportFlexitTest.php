@@ -169,3 +169,23 @@ it('puts classes with a price list of their own in a race of their own', functio
         // One class at the same distance: the rest of its name, not "10".
         ->and($prices('Atea Kalmarmilen 13 år o yngre'))->toBe([10000, 15000]);
 });
+
+it('leaves out registrations for last year\'s upplaga, and a copy that only has those', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $data = json_decode(file_get_contents(flexitFile([
+        ['class' => 1, 'first_name' => 'Ny', 'ordered_at' => '2026-12-01T10:00:00', 'paid_at' => '2026-12-01T10:00:00'],
+        ['class' => 1, 'first_name' => 'Gammal', 'ordered_at' => '2025-12-30T10:00:00', 'paid_at' => '2025-12-30T10:00:00'],
+        ['class' => 9, 'first_name' => 'Kopia', 'ordered_at' => '2025-12-20T10:00:00', 'paid_at' => '2025-12-20T10:00:00'],
+    ])), true);
+    $data['competitions'] = array_map(fn ($c) => $c + ['previous' => '2025-12-31'], $data['competitions']);
+    $data['competitions'][] = ['id' => 9, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2026-12-30', 'name' => 'Sylvesterloppet kopia', 'active' => false, 'previous' => '2025-12-31'];
+    $data['classes'][] = ['id' => 9, 'competition' => 9, 'name' => '10 km Kvinnor', 'sort' => 1];
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode($data));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
+        ->expectsOutputToContain('Sylvesterloppet kopia (2026-12-30): 1 anmälningar beställda senast 2025-12-31, hela tävlingen hoppades över')
+        ->assertSuccessful();
+
+    expect(Registration::pluck('first_name')->all())->toBe(['Ny'])->and(Event::count())->toBe(1);
+});

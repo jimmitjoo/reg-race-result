@@ -15,7 +15,10 @@ GO
 -- FOR JSON straight to sqlcmd comes in rows of 2033 characters; one nvarchar(max) does not.
 DECLARE @json nvarchar(max) = (SELECT
     (SELECT c.CompetitionId AS id, RTRIM(g.EventGroupName) AS arrangemang, RTRIM(e.EventName) AS race,
-            CONVERT(char(10), c.CompetitionDate, 23) AS date, RTRIM(c.CompetitionName) AS name, c.IsActive AS active
+            CONVERT(char(10), c.CompetitionDate, 23) AS date, RTRIM(c.CompetitionName) AS name, c.IsActive AS active,
+            -- The upplaga before, at least half a year earlier so that a copy with the wrong date does not count.
+            (SELECT CONVERT(char(10), MAX(p.CompetitionDate), 23) FROM Competition p JOIN Event pe ON pe.EventId = p.EventId
+             WHERE pe.EventGroupId = e.EventGroupId AND p.CompetitionDate < DATEADD(day, -180, c.CompetitionDate)) AS previous
      FROM Competition c
      JOIN Event e ON e.EventId = c.EventId
      JOIN EventGroup g ON g.EventGroupId = e.EventGroupId
