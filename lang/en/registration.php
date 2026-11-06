@@ -26,4 +26,5 @@ return [
     'paid' => 'The registration is paid.',
     'unpaid' => 'The registration has not been paid yet.',
     'publication_notice' => 'Name, year of birth, club and results are published in start and result lists.',
+    'earlier_results' => 'Results from earlier years',
 ];
