@@ -34,7 +34,7 @@ class ImportFlexit extends Command
 
     private array $needsStartTime = [];
 
-    private array $differentPrices = [];
+    private array $split = [];
 
     private array $unpaid = [];
 
@@ -62,15 +62,17 @@ class ImportFlexit extends Command
             $event = $this->event($organizer, $competitions->first());
 
             foreach ($competitions as $competition) {
-                $race = $this->firstOrCreate($event->races(), ['name' => trim($competition['race'])], [], 'lopp');
-
                 $raceClasses = collect($classes->get($competition['id'], []))->sortBy('sort');
-                $this->prices($race, $raceClasses->map(fn ($class) => $prices->get($class['id'], collect())->sortBy('until')->values()));
 
-                foreach ($raceClasses as $class) {
-                    $raceClass = $this->raceClass($event, $race, $class);
-                    foreach ($registrations->get($class['id'], []) as $registration) {
-                        $this->registration($organizer, $raceClass, $registration);
+                foreach ($this->byPrice($raceClasses, $prices, $registrations, trim($competition['race'])) as $name => ['classes' => $group, 'steps' => $steps]) {
+                    $race = $this->firstOrCreate($event->races(), ['name' => $name], [], 'lopp');
+                    $this->prices($race, $steps);
+
+                    foreach ($group as $class) {
+                        $raceClass = $this->raceClass($event, $race, $class);
+                        foreach ($registrations->get($class['id'], []) as $registration) {
+                            $this->registration($organizer, $raceClass, $registration);
+                        }
                     }
                 }
             }
@@ -115,28 +117,75 @@ class ImportFlexit extends Command
         return $event ?? $series->addEdition($competition['date']);
     }
 
-    /** One price per race here; the old system priced each class. */
-    private function prices(Race $race, Collection $perClass): void
+    /**
+     * One price per race here, one per class in the old system. Classes with a price list of their own
+     * (children at 150 kr beside 6,2 km at 250) become a race of their own. The race keeps its name for
+     * the classes most runners chose; the others are named by their distances, or by what their names share.
+     *
+     * @return Collection<string, array{classes: Collection, steps: list<array{string, int}>}>
+     */
+    private function byPrice(Collection $classes, Collection $prices, Collection $registrations, string $race): Collection
     {
-        if ($race->priceSteps()->exists() || $perClass->flatten(1)->isEmpty()) {
+        $curve = fn (array $class) => $prices->get($class['id'], collect())->sortBy('until')->map(fn ($s) => [$s['until'], $s['amount']])->values()->all();
+        $groups = $classes->groupBy(fn ($class) => json_encode($curve($class)));
+        $runners = fn (Collection $group) => $group->sum(fn ($class) => count($registrations->get($class['id'], [])));
+        $main = $groups->sortByDesc($runners)->keys()->first();
+
+        // Classes without a price go with the others rather than make a race nobody can register for.
+        if ($groups->count() > 1 && $groups->has('[]')) {
+            $unpriced = $groups->pull('[]');
+            $main = $main === '[]' ? $groups->sortByDesc($runners)->keys()->first() : $main;
+            $groups[$main] = $groups[$main]->concat($unpriced)->sortBy('sort');
+        }
+
+        $names = fn (Collection $group) => $group->map(fn ($class) => self::clean($class['name']));
+        $out = collect();
+        foreach ($groups->sortByDesc(fn ($group, $key) => $key === $main) as $key => $group) {
+            $name = $key === $main ? $race : "{$race} ".self::suffix($names($group), $names($groups[$main]));
+            $name = $out->has($name) ? "{$name} ".($out->count() + 1) : $name;
+            if ($key !== $main) {
+                $this->split[] = "{$name}: ".$names($group)->implode(', ');
+            }
+            $out[$name] = ['classes' => $group, 'steps' => json_decode($key, true)];
+        }
+
+        return $out;
+    }
+
+    /** "1,4 km och 800 m" for the distances the main race does not have, else the word the class names start with ("DM"). */
+    private static function suffix(Collection $names, Collection $mainNames): string
+    {
+        $distances = fn (Collection $names) => $names->map(fn ($name) => self::distanceFrom($name))->filter()->unique()->sortDesc()->values()->all();
+        $own = $distances($names);
+        if ($own && $own !== $distances($mainNames)) {
+            return collect($own)->map(fn ($m) => $m >= 1000 ? str_replace('.', ',', rtrim(rtrim(number_format($m / 1000, 1, '.', ''), '0'), '.')).' km' : "{$m} m")->implode(' och ');
+        }
+        $first = $names->map(fn ($name) => strtok($name, ' '))->unique();
+
+        return $first->count() === 1 ? $first->first() : $names->first();
+    }
+
+    /** @param  list<array{string, int}>  $steps */
+    private function prices(Race $race, array $steps): void
+    {
+        if (! $steps || $race->priceSteps()->exists()) {
             return;
         }
 
-        $curves = $perClass->map(fn ($steps) => $steps->map(fn ($s) => [$s['until'], $s['amount']])->all())->unique(fn ($curve) => json_encode($curve));
-        if ($curves->count() > 1) {
-            $this->differentPrices[] = $race->name;
-        }
-
-        // The highest price of each period, so that no class becomes cheaper than it was.
-        foreach ($perClass->flatten(1)->groupBy('until')->sortKeys() as $until => $steps) {
-            $race->priceSteps()->create(['until' => $until, 'amount' => $steps->max('amount')]);
+        foreach ($steps as [$until, $amount]) {
+            $race->priceSteps()->create(['until' => $until, 'amount' => $amount]);
         }
         $this->count('prislistor', 'nya');
     }
 
+    private static function clean(string $name): string
+    {
+        return preg_replace('/\s+/u', ' ', trim($name));
+    }
+
     private function raceClass(Event $event, Race $race, array $class): RaceClass
     {
-        $name = preg_replace('/\s+/u', ' ', trim($class['name']));
+        $name = self::clean($class['name']);
         $existing = $event->raceClasses()->where('race_id', $race->id)->where('name', $name)->first();
         $this->count('klasser', $existing ? 'fanns' : 'nya');
 
@@ -223,7 +272,7 @@ class ImportFlexit extends Command
         $this->table(['', 'nya', 'fanns', 'dubbla'], collect($this->counts)->map(fn ($c, $label) => [$label, $c['nya'] ?? 0, $c['fanns'] ?? 0, $c['dubbla'] ?? 0])->values());
 
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
-        $this->list('Lopp där klasserna hade olika priser. Det högsta priset i varje period används; dela loppet om några klasser ska vara billigare:', $this->differentPrices);
+        $this->list('Klasser med ett eget pris i gamla systemet, nu i ett eget lopp (byt namn i admin om du vill):', $this->split);
         $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
         $this->list('Betalda två gånger i samma klass (samma namn och födelsedatum). En är importerad; betala tillbaka den andra i gamla systemet:', $this->twice);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);

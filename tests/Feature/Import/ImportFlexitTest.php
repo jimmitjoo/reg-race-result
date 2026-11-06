@@ -4,6 +4,7 @@ use App\Console\Commands\ImportFlexit;
 use App\Models\Club;
 use App\Models\Event;
 use App\Models\Organizer;
+use App\Models\Race;
 use App\Models\Registration;
 use App\Models\Series;
 use Illuminate\Support\Facades\Mail;
@@ -31,7 +32,7 @@ function flexitFile(array $registrations): string
         'prices' => [
             ['class' => 1, 'until' => '2026-12-24', 'amount' => 30000], ['class' => 1, 'until' => '2026-12-29', 'amount' => 40000],
             ['class' => 2, 'until' => '2026-12-24', 'amount' => 30000], ['class' => 2, 'until' => '2026-12-29', 'amount' => 40000],
-            ['class' => 3, 'until' => '2026-12-24', 'amount' => 10000], ['class' => 3, 'until' => '2026-12-29', 'amount' => 30000],
+            ['class' => 3, 'until' => '2026-12-24', 'amount' => 15000], ['class' => 3, 'until' => '2026-12-29', 'amount' => 20000],
             ['class' => 4, 'until' => '2026-12-24', 'amount' => 15000], ['class' => 4, 'until' => '2026-12-29', 'amount' => 20000],
         ],
         'registrations' => array_map($runner, $registrations),
@@ -54,8 +55,7 @@ it('brings over the arrangemang, races, classes and prices of an open upplaga', 
 
     $race = $event->races()->where('name', 'Sylvesterloppet')->sole();
     expect($race->priceSteps->map(fn ($s) => [$s->until->toDateString(), $s->amount])->all())->toBe([['2026-12-24', 30000], ['2026-12-29', 40000]])
-        // Classes priced differently (like Kalmarmilen, where DM was cheaper first and dearer last): the highest price of each period.
-        ->and($event->races()->where('name', 'Lilla Sylvesterloppet')->sole()->priceSteps->map(fn ($s) => $s->amount)->all())->toBe([15000, 30000]);
+        ->and($event->races()->where('name', 'Lilla Sylvesterloppet')->sole()->priceSteps->map(fn ($s) => $s->amount)->all())->toBe([15000, 20000]);
 });
 
 it('imports paid registrations without mailing receipts, keeping only the birth date', function () {
@@ -131,4 +131,37 @@ it('takes the active one when the old system has the same race twice on one day'
         ->assertSuccessful();
 
     expect(Registration::pluck('first_name')->all())->toBe(['Anna']);
+});
+
+it('puts classes with a price list of their own in a race of their own', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $step = fn (int $class, int $first, int $last) => [['class' => $class, 'until' => '2026-07-15', 'amount' => $first], ['class' => $class, 'until' => '2026-07-20', 'amount' => $last]];
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode([
+        'competitions' => [
+            ['id' => 1, 'arrangemang' => 'Löttorpsvarvet', 'race' => 'Löttorpsvarvet', 'date' => '2026-07-22', 'name' => 'Löttorpsvarvet', 'active' => true],
+            ['id' => 2, 'arrangemang' => 'Atea Kalmarmilen', 'race' => 'Atea Kalmarmilen', 'date' => '2026-07-29', 'name' => 'Atea Kalmarmilen', 'active' => true],
+        ],
+        'classes' => [
+            ['id' => 1, 'competition' => 1, 'name' => '6,2 km Män', 'sort' => 1], ['id' => 2, 'competition' => 1, 'name' => 'P13 1,4 km', 'sort' => 2],
+            ['id' => 3, 'competition' => 1, 'name' => 'P7/F7 800 m', 'sort' => 3], ['id' => 4, 'competition' => 1, 'name' => 'Utan pris', 'sort' => 4],
+            ['id' => 5, 'competition' => 2, 'name' => '10km M', 'sort' => 1], ['id' => 6, 'competition' => 2, 'name' => 'DM 10km M', 'sort' => 2], ['id' => 7, 'competition' => 2, 'name' => 'DM 10km K', 'sort' => 3],
+        ],
+        'prices' => [...$step(1, 25000, 30000), ...$step(2, 15000, 20000), ...$step(3, 15000, 20000), ...$step(5, 35000, 45000), ...$step(6, 30000, 60000), ...$step(7, 30000, 60000)],
+        'registrations' => [],
+    ]));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
+        ->expectsOutputToContain('Löttorpsvarvet 1,4 km och 800 m: P13 1,4 km, P7/F7 800 m')
+        ->assertSuccessful();
+
+    $race = fn (string $name) => Race::where('name', $name)->sole();
+    $prices = fn (string $name) => $race($name)->priceSteps->map(fn ($s) => $s->amount)->all();
+    expect($prices('Löttorpsvarvet'))->toBe([25000, 30000])
+        ->and($race('Löttorpsvarvet')->raceClasses()->pluck('name')->all())->toBe(['6,2 km Män', 'Utan pris'])
+        ->and($prices('Löttorpsvarvet 1,4 km och 800 m'))->toBe([15000, 20000])
+        // Same distance as the main race: named by the word the classes start with.
+        ->and($prices('Atea Kalmarmilen'))->toBe([35000, 45000])
+        ->and($prices('Atea Kalmarmilen DM'))->toBe([30000, 60000])
+        ->and($race('Atea Kalmarmilen DM')->raceClasses()->count())->toBe(2);
 });
