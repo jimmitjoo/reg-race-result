@@ -171,7 +171,7 @@ it('puts classes with a price list of their own in a race of their own', functio
         ->and($prices('Atea Kalmarmilen 13 år o yngre'))->toBe([10000, 15000]);
 });
 
-it('leaves out registrations for last year\'s upplaga, and a copy that only has those', function () {
+it('moves last year\'s registrations to last year\'s upplaga, also from a copy at the wrong date', function () {
     Organizer::factory()->create(['slug' => 'hogby-if']);
     $data = json_decode(file_get_contents(flexitFile([
         ['class' => 1, 'first_name' => 'Ny', 'ordered_at' => '2026-12-01T10:00:00', 'paid_at' => '2026-12-01T10:00:00'],
@@ -179,16 +179,25 @@ it('leaves out registrations for last year\'s upplaga, and a copy that only has 
         ['class' => 9, 'first_name' => 'Kopia', 'ordered_at' => '2025-12-20T10:00:00', 'paid_at' => '2025-12-20T10:00:00'],
     ])), true);
     $data['competitions'] = array_map(fn ($c) => $c + ['previous' => '2025-12-31'], $data['competitions']);
+    // The empty competition at last year's date, which last year's runners were moved out of.
+    $data['competitions'][] = ['id' => 8, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2025-12-31', 'name' => 'Sylvesterloppet', 'active' => false, 'previous' => null];
+    $data['classes'][] = ['id' => 8, 'competition' => 8, 'name' => '10 km Kvinnor', 'sort' => 1];
     $data['competitions'][] = ['id' => 9, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2026-12-30', 'name' => 'Sylvesterloppet kopia', 'active' => false, 'previous' => '2025-12-31'];
     $data['classes'][] = ['id' => 9, 'competition' => 9, 'name' => '10 km Kvinnor', 'sort' => 1];
     $file = tempnam(sys_get_temp_dir(), 'flexit');
     file_put_contents($file, json_encode($data));
 
     $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
-        ->expectsOutputToContain('Sylvesterloppet kopia (2026-12-30): 1 anmälningar beställda senast 2025-12-31, hela tävlingen hoppades över')
+        ->expectsOutputToContain('Sylvesterloppet kopia (2026-12-30): 1 anmälningar beställda senast 2025-12-31, nu i den upplagan, inga andra kvar')
         ->assertSuccessful();
 
-    expect(Registration::pluck('first_name')->all())->toBe(['Ny'])->and(Event::count())->toBe(1);
+    $runners = fn (string $date) => Event::whereDate('date', $date)->sole()->registrations()->orderBy('first_name')->pluck('first_name')->all();
+    expect(Event::count())->toBe(2)
+        ->and($runners('2026-12-31'))->toBe(['Ny'])
+        ->and($runners('2025-12-31'))->toBe(['Gammal', 'Kopia'])
+        // One class, where the empty competition and the moved runners meet; prices moved back a year.
+        ->and(Event::whereDate('date', '2025-12-31')->sole()->raceClasses()->where('name', '10 km Kvinnor')->count())->toBe(1)
+        ->and(Race::whereHas('event', fn ($q) => $q->whereDate('date', '2025-12-31'))->where('name', 'Sylvesterloppet')->sole()->priceSteps->first()->until->toDateString())->toBe('2025-12-24');
 });
 
 it('names a race in miles as the old system did', function () {
