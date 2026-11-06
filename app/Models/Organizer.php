@@ -31,6 +31,11 @@ class Organizer extends Model
         return min($price, (int) round($price * $this->fee_basis_points / 10000) + $this->fee_fixed);
     }
 
+    public function series(): HasMany
+    {
+        return $this->hasMany(Series::class);
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
