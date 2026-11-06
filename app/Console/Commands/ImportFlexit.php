@@ -76,7 +76,7 @@ class ImportFlexit extends Command
             $event = $this->event($organizer, $competitions->first());
 
             foreach ($competitions as $competition) {
-                $raceClasses = collect($classes->get($competition['id'], []))->sortBy('sort');
+                $raceClasses = collect($classes->get($competition['id'], []))->sortBy(fn ($class) => [$class['sort'], (string) $class['id']]);
 
                 foreach ($this->byPrice($raceClasses, $prices, $registrations, trim($competition['race'])) as $name => ['classes' => $group, 'steps' => $steps]) {
                     $race = $this->firstOrCreate($event->races(), ['name' => $name], [], 'lopp');
@@ -225,12 +225,14 @@ class ImportFlexit extends Command
         $curve = fn (array $class) => $prices->get($class['id'], collect())->sortBy('until')->map(fn ($s) => [$s['until'], $s['amount']])->values()->all();
         $groups = $classes->groupBy(fn ($class) => json_encode($curve($class)));
         $runners = fn (Collection $group) => $group->sum(fn ($class) => count($registrations->get($class['id'], [])));
-        $main = $groups->sortByDesc($runners)->keys()->first();
+        // Most runners, then the class shown first: the same race keeps its name whatever order the export has.
+        $first = fn (Collection $groups) => $groups->sortBy(fn ($group) => [-$runners($group), $group->min('sort'), (string) $group->min('id')])->keys()->first();
+        $main = $first($groups);
 
         // Classes without a price go with the others rather than make a race nobody can register for.
         if ($groups->count() > 1 && $groups->has('[]')) {
             $unpriced = $groups->pull('[]');
-            $main = $main === '[]' ? $groups->sortByDesc($runners)->keys()->first() : $main;
+            $main = $main === '[]' ? $first($groups) : $main;
             $groups[$main] = $groups[$main]->concat($unpriced)->sortBy('sort');
         }
 
