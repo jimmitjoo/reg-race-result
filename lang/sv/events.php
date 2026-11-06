@@ -82,4 +82,7 @@ return [
     'setup_price' => 'Öppna anmälan',
     'setup_price_help' => 'Lägg ett pris med ett sista datum. Ett gratislopp öppnar med 0 kr. Sedan kommer tävlingsdagens verktyg fram här.',
     'onsite_help' => 'Valfritt. Visas för den som anmäler sig på plats på tävlingsdagen.',
+    'series_name' => 'Namn på arrangemanget',
+    'series_name_help' => 'Upplagor med det gamla namnet följer med. Länken är densamma.',
+    'rename' => 'Byt namn',
 ];

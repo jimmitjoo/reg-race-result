@@ -59,6 +59,22 @@ class Series extends Model
             ?? $this->events()->latest('date')->first();
     }
 
+    /**
+     * The slug stays, so that links on club sites and posters keep working. Upplagor with the old
+     * name and their year ("Kalmar Malkars 21KM 2026") follow; one given a name of its own keeps it.
+     */
+    public function rename(string $name): void
+    {
+        DB::transaction(function () use ($name) {
+            foreach ($this->events as $event) {
+                if ($event->name === "{$this->name} {$event->date->year}") {
+                    $event->update(['name' => "{$name} {$event->date->year}"]);
+                }
+            }
+            $this->update(['name' => $name]);
+        });
+    }
+
     public function addEdition(string $date, array $attributes = []): Event
     {
         return $this->events()->create($attributes + [
