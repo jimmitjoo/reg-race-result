@@ -26,5 +26,6 @@ return [
         'stripe' => 'Kort (Stripe)',
         'swish_onsite' => 'Swish på plats',
         'free' => 'Gratis',
+        'flexit' => 'Gamla anmälningssystemet',
     ],
 ];
