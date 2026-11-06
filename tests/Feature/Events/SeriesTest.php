@@ -79,3 +79,27 @@ it('gathers the existing events of an organizer into arrangemang by name without
         ->and(Event::whereNull('series_id')->count())->toBe(0)
         ->and(Series::where('name', 'Sylvesterloppet')->sole()->events()->count())->toBe(2);
 });
+
+it('shows the next upplaga at the arrangemang\'s link, and the latest once the last has been run', function () {
+    $this->travelTo('2026-06-01 12:00:00');
+    $organizer = Organizer::factory()->create(['slug' => 'hogby-if']);
+    $series = Series::factory()->create(['organizer_id' => $organizer->id, 'name' => 'Sylvesterloppet']);
+    $old = $series->addEdition('2025-12-31');
+    $next = $series->addEdition('2026-12-31');
+
+    $this->get('/hogby-if/sylvesterloppet')->assertOk()->assertSee('Sylvesterloppet 2026');
+    $this->get('/hogby-if/sylvesterloppet-2025')->assertOk()->assertSee('Sylvesterloppet 2025');
+    expect($next->publicUrl())->toBe(url('/hogby-if/sylvesterloppet'))
+        ->and($old->publicUrl())->toBe(url('/hogby-if/sylvesterloppet-2025'));
+
+    $this->travelTo('2027-01-15 12:00:00');
+    $this->get('/hogby-if/sylvesterloppet')->assertOk()->assertSee('Sylvesterloppet 2026');
+});
+
+it('keeps the link of an upplaga that has the arrangemang\'s slug', function () {
+    $organizer = Organizer::factory()->create(['slug' => 'hogby-if']);
+    $series = Series::factory()->create(['organizer_id' => $organizer->id, 'name' => 'Kalmarmilen']);
+    $series->addEdition('2026-05-01', ['name' => 'Kalmarmilen', 'slug' => 'kalmarmilen']);
+
+    $this->get('/hogby-if/kalmarmilen')->assertOk()->assertSee('Kalmarmilen');
+});

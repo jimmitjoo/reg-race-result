@@ -45,6 +45,14 @@ class Event extends Model
         return $this->belongsTo(Series::class);
     }
 
+    /** The link to share: the arrangemang's, which stays the same every year, while this is its current upplaga. */
+    public function publicUrl(): string
+    {
+        $slug = $this->series?->current()?->is($this) ? $this->series->slug : $this->slug;
+
+        return route('public.event', ['organizer' => $this->organizer->slug, 'event' => $slug]);
+    }
+
     public function races(): HasMany
     {
         return $this->hasMany(Race::class);

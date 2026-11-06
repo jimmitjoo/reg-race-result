@@ -25,7 +25,8 @@ class Series extends Model
             if (! $series->slug) {
                 $base = Str::slug($series->name);
                 $slug = $base;
-                for ($n = 2; static::where('organizer_id', $series->organizer_id)->where('slug', $slug)->exists(); $n++) {
+                // 'terms' is a public page of the organizer, like for events.
+                for ($n = 2; $slug === 'terms' || static::where('organizer_id', $series->organizer_id)->where('slug', $slug)->exists(); $n++) {
                     $slug = "{$base}-{$n}";
                 }
                 $series->slug = $slug;
@@ -47,6 +48,15 @@ class Series extends Model
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
+    }
+
+    /** The upplaga the arrangemang's link shows: the next one coming, or the latest when none is. */
+    public function current(): ?Event
+    {
+        $today = now($this->organizer->timezone)->toDateString();
+
+        return $this->events()->whereDate('date', '>=', $today)->oldest('date')->first()
+            ?? $this->events()->latest('date')->first();
     }
 
     public function addEdition(string $date, array $attributes = []): Event

@@ -26,10 +26,12 @@ new #[Layout('components.layouts.public')] class extends Component {
     public string $phone = '';
     public bool $acceptTerms = false;
 
+    // The arrangemang's slug shows its current upplaga, so the link stays the same every year; an upplaga's own slug still works.
     public function mount(string $organizer, string $event): void
     {
-        $this->raceEvent = Organizer::where('slug', $organizer)->firstOrFail()
-            ->events()->where('slug', $event)->firstOrFail();
+        $organizer = Organizer::where('slug', $organizer)->firstOrFail();
+        $this->raceEvent = $organizer->series()->where('slug', $event)->first()?->current()
+            ?? $organizer->events()->where('slug', $event)->firstOrFail();
     }
 
     public function with(): array
