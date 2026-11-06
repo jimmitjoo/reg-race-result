@@ -241,6 +241,7 @@ class ImportFlexit extends Command
             'name' => $name,
             'gender' => self::genderFrom($name),
             'distance_meters' => self::distanceFrom($name),
+            'team_size' => $class['team_size'] ?? null,
             'timed' => true,
             'start_at' => CarbonImmutable::parse("{$event->date->toDateString()} ".self::PLACEHOLDER_START, $event->timezone),
         ]);
@@ -260,13 +261,16 @@ class ImportFlexit extends Command
         $birthDate = self::birthDate($row['birth']);
         $this->noBirthDate += $birthDate === null ? 1 : 0;
 
-        $attributes = ['race_class_id' => $class->id, 'first_name' => trim($row['first_name']), 'last_name' => trim($row['last_name']), 'birth_date' => $birthDate];
+        // One contact often registers several teams in a class, so a team is told apart by its name.
+        $team = $class->team_size ? (trim($row['team'] ?? '') ?: null) : null;
+        $attributes = ['race_class_id' => $class->id, 'first_name' => trim($row['first_name']), 'last_name' => trim($row['last_name']), 'team_name' => $team, 'birth_date' => $birthDate];
         // The date is stored with a time, so it is compared as a date.
-        $same = Registration::where(collect($attributes)->except('birth_date')->all())
+        $same = Registration::where(collect($attributes)->except(['birth_date', 'team_name'])->all())
+            ->when($team, fn ($q) => $q->where('team_name', $team), fn ($q) => $q->whereNull('team_name'))
             ->when($birthDate, fn ($q) => $q->whereDate('birth_date', $birthDate), fn ($q) => $q->whereNull('birth_date'));
         if ($existing = $same->first()) {
             if (in_array($existing->id, $this->created, true)) {
-                $this->twice[] = "{$name} ({$class->name})";
+                $this->twice[] = ($team ? "{$team}, " : '')."{$name} ({$class->name})";
                 $this->count('anmälningar', 'dubbla');
             } else {
                 $this->count('anmälningar', 'fanns');
@@ -288,6 +292,7 @@ class ImportFlexit extends Command
             'paid_at' => self::utc($row['paid_at'] ?? $row['ordered_at'], $organizer),
             'note' => $row['standard'] ? null : "Kampanj: {$row['campaign']}",
             'status' => 'registered',
+            'team_members' => $team ? collect($row['members'] ?? [])->pluck('name')->map(fn ($n) => trim((string) $n))->filter()->values()->all() : null,
         ]);
         $registration->created_at = self::utc($row['ordered_at'], $organizer);
         $registration->save();

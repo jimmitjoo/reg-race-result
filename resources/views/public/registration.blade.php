@@ -3,7 +3,7 @@
         <flux:heading size="xl">{{ __('registration.confirmation_title') }}</flux:heading>
         <flux:text>
             {{ __('registration.confirmation_text', [
-                'name' => $registration->first_name.' '.$registration->last_name,
+                'name' => $registration->displayName(),
                 'class' => $registration->raceClass->name,
                 'event' => $event->name,
             ]) }}

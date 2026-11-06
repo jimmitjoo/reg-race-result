@@ -141,3 +141,12 @@ it('leaves age groups empty for races without age group placings', function () {
 
     expect(sfifRows($event)[0])->agegroup->toBe('')->agegroupplacing->toBe('');
 });
+
+it('leaves team classes out of the federation file (#31)', function () {
+    [$event, , $women] = sfifEvent();
+    finisher($women, 1, '10:40:00');
+    $team = RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $women->race_id, 'name' => 'Öppen klass', 'team_size' => 11, 'start_at' => '2026-12-31 10:00:00', 'min_time_seconds' => 600]);
+    finisher($team, 2, '10:30:00', ['team_name' => 'Kyrkans Löpare']);
+
+    expect(SfifExport::csv($event))->not->toContain('Kyrkans')->and(count(sfifRows($event)))->toBe(1);
+});

@@ -85,4 +85,7 @@ return [
     'series_name' => 'Name of the event',
     'series_name_help' => 'Editions with the old name follow. The link stays the same.',
     'rename' => 'Rename',
+    'team_size' => 'Team size',
+    'team_size_help' => 'Members per team, for a relay or team class. Empty when everyone registers on their own.',
+    'team_of' => 'Team of :size',
 ];

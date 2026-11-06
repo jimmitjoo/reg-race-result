@@ -69,7 +69,7 @@ new class extends Component {
                 <span class="flex-1 font-semibold">{{ $prize->name }}</span>
                 @if ($prize->winner)
                     <span class="font-mono">{{ $prize->winner->bib }}</span>
-                    <span>{{ $prize->winner->first_name }} {{ $prize->winner->last_name }}@if ($prize->winner->club), {{ $prize->winner->club }}@endif</span>
+                    <span>{{ $prize->winner->displayName() }}@if ($prize->winner->club), {{ $prize->winner->club }}@endif</span>
                     <flux:button size="sm" wire:click="draw({{ $prize->id }})">{{ __('prizes.redraw') }}</flux:button>
                 @else
                     <flux:button size="sm" variant="primary" wire:click="draw({{ $prize->id }})">{{ __('prizes.draw') }}</flux:button>

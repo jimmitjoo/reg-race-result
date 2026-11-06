@@ -33,6 +33,7 @@ new class extends Component {
     public ?int $raceId = null;
     public string $className = '';
     public ?int $distanceMeters = null;
+    public ?int $teamSize = null;
     public string $gender = '';
     public bool $timed = true;
     public string $startTime = '';
@@ -198,6 +199,7 @@ new class extends Component {
         $this->raceId = $class->race_id;
         $this->className = $class->name;
         $this->distanceMeters = $class->distance_meters;
+        $this->teamSize = $class->team_size;
         $this->gender = $class->gender ?? '';
         $this->timed = $class->timed;
         $this->startTime = $class->start_at->setTimezone($this->event->timezone)->format('H:i:s');
@@ -206,7 +208,7 @@ new class extends Component {
 
     public function cancel(): void
     {
-        $this->reset('editingId', 'className', 'distanceMeters', 'gender', 'timed', 'startTime', 'minTimeMinutes');
+        $this->reset('editingId', 'className', 'distanceMeters', 'teamSize', 'gender', 'timed', 'startTime', 'minTimeMinutes');
         $this->resetValidation();
     }
 
@@ -216,6 +218,7 @@ new class extends Component {
             'raceId' => ['required', Rule::exists('races', 'id')->where('event_id', $this->event->id)],
             'className' => ['required', 'string', 'max:255'],
             'distanceMeters' => ['nullable', 'integer', 'min:1'],
+            'teamSize' => ['nullable', 'integer', 'min:2', 'max:20'],
             'gender' => ['nullable', 'in:M,K'],
             'timed' => ['boolean'],
             'startTime' => ['required', 'regex:/^([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/'],
@@ -226,6 +229,7 @@ new class extends Component {
             'race_id' => $this->raceId,
             'name' => $this->className,
             'distance_meters' => $this->distanceMeters,
+            'team_size' => $this->teamSize ?: null,
             'gender' => $this->gender ?: null,
             'timed' => $this->timed,
             'start_at' => CarbonImmutable::parse($this->event->date->toDateString().' '.$this->startTime, $this->event->timezone),
@@ -429,6 +433,7 @@ new class extends Component {
         <div class="grid gap-4 sm:grid-cols-3">
             <flux:input wire:model="startTime" :label="__('events.start_time')" placeholder="10:00:00" />
             <flux:input wire:model="distanceMeters" type="number" min="1" :label="__('events.distance_meters')" />
+            <flux:input wire:model="teamSize" type="number" min="2" max="20" :label="__('events.team_size')" :description="__('events.team_size_help')" />
             <flux:select wire:model="gender" :label="__('events.gender')">
                 <option value="">{{ __('events.gender_any') }}</option>
                 <option value="M">{{ __('events.gender_m') }}</option>

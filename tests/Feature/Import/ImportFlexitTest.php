@@ -206,3 +206,19 @@ it('names a race in miles as the old system did', function () {
     expect(Race::orderBy('name')->pluck('name')->all())->toBe(['Öland Lighthouse Challenge', 'Öland Lighthouse Challenge 50 km', 'Öland Lighthouse Challenge 50 miles'])
         ->and(RaceClass::where('name', 'M/K 50 miles')->sole()->distance_meters)->toBe(80467);
 });
+
+it('imports a team class with its size, and two teams from the same contact (#31)', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $team = fn (string $name, array $members) => ['class' => 1, 'team' => $name, 'members' => array_map(fn ($m) => ['name' => $m], $members)];
+    $data = json_decode(file_get_contents(flexitFile([$team('Kyrkans Löpare', ['A', 'B', 'C']), $team('Kyrkans Gamlingar', ['D', 'E', ' '])])), true);
+    $data['classes'][0] += ['team_size' => 3];
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode($data));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->assertSuccessful();
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->assertSuccessful();
+
+    expect(RaceClass::where('name', '10 km Kvinnor')->sole()->team_size)->toBe(3)
+        ->and(Registration::orderBy('team_name')->get()->map(fn ($r) => [$r->team_name, $r->team_members])->all())
+        ->toBe([['Kyrkans Gamlingar', ['D', 'E']], ['Kyrkans Löpare', ['A', 'B', 'C']]]);
+});

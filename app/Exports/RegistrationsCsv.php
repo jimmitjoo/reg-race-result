@@ -19,6 +19,7 @@ final class RegistrationsCsv
             ->when($raceId, fn ($q) => $q->where('race_classes.race_id', $raceId))
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
                 ->where('first_name', 'like', "%{$search}%")
+                ->orWhere('team_name', 'like', "%{$search}%")
                 ->orWhere('last_name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")
                 ->orWhere('bib', $search)))
@@ -31,11 +32,17 @@ final class RegistrationsCsv
         return $event->races()->where('age_groups', true)->exists();
     }
 
+    /** Only an event with a team class gets the team columns (#31). */
+    public static function hasTeams(Event $event): bool
+    {
+        return $event->raceClasses()->whereNotNull('team_size')->exists();
+    }
+
     /** @return list<string> */
-    public static function columns(bool $ageGroups = false): array
+    public static function columns(bool $ageGroups = false, bool $teams = false): array
     {
         return [
-            __('registration.class'), __('results.bib'), __('registration.first_name'), __('registration.last_name'),
+            __('registration.class'), __('results.bib'), ...($teams ? [__('registration.team_name'), __('registration.team_members')] : []), __('registration.first_name'), __('registration.last_name'),
             __('registration.birth_date'), __('registration.gender'), ...($ageGroups ? [__('results.age_group')] : []), __('registration.club'), __('registration.email'),
             __('registration.phone'), __('registrations.price'), __('registrations.payment_method'), __('registrations.paid_at'),
             __('registrations.created_at'),
@@ -43,10 +50,10 @@ final class RegistrationsCsv
     }
 
     /** @return list<?string> */
-    public static function row(Registration $r, string $timezone, bool $ageGroups = false): array
+    public static function row(Registration $r, string $timezone, bool $ageGroups = false, bool $teams = false): array
     {
         return [
-            $r->raceClass->name, $r->bib === null ? null : (string) $r->bib, $r->first_name, $r->last_name,
+            $r->raceClass->name, $r->bib === null ? null : (string) $r->bib, ...($teams ? [$r->team_name, implode(', ', $r->team_members ?? [])] : []), $r->first_name, $r->last_name,
             $r->birth_date?->toDateString(), $r->gender, ...($ageGroups ? [$r->raceClass->ageGroupOf($r)] : []), $r->club, $r->email,
             $r->phone, $r->price === null ? null : number_format($r->price / 100, 2, ',', ''), $r->payment_method ? __("registrations.method.{$r->payment_method}") : null,
             $r->refunded_at ? __('registrations.refunded') : $r->paid_at?->setTimezone($timezone)->format('Y-m-d H:i'), $r->created_at->setTimezone($timezone)->format('Y-m-d H:i'),
@@ -57,10 +64,10 @@ final class RegistrationsCsv
     public static function csv(Event $event, string $status = 'paid', ?int $raceId = null, string $search = ''): string
     {
         $line = fn (array $cells) => implode(';', array_map(fn ($cell) => str_replace([';', "\r", "\n"], ' ', (string) $cell), $cells));
-        $ageGroups = self::hasAgeGroups($event);
-        $lines = [$line(self::columns($ageGroups))];
+        [$ageGroups, $teams] = [self::hasAgeGroups($event), self::hasTeams($event)];
+        $lines = [$line(self::columns($ageGroups, $teams))];
         foreach (self::query($event, $status, $raceId, $search)->get() as $registration) {
-            $lines[] = $line(self::row($registration, $event->timezone, $ageGroups));
+            $lines[] = $line(self::row($registration, $event->timezone, $ageGroups, $teams));
         }
 
         return "\xEF\xBB\xBF".implode("\r\n", $lines)."\r\n";

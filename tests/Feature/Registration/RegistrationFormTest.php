@@ -199,3 +199,28 @@ it('does not let a man register in a women\'s class, and shows only fitting clas
 
     expect(Registration::count())->toBe(0);
 });
+
+it('registers a team with its name and members, the one who registers as contact (#31)', function () {
+    [, , , $class] = openEvent();
+    $class->update(['name' => 'Öppen klass', 'team_size' => 3]);
+    $page = fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
+        ->assertSee(__('registration.team_member_n', ['n' => 3]))
+        ->set('teamName', ' Kyrkans Löpare ')
+        ->set('members', ['Anna Karlsson', 'Bo Ek', '']);
+
+    $page->call('register')->assertHasErrors(['members.2' => 'required']);
+    expect(Registration::count())->toBe(0);
+
+    $page->set('members.2', 'Cilla Ask')->call('register')->assertHasNoErrors();
+    expect(Registration::sole())->team_name->toBe('Kyrkans Löpare')->team_members->toBe(['Anna Karlsson', 'Bo Ek', 'Cilla Ask'])
+        ->first_name->toBe('Anna');
+});
+
+it('asks no team questions for a class where everyone registers on their own', function () {
+    [, , , $class] = openEvent();
+
+    fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
+        ->assertDontSee(__('registration.team_name'))
+        ->call('register')->assertHasNoErrors();
+    expect(Registration::sole()->team_name)->toBeNull();
+});

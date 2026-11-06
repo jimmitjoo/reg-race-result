@@ -59,7 +59,7 @@ new class extends Component {
                  class="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                 <div class="flex flex-wrap items-baseline gap-x-4">
                     <span class="font-mono text-lg font-semibold">{{ $registration->bib }}</span>
-                    <span class="font-semibold">{{ $registration->first_name }} {{ $registration->last_name }}</span>
+                    <span class="font-semibold">{{ $registration->displayName() }}</span>
                     <span class="text-sm text-zinc-500">{{ $registration->raceClass->name }}</span>
                     @if (in_array($registration->status, ['dnf', 'dq']))
                         <flux:badge color="red">{{ __('results.status_'.$registration->status) }}</flux:badge>
@@ -95,7 +95,7 @@ new class extends Component {
             @foreach ($untimed as $registration)
                 <div wire:key="untimed-{{ $registration->id }}" class="flex items-center gap-4 rounded-lg border border-zinc-200 px-4 py-2 dark:border-zinc-700">
                     <span class="font-mono">{{ $registration->bib }}</span>
-                    <span class="flex-1 {{ $registration->status === 'dns' ? 'text-zinc-400 line-through' : '' }}">{{ $registration->first_name }} {{ $registration->last_name }} · {{ $registration->raceClass->name }}</span>
+                    <span class="flex-1 {{ $registration->status === 'dns' ? 'text-zinc-400 line-through' : '' }}">{{ $registration->displayName() }} · {{ $registration->raceClass->name }}</span>
                     @if ($registration->status === 'dns')
                         <flux:button size="sm" wire:click="setStatus({{ $registration->id }}, 'registered')">{{ __('results.undo') }}</flux:button>
                     @else

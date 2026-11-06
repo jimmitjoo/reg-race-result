@@ -145,7 +145,7 @@ new class extends Component {
         @forelse ($today as $registration)
             <div wire:key="onsite-{{ $registration->id }}" x-data="{ bib: '{{ $registration->bib }}' }" class="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-200 px-4 py-2 dark:border-zinc-700">
                 <span class="font-mono text-lg font-semibold">{{ $registration->bib }}</span>
-                <span class="flex-1">{{ $registration->first_name }} {{ $registration->last_name }} · {{ $registration->raceClass->name }}</span>
+                <span class="flex-1">{{ $registration->displayName() }} · {{ $registration->raceClass->name }}</span>
                 <flux:badge color="green">{{ __('onsite.paid') }}</flux:badge>
                 <flux:input x-model="bib" size="sm" class="w-24" :aria-label="__('onsite.bib')" />
                 <flux:button size="sm" x-on:click="$wire.changeBib({{ $registration->id }}, bib)">{{ __('onsite.change_bib') }}</flux:button>

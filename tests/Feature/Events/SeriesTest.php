@@ -69,11 +69,12 @@ it('cannot make an upplaga of another organizer\'s arrangemang', function () {
 
 it('gathers the existing events of an organizer into arrangemang by name without the year', function () {
     $organizer = Organizer::factory()->create();
-    Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]);
+    $migration = 'database/migrations/2026_11_06_000000_create_series.php';
+    Artisan::call('migrate:rollback', ['--path' => $migration, '--force' => true]);
     foreach (['Sylvesterloppet 2025', 'Sylvesterloppet 2026', 'Kalmarmilen'] as $name) {
         DB::table('events')->insert(['organizer_id' => $organizer->id, 'name' => $name, 'slug' => Str::slug($name), 'date' => '2026-01-01', 'timezone' => 'Europe/Stockholm']);
     }
-    Artisan::call('migrate', ['--force' => true]);
+    Artisan::call('migrate', ['--path' => $migration, '--force' => true]);
 
     expect(Series::orderBy('name')->pluck('name')->all())->toBe(['Kalmarmilen', 'Sylvesterloppet'])
         ->and(Event::whereNull('series_id')->count())->toBe(0)
@@ -138,4 +139,23 @@ it('does not give two arrangemang the same name, or rename another organizer\'s'
 
     Volt::test('events.index')->call('editSeries', $series->id)->set('seriesName', 'Sylvesterloppet')->call('saveSeries')->assertHasErrors(['seriesName' => 'unique']);
     Volt::test('events.index')->call('editSeries', Series::factory()->create()->id)->assertNotFound();
+});
+
+it('shows a team by its name on the public lists, also when the contact hid their own (#31)', function () {
+    $organizer = Organizer::factory()->create(['slug' => 'hogby-if']);
+    $event = Series::factory()->create(['organizer_id' => $organizer->id, 'name' => 'Ölands Kyrkstafett'])->addEdition('2026-05-09');
+    $class = RaceClass::factory()->create(['event_id' => $event->id, 'name' => 'Öppen klass', 'team_size' => 11]);
+    Registration::factory()->for($class)->create(['first_name' => 'Kontakt', 'last_name' => 'Person', 'team_name' => 'Kyrkans Löpare', 'team_members' => ['A', 'B'], 'hidden_at' => now()]);
+
+    $this->get('/hogby-if/olands-kyrkstafett-2026/start-list')->assertOk()->assertSee('Kyrkans Löpare')->assertDontSee('Kontakt Person');
+});
+
+it('copies the team size to a new upplaga', function () {
+    $this->actingAs($user = seriesUser());
+    $series = Series::factory()->create(['organizer_id' => $user->organizer_id, 'name' => 'Ölands Kyrkstafett']);
+    $old = $series->addEdition('2025-05-10');
+    $race = $old->races()->create(['name' => 'Ölands Kyrkstafett, långa']);
+    RaceClass::factory()->create(['event_id' => $old->id, 'race_id' => $race->id, 'name' => 'Öppen klass', 'team_size' => 11]);
+
+    expect($series->newEdition('2026-05-09')->raceClasses()->sole()->team_size)->toBe(11);
 });
