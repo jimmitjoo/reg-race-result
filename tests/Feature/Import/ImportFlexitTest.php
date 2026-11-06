@@ -31,7 +31,8 @@ function flexitFile(array $registrations): string
         'prices' => [
             ['class' => 1, 'until' => '2026-12-24', 'amount' => 30000], ['class' => 1, 'until' => '2026-12-29', 'amount' => 40000],
             ['class' => 2, 'until' => '2026-12-24', 'amount' => 30000], ['class' => 2, 'until' => '2026-12-29', 'amount' => 40000],
-            ['class' => 3, 'until' => '2026-12-24', 'amount' => 10000], ['class' => 4, 'until' => '2026-12-24', 'amount' => 15000],
+            ['class' => 3, 'until' => '2026-12-24', 'amount' => 10000], ['class' => 3, 'until' => '2026-12-29', 'amount' => 30000],
+            ['class' => 4, 'until' => '2026-12-24', 'amount' => 15000], ['class' => 4, 'until' => '2026-12-29', 'amount' => 20000],
         ],
         'registrations' => array_map($runner, $registrations),
     ]));
@@ -53,8 +54,8 @@ it('brings over the arrangemang, races, classes and prices of an open upplaga', 
 
     $race = $event->races()->where('name', 'Sylvesterloppet')->sole();
     expect($race->priceSteps->map(fn ($s) => [$s->until->toDateString(), $s->amount])->all())->toBe([['2026-12-24', 30000], ['2026-12-29', 40000]])
-        // Children's classes priced differently: the dearest list, and the report says so.
-        ->and($event->races()->where('name', 'Lilla Sylvesterloppet')->sole()->priceSteps()->sole()->amount)->toBe(15000);
+        // Classes priced differently (like Kalmarmilen, where DM was cheaper first and dearer last): the highest price of each period.
+        ->and($event->races()->where('name', 'Lilla Sylvesterloppet')->sole()->priceSteps->map(fn ($s) => $s->amount)->all())->toBe([15000, 30000]);
 });
 
 it('imports paid registrations without mailing receipts, keeping only the birth date', function () {
