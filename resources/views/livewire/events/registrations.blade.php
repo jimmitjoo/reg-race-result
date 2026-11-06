@@ -139,7 +139,12 @@ new class extends Component {
                         <td class="py-1 pe-3">{{ $registration->raceClass->name }}</td>
                         <td class="py-1 pe-3 font-mono">{{ $registration->bib }}</td>
                         <td class="py-1 pe-3">
-                            {{ $registration->first_name }} {{ $registration->last_name }}
+                            @if ($registration->team_name)
+                                <span class="font-semibold">{{ $registration->team_name }}</span>
+                                <span class="text-zinc-500">· {{ $registration->first_name }} {{ $registration->last_name }}</span>
+                            @else
+                                {{ $registration->first_name }} {{ $registration->last_name }}
+                            @endif
                             @if ($registration->hidden_at)<flux:badge size="sm" color="zinc">{{ __('registrations.hidden') }}</flux:badge>@endif
                         </td>
                         <td class="py-1 pe-3">{{ $registration->birth_date?->toDateString() }}</td>

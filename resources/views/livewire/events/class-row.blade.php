@@ -2,6 +2,9 @@
     <span class="min-w-40 font-semibold">{{ $class->name }}</span>
     <span class="font-mono">{{ $class->start_at->setTimezone($event->timezone)->format('H:i:s') }}</span>
     <span class="text-sm text-zinc-500">{{ $class->timed ? __('events.timed') : __('events.untimed') }}</span>
+    @if ($class->team_size)
+        <span class="text-sm text-zinc-500">{{ __('events.team_of', ['size' => $class->team_size]) }}</span>
+    @endif
     @if ($class->timed)
         <span class="text-sm text-zinc-500">{{ __('events.min_time_minutes') }}: {{ intdiv($class->min_time_seconds, 60) }}</span>
     @endif

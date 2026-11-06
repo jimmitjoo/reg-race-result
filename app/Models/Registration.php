@@ -18,7 +18,22 @@ class Registration extends Model
 
     protected function casts(): array
     {
-        return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime', 'refunded_at' => 'immutable_datetime', 'manual_finish_at' => UtcDateTime::class.':ms', 'terms_accepted_at' => 'immutable_datetime', 'hidden_at' => 'immutable_datetime'];
+        return ['birth_date' => 'immutable_date', 'paid_at' => 'immutable_datetime', 'refunded_at' => 'immutable_datetime', 'manual_finish_at' => UtcDateTime::class.':ms', 'terms_accepted_at' => 'immutable_datetime', 'hidden_at' => 'immutable_datetime', 'team_members' => 'array'];
+    }
+
+    /** The team's name for a team (#31), else the runner's. */
+    public function displayName(): string
+    {
+        return $this->team_name ?? trim("{$this->first_name} {$this->last_name}");
+    }
+
+    /**
+     * The name on public lists. A runner who asked not to be shown loses it (GDPR, #13); a team keeps its name,
+     * which is not the contact's personal data.
+     */
+    public function publicName(): string
+    {
+        return $this->team_name ?? ($this->hidden_at ? __('privacy.anonymous') : $this->displayName());
     }
 
     /** Webhook, reconciliation and the confirmation page can race; only the one that marks it paid sends the receipt. */

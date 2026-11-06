@@ -27,6 +27,10 @@ new #[Layout('components.layouts.public')] class extends Component {
     public string $phone = '';
     public bool $acceptTerms = false;
 
+    // A team class (#31): the one who registers is the team's contact and names the members.
+    public string $teamName = '';
+    public array $members = [];
+
     // The arrangemang's slug shows its current upplaga, so the link stays the same every year; an upplaga's own slug still works.
     public function mount(string $organizer, string $event): void
     {
@@ -48,6 +52,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                 ->map(fn ($r) => $r + ['soon' => $r['price'] > 0 && ! $canPay]),
             'currency' => $this->raceEvent->organizer->currency,
             'ageGroup' => $this->ageGroup(),
+            'teamSize' => $this->selectedClass()?->team_size,
             // Earlier upplagor of the arrangemang, for the runners who look up last year's time.
             'earlier' => $this->raceEvent->series?->events()->whereKeyNot($this->raceEvent->id)->whereNotNull('results_public_at')
                 ->where('date', '<', $this->raceEvent->date)->orderByDesc('date')->get() ?? collect(),
@@ -58,12 +63,18 @@ new #[Layout('components.layouts.public')] class extends Component {
     /** "Du tävlar i M45" once the class, birth date and gender are filled in, for a race with age groups (#92). */
     private function ageGroup(): ?string
     {
-        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->birthDate) || ! $this->raceClassId) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->birthDate)) {
             return null;
         }
-        $class = $this->raceEvent->raceClasses()->with('race')->find((int) $this->raceClassId);
 
-        return $class?->setRelation('event', $this->raceEvent)->ageGroupOf(new Registration(['birth_date' => $this->birthDate, 'gender' => $this->gender ?: null]));
+        return $this->selectedClass()?->ageGroupOf(new Registration(['birth_date' => $this->birthDate, 'gender' => $this->gender ?: null]));
+    }
+
+    private function selectedClass(): ?RaceClass
+    {
+        return $this->raceClassId
+            ? $this->raceEvent->raceClasses()->with('race')->find((int) $this->raceClassId)?->setRelation('event', $this->raceEvent)
+            : null;
     }
 
     public function register(): void
@@ -93,6 +104,16 @@ new #[Layout('components.layouts.public')] class extends Component {
             return;
         }
 
+        if ($class->team_size) {
+            $this->teamName = trim($this->teamName);
+            $this->members = array_map('trim', array_pad(array_slice(array_values($this->members), 0, $class->team_size), $class->team_size, ''));
+            $this->validate(
+                ['teamName' => ['required', 'string', 'max:100'], 'members.*' => ['required', 'string', 'max:100']],
+                [],
+                ['teamName' => __('registration.team_name'), 'members.*' => __('registration.team_member')],
+            );
+        }
+
         if ($class->gender && $class->gender !== $this->gender) {
             $this->addError('raceClassId', __('registration.wrong_gender'));
 
@@ -119,6 +140,8 @@ new #[Layout('components.layouts.public')] class extends Component {
             'phone' => $this->phone ?: null,
             'price' => $price,
             'terms_accepted_at' => now(),
+            'team_name' => $class->team_size ? $this->teamName : null,
+            'team_members' => $class->team_size ? $this->members : null,
         ]);
 
         $confirmationUrl = $registration->confirmationUrl();
@@ -181,6 +204,18 @@ new #[Layout('components.layouts.public')] class extends Component {
 
         @if ($ageGroup)
             <flux:text class="text-sm">{{ __('registration.your_age_group', ['group' => $ageGroup]) }}</flux:text>
+        @endif
+
+        @if ($teamSize)
+            <div class="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                <flux:input wire:model="teamName" :label="__('registration.team_name')" />
+                <div class="grid gap-3 sm:grid-cols-2">
+                    @for ($i = 0; $i < $teamSize; $i++)
+                        <flux:input wire:key="member-{{ $i }}" wire:model="members.{{ $i }}" :label="__('registration.team_member_n', ['n' => $i + 1])" />
+                    @endfor
+                </div>
+                <flux:text class="text-sm">{{ __('registration.team_help') }}</flux:text>
+            </div>
         @endif
 
         <div class="grid gap-4 sm:grid-cols-2">

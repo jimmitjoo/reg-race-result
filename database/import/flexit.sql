@@ -26,7 +26,9 @@ DECLARE @json nvarchar(max) = (SELECT
      FOR JSON PATH) AS competitions,
 
     -- Active classes, and inactive ones that still have registrations.
-    (SELECT cl.ClassId AS id, cl.CompetitionId AS competition, cl.ClassName AS name, cl.SortOrder AS sort
+    (SELECT cl.ClassId AS id, cl.CompetitionId AS competition, cl.ClassName AS name, cl.SortOrder AS sort,
+            -- A team class names its members in team attributes ("För- och efternamn deltagare 1" …).
+            CASE WHEN cl.IsTeam = 1 THEN (SELECT NULLIF(COUNT(*), 0) FROM Attribute a WHERE a.CompetitionId = cl.CompetitionId AND a.IsTeamAttribute = 1 AND a.IsActive = 1) END AS team_size
      FROM Class cl
      JOIN Competition c ON c.CompetitionId = cl.CompetitionId
      WHERE c.CompetitionDate >= '$(from)'
@@ -54,13 +56,18 @@ DECLARE @json nvarchar(max) = (SELECT
             CAST(od.Price * 100 AS int) AS price, pm.Code AS method,
             CONVERT(char(19), COALESCE(od.DatePaid, o.DatePaid), 126) AS paid_at,
             CONVERT(char(19), o.DateOrder, 126) AS ordered_at,
-            k.CampaignName AS campaign, k.IsDefault AS standard
+            k.CampaignName AS campaign, k.IsDefault AS standard,
+            RTRIM(t.TeamName) AS team,
+            (SELECT ra.Value AS name FROM RegistrationAttribute ra JOIN Attribute ta ON ta.AttributeId = ra.AttributeId
+             WHERE ra.RegistrationId = r.RegistrationId AND ta.IsTeamAttribute = 1 AND ta.IsActive = 1
+             ORDER BY ta.SortOrder FOR JSON PATH) AS members
      FROM Registration r
      CROSS APPLY (SELECT REPLACE(REPLACE(ISNULL(r.SocialNo, ''), '-', ''), ' ', '') AS digits) s
      JOIN Class cl ON cl.ClassId = r.ClassId
      JOIN Competition c ON c.CompetitionId = cl.CompetitionId
      JOIN Campaign k ON k.CampaignId = r.CampaignId
      LEFT JOIN Address a ON a.AddressId = r.AddressId
+     LEFT JOIN Team t ON t.TeamId = r.TeamId
      LEFT JOIN OrderDetail od ON od.RegistrationId = r.RegistrationId
      LEFT JOIN [Order] o ON o.OrderId = od.OrderId
      LEFT JOIN PaymentMethod pm ON pm.PaymentMethodId = o.PaymentMethodId

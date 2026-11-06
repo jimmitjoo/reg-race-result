@@ -85,4 +85,7 @@ return [
     'series_name' => 'Namn på arrangemanget',
     'series_name_help' => 'Upplagor med det gamla namnet följer med. Länken är densamma.',
     'rename' => 'Byt namn',
+    'team_size' => 'Lagstorlek',
+    'team_size_help' => 'Antal deltagare per lag, för en stafett eller lagklass. Tomt när var och en anmäler sig själv.',
+    'team_of' => 'Lag om :size',
 ];

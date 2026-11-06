@@ -68,7 +68,8 @@ final class SfifExport
         }
         $groups = [];
 
-        $classes = $event->raceClasses()->with(['race', 'registrations'])->where('timed', true)->get();
+        // The federation file is for runners on their own; a team class (#31) is not in it.
+        $classes = $event->raceClasses()->with(['race', 'registrations'])->where('timed', true)->whereNull('team_size')->get();
         foreach ($classes as $class) {
             foreach ($class->registrations as $registration) {
                 $result = $timing[(string) $registration->bib] ?? null;

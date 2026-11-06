@@ -107,7 +107,7 @@ class Series extends Model
 
                 foreach ($previous->raceClasses->where('race_id', $race->id) as $class) {
                     $time = $class->start_at->setTimezone($event->timezone)->format('H:i:s');
-                    $event->raceClasses()->create($class->only(['name', 'distance_meters', 'gender', 'timed', 'min_time_seconds']) + [
+                    $event->raceClasses()->create($class->only(['name', 'distance_meters', 'team_size', 'gender', 'timed', 'min_time_seconds']) + [
                         'race_id' => $copy->id,
                         'start_at' => CarbonImmutable::parse("{$event->date->toDateString()} {$time}", $event->timezone),
                     ]);

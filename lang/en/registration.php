@@ -28,4 +28,9 @@ return [
     'publication_notice' => 'Name, year of birth, club and results are published in start and result lists.',
     'earlier_results' => 'Results from earlier years',
     'your_age_group' => 'You compete in the age group :group.',
+    'team_name' => 'Team name',
+    'team_members' => 'Team members',
+    'team_member' => 'member',
+    'team_member_n' => 'Member :n',
+    'team_help' => 'You who register are the team\'s contact and get the receipt. List the members in the order they run.',
 ];

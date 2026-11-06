@@ -1,7 +1,7 @@
 <x-mail::message>
 # {{ __('receipt.heading') }}
 
-{{ __('registration.confirmation_text', ['name' => $registration->first_name.' '.$registration->last_name, 'class' => $class, 'event' => $event->name]) }}
+{{ __('registration.confirmation_text', ['name' => $registration->displayName(), 'class' => $class, 'event' => $event->name]) }}
 
 <x-mail::table>
 | | |
