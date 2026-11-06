@@ -145,21 +145,22 @@ it('puts classes with a price list of their own in a race of their own', functio
         'classes' => [
             ['id' => 1, 'competition' => 1, 'name' => '6,2 km Män', 'sort' => 1], ['id' => 2, 'competition' => 1, 'name' => 'P13 1,4 km', 'sort' => 2],
             ['id' => 3, 'competition' => 1, 'name' => 'P7/F7 800 m', 'sort' => 3], ['id' => 4, 'competition' => 1, 'name' => 'Utan pris', 'sort' => 4],
+            ['id' => 8, 'competition' => 1, 'name' => 'P15 2,9 km', 'sort' => 5],
             ['id' => 5, 'competition' => 2, 'name' => '10km M', 'sort' => 1], ['id' => 6, 'competition' => 2, 'name' => 'DM 10km M', 'sort' => 2], ['id' => 7, 'competition' => 2, 'name' => 'DM 10km K', 'sort' => 3],
         ],
-        'prices' => [...$step(1, 25000, 30000), ...$step(2, 15000, 20000), ...$step(3, 15000, 20000), ...$step(5, 35000, 45000), ...$step(6, 30000, 60000), ...$step(7, 30000, 60000)],
+        'prices' => [...$step(1, 25000, 30000), ...$step(2, 15000, 20000), ...$step(3, 15000, 20000), ...$step(8, 15000, 20000), ...$step(5, 35000, 45000), ...$step(6, 30000, 60000), ...$step(7, 30000, 60000)],
         'registrations' => [],
     ]));
 
     $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
-        ->expectsOutputToContain('Löttorpsvarvet 1,4 km och 800 m: P13 1,4 km, P7/F7 800 m')
+        ->expectsOutputToContain('Löttorpsvarvet 2,9 km, 1,4 km och 800 m: P13 1,4 km, P7/F7 800 m, P15 2,9 km')
         ->assertSuccessful();
 
     $race = fn (string $name) => Race::where('name', $name)->sole();
     $prices = fn (string $name) => $race($name)->priceSteps->map(fn ($s) => $s->amount)->all();
     expect($prices('Löttorpsvarvet'))->toBe([25000, 30000])
         ->and($race('Löttorpsvarvet')->raceClasses()->pluck('name')->all())->toBe(['6,2 km Män', 'Utan pris'])
-        ->and($prices('Löttorpsvarvet 1,4 km och 800 m'))->toBe([15000, 20000])
+        ->and($prices('Löttorpsvarvet 2,9 km, 1,4 km och 800 m'))->toBe([15000, 20000])
         // Same distance as the main race: named by the word the classes start with.
         ->and($prices('Atea Kalmarmilen'))->toBe([35000, 45000])
         ->and($prices('Atea Kalmarmilen DM'))->toBe([30000, 60000])
