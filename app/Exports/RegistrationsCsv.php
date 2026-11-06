@@ -13,7 +13,7 @@ final class RegistrationsCsv
 
     public static function query(Event $event, string $status = 'paid', ?int $raceId = null, string $search = ''): HasManyThrough
     {
-        return $event->allRegistrations()->with('raceClass')
+        return $event->allRegistrations()->with(['raceClass.race', 'raceClass.event'])
             ->when($status === 'paid', fn ($q) => $q->whereNotNull('registrations.paid_at')->whereNull('registrations.refunded_at'))
             ->when($status === 'unpaid', fn ($q) => $q->whereNull('registrations.paid_at'))
             ->when($raceId, fn ($q) => $q->where('race_classes.race_id', $raceId))
@@ -25,23 +25,29 @@ final class RegistrationsCsv
             ->orderBy('bib')->orderBy('last_name')->orderBy('registrations.id');
     }
 
+    /** Only an event with a race that has age groups gets the column (#92). */
+    public static function hasAgeGroups(Event $event): bool
+    {
+        return $event->races()->where('age_groups', true)->exists();
+    }
+
     /** @return list<string> */
-    public static function columns(): array
+    public static function columns(bool $ageGroups = false): array
     {
         return [
             __('registration.class'), __('results.bib'), __('registration.first_name'), __('registration.last_name'),
-            __('registration.birth_date'), __('registration.gender'), __('registration.club'), __('registration.email'),
+            __('registration.birth_date'), __('registration.gender'), ...($ageGroups ? [__('results.age_group')] : []), __('registration.club'), __('registration.email'),
             __('registration.phone'), __('registrations.price'), __('registrations.payment_method'), __('registrations.paid_at'),
             __('registrations.created_at'),
         ];
     }
 
     /** @return list<?string> */
-    public static function row(Registration $r, string $timezone): array
+    public static function row(Registration $r, string $timezone, bool $ageGroups = false): array
     {
         return [
             $r->raceClass->name, $r->bib === null ? null : (string) $r->bib, $r->first_name, $r->last_name,
-            $r->birth_date?->toDateString(), $r->gender, $r->club, $r->email,
+            $r->birth_date?->toDateString(), $r->gender, ...($ageGroups ? [$r->raceClass->ageGroupOf($r)] : []), $r->club, $r->email,
             $r->phone, $r->price === null ? null : number_format($r->price / 100, 2, ',', ''), $r->payment_method ? __("registrations.method.{$r->payment_method}") : null,
             $r->refunded_at ? __('registrations.refunded') : $r->paid_at?->setTimezone($timezone)->format('Y-m-d H:i'), $r->created_at->setTimezone($timezone)->format('Y-m-d H:i'),
         ];
@@ -51,9 +57,10 @@ final class RegistrationsCsv
     public static function csv(Event $event, string $status = 'paid', ?int $raceId = null, string $search = ''): string
     {
         $line = fn (array $cells) => implode(';', array_map(fn ($cell) => str_replace([';', "\r", "\n"], ' ', (string) $cell), $cells));
-        $lines = [$line(self::columns())];
+        $ageGroups = self::hasAgeGroups($event);
+        $lines = [$line(self::columns($ageGroups))];
         foreach (self::query($event, $status, $raceId, $search)->get() as $registration) {
-            $lines[] = $line(self::row($registration, $event->timezone));
+            $lines[] = $line(self::row($registration, $event->timezone, $ageGroups));
         }
 
         return "\xEF\xBB\xBF".implode("\r\n", $lines)."\r\n";

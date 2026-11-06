@@ -4,6 +4,7 @@ use App\Models\Club;
 use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\RaceClass;
+use App\Models\Registration;
 use App\Payments\StripeCheckout;
 use App\Support\Money;
 use Illuminate\Validation\Rule;
@@ -46,11 +47,23 @@ new #[Layout('components.layouts.public')] class extends Component {
                 // A paid race waits until the organizer's Stripe account can take payments.
                 ->map(fn ($r) => $r + ['soon' => $r['price'] > 0 && ! $canPay]),
             'currency' => $this->raceEvent->organizer->currency,
+            'ageGroup' => $this->ageGroup(),
             // Earlier upplagor of the arrangemang, for the runners who look up last year's time.
             'earlier' => $this->raceEvent->series?->events()->whereKeyNot($this->raceEvent->id)->whereNotNull('results_public_at')
                 ->where('date', '<', $this->raceEvent->date)->orderByDesc('date')->get() ?? collect(),
             'clubs' => Club::orderBy('name')->pluck('name'),
         ];
+    }
+
+    /** "Du tävlar i M45" once the class, birth date and gender are filled in, for a race with age groups (#92). */
+    private function ageGroup(): ?string
+    {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->birthDate) || ! $this->raceClassId) {
+            return null;
+        }
+        $class = $this->raceEvent->raceClasses()->with('race')->find((int) $this->raceClassId);
+
+        return $class?->setRelation('event', $this->raceEvent)->ageGroupOf(new Registration(['birth_date' => $this->birthDate, 'gender' => $this->gender ?: null]));
     }
 
     public function register(): void
@@ -156,7 +169,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     <form wire:submit="register" class="flex flex-col gap-4">
         <flux:heading size="lg">{{ __('registration.title') }}</flux:heading>
 
-        <flux:select wire:model="raceClassId" :label="__('registration.class')" :placeholder="__('registration.choose_class')">
+        <flux:select wire:model.live="raceClassId" :label="__('registration.class')" :placeholder="__('registration.choose_class')">
             @foreach ($races as ['race' => $race, 'price' => $price, 'soon' => $soon])
                 @if ($price !== null && ! $soon)
                     @foreach ($race->raceClasses->filter(fn ($class) => ! $class->gender || ! $gender || $class->gender === $gender) as $class)
@@ -166,10 +179,14 @@ new #[Layout('components.layouts.public')] class extends Component {
             @endforeach
         </flux:select>
 
+        @if ($ageGroup)
+            <flux:text class="text-sm">{{ __('registration.your_age_group', ['group' => $ageGroup]) }}</flux:text>
+        @endif
+
         <div class="grid gap-4 sm:grid-cols-2">
             <flux:input wire:model="firstName" :label="__('registration.first_name')" autocomplete="given-name" />
             <flux:input wire:model="lastName" :label="__('registration.last_name')" autocomplete="family-name" />
-            <flux:input wire:model="birthDate" type="date" :label="__('registration.birth_date')" autocomplete="bday" />
+            <flux:input wire:model.live.blur="birthDate" type="date" :label="__('registration.birth_date')" autocomplete="bday" />
             <flux:select wire:model.live="gender" :label="__('registration.gender')" :placeholder="__('registration.gender')">
                 <option value="K">{{ __('registration.gender_k') }}</option>
                 <option value="M">{{ __('registration.gender_m') }}</option>

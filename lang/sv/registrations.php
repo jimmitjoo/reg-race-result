@@ -28,4 +28,5 @@ return [
         'free' => 'Gratis',
         'flexit' => 'Gamla anmälningssystemet',
     ],
+    'per_age_group' => 'Betalda per åldersklass',
 ];

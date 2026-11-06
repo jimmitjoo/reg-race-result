@@ -70,6 +70,9 @@ new #[Layout('components.layouts.public')] class extends Component {
                                 <div class="font-medium">{{ $row->name }}</div>
                                 <div class="text-xs text-zinc-500">{{ $row->club }}</div>
                             </td>
+                            @if ($results->raceClass->race?->age_groups)
+                                <td class="py-1.5 pe-2 text-right text-xs text-zinc-500">{{ $row->ageGroup ? $row->ageGroup.' '.$row->ageGroupPlacing : '' }}</td>
+                            @endif
                             <td class="py-1.5 pe-2 text-right font-mono">{{ $row->time }}</td>
                             <td class="w-12 py-1.5 text-right font-mono text-zinc-500">{{ $row->bib }}</td>
                         </tr>

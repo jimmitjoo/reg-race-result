@@ -23,7 +23,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         return [
             'event' => $this->raceEvent,
             'classes' => $this->raceEvent->raceClasses()->orderBy('start_at')->orderBy('name')
-                ->with(['registrations' => fn ($q) => $q->orderBy('bib')->orderBy('last_name')])
+                ->with(['race', 'event', 'registrations' => fn ($q) => $q->orderBy('bib')->orderBy('last_name')])
                 ->get()
                 ->map(fn ($class) => [
                     'class' => $class,
@@ -53,6 +53,9 @@ new #[Layout('components.layouts.public')] class extends Component {
                         <td class="w-16 py-1 font-mono">{{ $runner->bib }}</td>
                         <td class="py-1">{{ $runner->hidden_at ? __('privacy.anonymous') : $runner->first_name.' '.$runner->last_name }}</td>
                         <td class="py-1 text-zinc-500">{{ $runner->hidden_at ? '' : $runner->club }}</td>
+                        @if ($class->race?->age_groups)
+                            <td class="w-12 py-1 text-right text-zinc-500">{{ $runner->hidden_at ? '' : $class->ageGroupOf($runner) }}</td>
+                        @endif
                     </tr>
                 @endforeach
             </table>

@@ -27,4 +27,5 @@ return [
     'unpaid' => 'Anmälan är inte betald än.',
     'publication_notice' => 'Namn, födelseår, förening och resultat publiceras i start- och resultatlistor.',
     'earlier_results' => 'Resultat från tidigare år',
+    'your_age_group' => 'Du tävlar i åldersklassen :group.',
 ];
