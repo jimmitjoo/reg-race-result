@@ -26,5 +26,6 @@ return [
         'stripe' => 'Card (Stripe)',
         'swish_onsite' => 'Swish on site',
         'free' => 'Free',
+        'flexit' => 'Old registration system',
     ],
 ];
