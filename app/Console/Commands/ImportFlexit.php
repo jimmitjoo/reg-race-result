@@ -118,11 +118,14 @@ class ImportFlexit extends Command
         foreach ($competitions as $competition) {
             $days = self::raceDays($competition['dates'] ?? []);
             $own = collect($classes->get($competition['id'], []));
-            $target = function (array $r) use ($days, $competition) {
+            // On its own race day a competition keeps those ordered after it: the race was put off and the date
+            // never changed (Öland Ultra Trail 2020, on 2020-06-13, with 70 ordered in July and August 2020).
+            $raceDay = in_array($competition['date'], $days, true);
+            $target = function (array $r) use ($days, $competition, $raceDay) {
                 $ordered = substr($r['ordered_at'] ?? '', 0, 10);
                 $day = collect($days)->first(fn ($d) => $d >= $ordered && $d <= CarbonImmutable::parse($ordered)->addDays(400)->toDateString());
 
-                return $day ?? $competition['date'];
+                return $day === null || ($raceDay && $day > $competition['date']) ? $competition['date'] : $day;
             };
             $all = $own->mapWithKeys(fn ($class) => [$class['id'] => collect($registrations->get($class['id'], []))->groupBy($target)]);
             $dates = $all->flatMap(fn ($byDate) => $byDate->keys())->unique()->reject(fn ($d) => $d === $competition['date']);
