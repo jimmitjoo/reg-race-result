@@ -289,7 +289,7 @@ new class extends Component {
             </ol>
         </section>
     @else
-    <flux:input :value="route('public.event', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" readonly copyable :label="__('events.public_link')" />
+    <flux:input :value="$event->publicUrl()" readonly copyable :label="__('events.public_link')" />
 
     <form wire:submit="saveDetails" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
         <flux:heading>{{ __('events.details') }}</flux:heading>
