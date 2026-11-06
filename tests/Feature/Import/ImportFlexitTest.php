@@ -284,3 +284,25 @@ it('makes no upplaga of a competition that has been run without anybody', functi
 
     expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2026-05-09']);
 });
+
+it('takes a first upplaga at another time of year for a race day', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    // Öland Lighthouse Challenge started in August 2022 and has been run in late May since.
+    $dates = [['d' => '2022-08-13'], ['d' => '2023-06-03'], ['d' => '2024-05-31'], ['d' => '2025-05-31']];
+    $runner = fn (string $name, string $ordered) => [
+        'class' => 1, 'first_name' => $name, 'last_name' => 'Ek', 'birth' => '19800101', 'gender' => 'M', 'club' => null, 'email' => 'a@example.com', 'phone' => null,
+        'price' => 99000, 'method' => 'VI', 'paid_at' => "{$ordered}T10:00:00", 'ordered_at' => "{$ordered}T10:00:00", 'campaign' => 'Standard', 'standard' => true,
+    ];
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode([
+        'competitions' => [['id' => 1, 'arrangemang' => 'Öland Lighthouse Challenge', 'race' => 'Öland Lighthouse Challenge', 'date' => '2022-08-13', 'name' => 'Öland Lighthouse Challenge', 'active' => false, 'dates' => $dates]],
+        'classes' => [['id' => 1, 'competition' => 1, 'name' => 'M/K 100 miles', 'sort' => 1]],
+        'prices' => [],
+        'registrations' => [$runner('Juni', '2022-06-15'), $runner('Augusti', '2022-08-10')],
+    ]));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->assertSuccessful();
+
+    expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2022-08-13'])
+        ->and(Event::sole()->registrations()->count())->toBe(2);
+});
