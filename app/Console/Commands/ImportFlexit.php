@@ -156,16 +156,18 @@ class ImportFlexit extends Command
     }
 
     /**
-     * The dates an arrangemang is really run. Those more than 45 days from the time of year it usually is are wrong
-     * ("Hagbloms Nattloppet" on 2023-11-07); of dates within 30 days of each other ("Böda Beachrun kopia" the day
-     * before the race) the one with an active competition is kept, else the one whose runners ordered in the year before it.
+     * The dates an arrangemang is really run: one a year. Every wrong date in the old system shares its year with
+     * the real one ("Hagbloms Nattloppet" on 2023-11-07 and 2023-08-25, "Böda Beachrun kopia" the day before the race),
+     * while a first upplaga at another time of year is alone in its (Öland Lighthouse Challenge in August 2022, later
+     * in May). Of a year's dates the one with an active competition wins, else the one nearest the usual time of year,
+     * else the one whose runners ordered in the year before it.
      *
      * @param  list<array{d: string, active?: int, n?: int, ok?: int}>  $dates
      * @return list<string>
      */
     private static function raceDays(array $dates): array
     {
-        $dates = collect($dates)->keyBy('d')->sortKeys();
+        $dates = collect($dates)->keyBy('d');
         if ($dates->isEmpty()) {
             return [];
         }
@@ -173,18 +175,9 @@ class ImportFlexit extends Command
         $usual = $dates->keys()->map($dayOfYear)->median();
         $apart = fn (string $d) => min(abs($dayOfYear($d) - $usual), 365 - abs($dayOfYear($d) - $usual));
 
-        $days = [];
-        foreach ($dates->filter(fn ($date, $d) => $apart($d) <= 45) as $d => $date) {
-            $last = array_key_last($days);
-            if ($last !== null && CarbonImmutable::parse($days[$last]['d'])->diffInDays(CarbonImmutable::parse($d)) <= 30) {
-                $better = [$date['active'] ?? 0, $date['ok'] ?? 0, $date['n'] ?? 0] > [$days[$last]['active'] ?? 0, $days[$last]['ok'] ?? 0, $days[$last]['n'] ?? 0];
-                $days[$last] = $better ? $date : $days[$last];
-            } else {
-                $days[] = $date;
-            }
-        }
-
-        return array_column($days, 'd');
+        return $dates->groupBy(fn ($date) => substr($date['d'], 0, 4))
+            ->map(fn (Collection $year) => $year->sortBy(fn ($date) => [-($date['active'] ?? 0), $apart($date['d']), -($date['ok'] ?? 0)])->first()['d'])
+            ->sort()->values()->all();
     }
 
     /**
