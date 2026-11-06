@@ -38,6 +38,8 @@ class ImportFlexit extends Command
 
     private array $unpaid = [];
 
+    private array $skipped = [];
+
     private int $noBirthDate = 0;
 
     public function handle(): int
@@ -51,7 +53,7 @@ class ImportFlexit extends Command
 
         DB::beginTransaction();
 
-        foreach (collect($data['competitions'] ?? [])->groupBy(fn ($c) => Series::nameFrom($c['arrangemang'])."\0".$c['date']) as $competitions) {
+        foreach ($this->onePerRaceAndDay(collect($data['competitions'] ?? []), $registrations, $classes)->groupBy(fn ($c) => Series::nameFrom($c['arrangemang'])."\0".$c['date']) as $competitions) {
             $event = $this->event($organizer, $competitions->first());
 
             foreach ($competitions as $competition) {
@@ -79,6 +81,24 @@ class ImportFlexit extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The same race twice on one day is a mistake in the old system ("Ekerumsloppet fel" was the year before,
+     * with the wrong date). The active one is kept, else the newest; the others are listed, never merged in.
+     */
+    private function onePerRaceAndDay(Collection $competitions, Collection $registrations, Collection $classes): Collection
+    {
+        return $competitions->groupBy(fn ($c) => Series::nameFrom($c['arrangemang'])."\0".trim($c['race'])."\0{$c['date']}")
+            ->map(function (Collection $same) use ($registrations, $classes) {
+                $kept = $same->sortByDesc(fn ($c) => [$c['active'] ?? true, $c['id']])->first();
+                foreach ($same->where('id', '!=', $kept['id']) as $c) {
+                    $count = collect($classes->get($c['id'], []))->sum(fn ($class) => count($registrations->get($class['id'], [])));
+                    $this->skipped[] = ($c['name'] ?? $c['race'])." ({$c['date']}, {$count} anmälningar, id {$c['id']})";
+                }
+
+                return $kept;
+            })->values();
     }
 
     private function event(Organizer $organizer, array $competition): Event
@@ -193,6 +213,7 @@ class ImportFlexit extends Command
 
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
         $this->list('Lopp där klasserna hade olika priser. Den dyraste prislistan används; dela loppet om barnklasserna ska vara billigare:', $this->differentPrices);
+        $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);
         if ($this->noBirthDate) {
             $this->warn("{$this->noBirthDate} anmälningar saknar ett giltigt födelsedatum.");

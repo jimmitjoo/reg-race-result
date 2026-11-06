@@ -15,7 +15,7 @@ GO
 -- FOR JSON straight to sqlcmd comes in rows of 2033 characters; one nvarchar(max) does not.
 DECLARE @json nvarchar(max) = (SELECT
     (SELECT c.CompetitionId AS id, RTRIM(g.EventGroupName) AS arrangemang, RTRIM(e.EventName) AS race,
-            CONVERT(char(10), c.CompetitionDate, 23) AS date
+            CONVERT(char(10), c.CompetitionDate, 23) AS date, RTRIM(c.CompetitionName) AS name, c.IsActive AS active
      FROM Competition c
      JOIN Event e ON e.EventId = c.EventId
      JOIN EventGroup g ON g.EventGroupId = e.EventGroupId

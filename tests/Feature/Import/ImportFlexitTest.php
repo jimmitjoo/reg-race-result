@@ -106,3 +106,18 @@ it('reads gender and distance from class names', function (string $name, ?string
     ['10 km Män', 'M', 10000], ['K 10 km', 'K', 10000], ['10km M', 'M', 10000], ['F13 2 km', 'K', 2000],
     ['P/F11 1,3 km', null, 1300], ['P5/F5 400m', null, 400], ['Promenad 5 km', null, 5000],
 ]);
+
+it('takes the active one when the old system has the same race twice on one day', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $data = json_decode(file_get_contents(flexitFile([[], ['class' => 9, 'first_name' => 'Fel']])), true);
+    $data['competitions'][] = ['id' => 9, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2026-12-31', 'name' => 'Sylvesterloppet fel', 'active' => false];
+    $data['classes'][] = ['id' => 9, 'competition' => 9, 'name' => '10 km Kvinnor', 'sort' => 1];
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode($data));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
+        ->expectsOutputToContain('Sylvesterloppet fel (2026-12-31, 1 anmälningar, id 9)')
+        ->assertSuccessful();
+
+    expect(Registration::pluck('first_name')->all())->toBe(['Anna']);
+});
