@@ -135,6 +135,7 @@ it('takes the active one when the old system has the same race twice on one day'
 });
 
 it('puts classes with a price list of their own in a race of their own', function () {
+    $this->travelTo('2026-01-01 12:00:00');
     Organizer::factory()->create(['slug' => 'hogby-if']);
     $step = fn (int $class, int $first, int $last) => [['class' => $class, 'until' => '2026-07-15', 'amount' => $first], ['class' => $class, 'until' => '2026-07-20', 'amount' => $last]];
     $file = tempnam(sys_get_temp_dir(), 'flexit');
@@ -203,6 +204,7 @@ it('moves registrations to the first race day after they were ordered, also from
 });
 
 it('names a race in miles as the old system did', function () {
+    $this->travelTo('2026-01-01 12:00:00');
     Organizer::factory()->create(['slug' => 'hogby-if']);
     $file = tempnam(sys_get_temp_dir(), 'flexit');
     file_put_contents($file, json_encode([
@@ -261,4 +263,24 @@ it('moves this year\'s registrations out of a competition with an old date', fun
     expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2025-08-22'])
         ->and(Event::sole()->registrations()->sole()->first_name)->toBe('Erik')
         ->and(Event::sole()->raceClasses()->count())->toBe(1);
+});
+
+it('makes no upplaga of a competition that has been run without anybody', function () {
+    $this->travelTo('2026-03-01 12:00:00');
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode([
+        'competitions' => [
+            ['id' => 1, 'arrangemang' => 'Ölands Kyrkstafett', 'race' => 'Ölands Kyrkstafett, långa', 'date' => '2025-05-03', 'name' => 'Ölands Kyrkstafett, långa', 'active' => false],
+            // Ahead, with nobody yet: registration may just have opened.
+            ['id' => 2, 'arrangemang' => 'Ölands Kyrkstafett', 'race' => 'Ölands Kyrkstafett, långa', 'date' => '2026-05-09', 'name' => 'Ölands Kyrkstafett, långa', 'active' => true],
+        ],
+        'classes' => [['id' => 1, 'competition' => 1, 'name' => 'Öppen klass', 'sort' => 1], ['id' => 2, 'competition' => 2, 'name' => 'Öppen klass', 'sort' => 1]],
+        'prices' => [],
+        'registrations' => [],
+    ]));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->expectsOutputToContain('Ölands Kyrkstafett 2025-05-03')->assertSuccessful();
+
+    expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2026-05-09']);
 });

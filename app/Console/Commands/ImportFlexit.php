@@ -44,6 +44,8 @@ class ImportFlexit extends Command
 
     private array $moved = [];
 
+    private array $notRun = [];
+
     // Registrations made by this run, to tell a runner who paid twice from one imported before.
     private array $created = [];
 
@@ -63,6 +65,14 @@ class ImportFlexit extends Command
         $competitions = $this->byOrderDate(collect($data['competitions'] ?? []), $classes, $prices, $registrations);
 
         foreach ($this->onePerRaceAndDay($competitions, $registrations, $classes)->groupBy(fn ($c) => Series::nameFrom($c['arrangemang'])."\0".$c['date']) as $competitions) {
+            // An upplaga that has been run without anybody was not run (Ölands Kyrkstafett 2025 has only an empty competition).
+            $runners = $competitions->sum(fn ($c) => collect($classes->get($c['id'], []))->sum(fn ($class) => count($registrations->get($class['id'], []))));
+            if (! $runners && $competitions->first()['date'] < now($organizer->timezone)->toDateString()) {
+                $this->notRun[] = Series::nameFrom($competitions->first()['arrangemang'])." {$competitions->first()['date']}";
+
+                continue;
+            }
+
             $event = $this->event($organizer, $competitions->first());
 
             foreach ($competitions as $competition) {
@@ -378,6 +388,7 @@ class ImportFlexit extends Command
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
         $this->list('Klasser med ett eget pris i gamla systemet, nu i ett eget lopp (byt namn i admin om du vill):', $this->split);
         $this->list('Anmälningar under fel datum i gamla systemet, flyttade till upplagan efter beställningsdagen:', $this->moved);
+        $this->list('Upplagor som har gått utan några anmälningar i gamla systemet, inte skapade:', $this->notRun);
         $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
         $this->list('Betalda två gånger i samma klass (samma namn och födelsedatum). En är importerad; betala tillbaka den andra i gamla systemet:', $this->twice);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);
