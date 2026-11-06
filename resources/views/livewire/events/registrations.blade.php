@@ -34,8 +34,14 @@ new class extends Component {
             ->selectRaw('registrations.race_class_id, count(*) as total, sum(case when registrations.paid_at is not null and registrations.refunded_at is null then 1 else 0 end) as paid')
             ->groupBy('registrations.race_class_id')->get()->keyBy('race_class_id');
 
+        $ageGroups = RegistrationsCsv::hasAgeGroups($this->event);
+
         return [
             'registrations' => RegistrationsCsv::query($this->event, $status, (int) $this->race ?: null, trim($this->search))->paginate(100),
+            'ageGroups' => $ageGroups,
+            // How many paid runners in each age group, for the prizes.
+            'ageGroupCounts' => $ageGroups ? RegistrationsCsv::query($this->event)->get()
+                ->map(fn ($r) => $r->raceClass->ageGroupOf($r))->filter()->countBy()->sortKeys() : collect(),
             'races' => $this->event->races()->with(['raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get(),
             'counts' => $counts,
             'download' => route('events.exports.registrations', [$this->event, ...array_filter($filters)]),
@@ -100,6 +106,13 @@ new class extends Component {
         </flux:select>
     </div>
 
+    @if ($ageGroupCounts->isNotEmpty())
+        <div class="flex flex-col gap-1">
+            <flux:heading size="sm">{{ __('registrations.per_age_group') }}</flux:heading>
+            <flux:text class="text-sm">{{ $ageGroupCounts->map(fn ($n, $group) => "{$group}: {$n}")->implode(' · ') }}</flux:text>
+        </div>
+    @endif
+
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm whitespace-nowrap">
             <thead class="text-zinc-500">
@@ -109,6 +122,7 @@ new class extends Component {
                     <th class="py-1 pe-3">{{ __('results.name') }}</th>
                     <th class="py-1 pe-3">{{ __('registration.birth_date') }}</th>
                     <th class="py-1 pe-3">{{ __('registration.gender') }}</th>
+                    @if ($ageGroups)<th class="py-1 pe-3">{{ __('results.age_group') }}</th>@endif
                     <th class="py-1 pe-3">{{ __('registration.club') }}</th>
                     <th class="py-1 pe-3">{{ __('registration.email') }}</th>
                     <th class="py-1 pe-3">{{ __('registration.phone') }}</th>
@@ -130,6 +144,7 @@ new class extends Component {
                         </td>
                         <td class="py-1 pe-3">{{ $registration->birth_date?->toDateString() }}</td>
                         <td class="py-1 pe-3">{{ $registration->gender }}</td>
+                        @if ($ageGroups)<td class="py-1 pe-3">{{ $registration->raceClass->ageGroupOf($registration) }}</td>@endif
                         <td class="py-1 pe-3">{{ $registration->club }}</td>
                         <td class="py-1 pe-3">{{ $registration->email }}</td>
                         <td class="py-1 pe-3">{{ $registration->phone }}</td>

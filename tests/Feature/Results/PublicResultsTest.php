@@ -66,3 +66,13 @@ it('lets the organizer make the results public and hide them again', function ()
     Volt::test('events.results', ['event' => $event->fresh()])->assertSee('/hogby-if/nattloppet-2026/results')->call('togglePublic');
     expect($event->fresh()->results_public_at)->toBeNull();
 });
+
+it('shows the age group and its placing for a race that counts age groups (#92)', function () {
+    [, $women] = publicResultsEvent();
+    Registration::where('bib', 367)->update(['birth_date' => '1984-02-02', 'gender' => 'K']);
+
+    $this->get('/hogby-if/nattloppet-2026/results')->assertOk()->assertDontSee('K40 1');
+
+    $women->race->update(['age_groups' => true]);
+    $this->get('/hogby-if/nattloppet-2026/results')->assertOk()->assertSee('K40 1');
+});

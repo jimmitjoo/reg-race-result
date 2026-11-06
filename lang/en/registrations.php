@@ -28,4 +28,5 @@ return [
         'free' => 'Free',
         'flexit' => 'Old registration system',
     ],
+    'per_age_group' => 'Paid per age group',
 ];
