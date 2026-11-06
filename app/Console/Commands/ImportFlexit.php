@@ -42,7 +42,7 @@ class ImportFlexit extends Command
 
     private array $twice = [];
 
-    private array $lastYear = [];
+    private array $moved = [];
 
     // Registrations made by this run, to tell a runner who paid twice from one imported before.
     private array $created = [];
@@ -60,7 +60,7 @@ class ImportFlexit extends Command
 
         DB::beginTransaction();
 
-        $competitions = $this->lastYearApart(collect($data['competitions'] ?? []), $classes, $prices, $registrations);
+        $competitions = $this->byOrderDate(collect($data['competitions'] ?? []), $classes, $prices, $registrations);
 
         foreach ($this->onePerRaceAndDay($competitions, $registrations, $classes)->groupBy(fn ($c) => Series::nameFrom($c['arrangemang'])."\0".$c['date']) as $competitions) {
             $event = $this->event($organizer, $competitions->first());
@@ -95,46 +95,86 @@ class ImportFlexit extends Command
     }
 
     /**
-     * Each year the old system moved last year's competition a year on and left an empty one at last year's date
-     * ("Ekerumsloppet fel" on 2026-10-03 holds 2025's runners), or kept last year's runners in this year's
-     * (Lilla Böda Beachrun 2026 has 23 from June 2025). A registration ordered on or before the upplaga before
-     * belongs to it, so it goes there: in a copy of the competition at that date, with the price dates moved
-     * back as many days, so that it meets the empty one's races and classes.
+     * The old system kept registrations under wrong dates both ways: it moved last year's competition a year on
+     * and left an empty one at last year's date ("Ekerumsloppet fel" on 2026-10-03 holds 2025's runners), kept last
+     * year's runners in this year's (Lilla Böda Beachrun), and gave this year's an old date (Hagbloms Nattloppet
+     * 2025's 825 runners are on 2023-11-07). So a registration goes to the arrangemang's first race day on or after
+     * the day it was ordered: in a copy of its competition at that date, with the price dates moved as many days,
+     * where it meets that day's races and classes. A competition left with nobody, at a date that is no race day, goes.
      */
-    private function lastYearApart(Collection $competitions, Collection $classes, Collection $prices, Collection $registrations): Collection
+    private function byOrderDate(Collection $competitions, Collection $classes, Collection $prices, Collection $registrations): Collection
     {
         $out = collect();
         foreach ($competitions as $competition) {
-            $previous = $competition['previous'] ?? null;
-            $old = fn (array $r) => $previous && substr($r['ordered_at'] ?? '', 0, 10) <= $previous;
+            $days = self::raceDays($competition['dates'] ?? []);
             $own = collect($classes->get($competition['id'], []));
-            $moved = $own->sum(fn ($class) => collect($registrations->get($class['id'], []))->filter($old)->count());
-            if (! $moved) {
-                $out[] = $competition;
+            $target = function (array $r) use ($days, $competition) {
+                $ordered = substr($r['ordered_at'] ?? '', 0, 10);
+                $day = collect($days)->first(fn ($d) => $d >= $ordered && $d <= CarbonImmutable::parse($ordered)->addDays(400)->toDateString());
 
-                continue;
+                return $day ?? $competition['date'];
+            };
+            $all = $own->mapWithKeys(fn ($class) => [$class['id'] => collect($registrations->get($class['id'], []))->groupBy($target)]);
+            $dates = $all->flatMap(fn ($byDate) => $byDate->keys())->unique()->reject(fn ($d) => $d === $competition['date']);
+
+            foreach ($dates as $date) {
+                $copy = "{$competition['id']}@{$date}";
+                $shift = (int) CarbonImmutable::parse($competition['date'])->diffInDays(CarbonImmutable::parse($date), false);
+                $classes[$copy] = $own->map(fn ($class) => ['id' => "{$class['id']}@{$date}", 'competition' => $copy] + $class);
+                foreach ($own as $class) {
+                    $registrations["{$class['id']}@{$date}"] = $all[$class['id']]->get($date, collect())->values();
+                    $prices["{$class['id']}@{$date}"] = collect($prices->get($class['id'], []))
+                        ->map(fn ($step) => ['until' => CarbonImmutable::parse($step['until'])->addDays($shift)->toDateString()] + $step);
+                }
+                $out[] = ['id' => $copy, 'date' => $date, 'moved' => true] + $competition;
+                $moved = $all->sum(fn ($byDate) => $byDate->get($date, collect())->count());
+                $this->moved[] = ($competition['name'] ?? $competition['race'])." ({$competition['date']}): {$moved} anmälningar till upplagan {$date}";
             }
 
-            $copy = "{$competition['id']}@{$previous}";
-            $days = (int) CarbonImmutable::parse($previous)->diffInDays(CarbonImmutable::parse($competition['date']));
-            $classes[$copy] = $own->map(fn ($class) => ['id' => "{$class['id']}@{$previous}", 'competition' => $copy] + $class);
+            $left = 0;
             foreach ($own as $class) {
-                $all = collect($registrations->get($class['id'], []));
-                $registrations["{$class['id']}@{$previous}"] = $all->filter($old)->values();
-                $registrations[$class['id']] = $all->reject($old)->values();
-                $prices["{$class['id']}@{$previous}"] = collect($prices->get($class['id'], []))
-                    ->map(fn ($step) => ['until' => CarbonImmutable::parse($step['until'])->subDays($days)->toDateString()] + $step);
+                $registrations[$class['id']] = $all[$class['id']]->get($competition['date'], collect())->values();
+                $left += $registrations[$class['id']]->count();
             }
-            $out[] = ['id' => $copy, 'date' => $previous, 'previous' => null, 'moved' => true] + $competition;
-
-            $left = $own->sum(fn ($class) => count($registrations->get($class['id'], [])));
-            if ($left) {
+            $hadRunners = $all->sum(fn ($byDate) => $byDate->flatten(1)->count()) > 0;
+            if ($left || (! $hadRunners && (! $days || in_array($competition['date'], $days, true)))) {
                 $out[] = $competition;
             }
-            $this->lastYear[] = ($competition['name'] ?? $competition['race'])." ({$competition['date']}): {$moved} anmälningar beställda senast {$previous}, nu i den upplagan".($left ? '' : ', inga andra kvar');
         }
 
         return $out;
+    }
+
+    /**
+     * The dates an arrangemang is really run. Those more than 45 days from the time of year it usually is are wrong
+     * ("Hagbloms Nattloppet" on 2023-11-07); of dates within 30 days of each other ("Böda Beachrun kopia" the day
+     * before the race) the one with an active competition is kept, else the one whose runners ordered in the year before it.
+     *
+     * @param  list<array{d: string, active?: int, n?: int, ok?: int}>  $dates
+     * @return list<string>
+     */
+    private static function raceDays(array $dates): array
+    {
+        $dates = collect($dates)->keyBy('d')->sortKeys();
+        if ($dates->isEmpty()) {
+            return [];
+        }
+        $dayOfYear = fn (string $d) => CarbonImmutable::parse($d)->dayOfYear;
+        $usual = $dates->keys()->map($dayOfYear)->median();
+        $apart = fn (string $d) => min(abs($dayOfYear($d) - $usual), 365 - abs($dayOfYear($d) - $usual));
+
+        $days = [];
+        foreach ($dates->filter(fn ($date, $d) => $apart($d) <= 45) as $d => $date) {
+            $last = array_key_last($days);
+            if ($last !== null && CarbonImmutable::parse($days[$last]['d'])->diffInDays(CarbonImmutable::parse($d)) <= 30) {
+                $better = [$date['active'] ?? 0, $date['ok'] ?? 0, $date['n'] ?? 0] > [$days[$last]['active'] ?? 0, $days[$last]['ok'] ?? 0, $days[$last]['n'] ?? 0];
+                $days[$last] = $better ? $date : $days[$last];
+            } else {
+                $days[] = $date;
+            }
+        }
+
+        return array_column($days, 'd');
     }
 
     /**
@@ -337,7 +377,7 @@ class ImportFlexit extends Command
 
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
         $this->list('Klasser med ett eget pris i gamla systemet, nu i ett eget lopp (byt namn i admin om du vill):', $this->split);
-        $this->list('Förra årets anmälningar i årets tävling i gamla systemet, flyttade till förra upplagan:', $this->lastYear);
+        $this->list('Anmälningar under fel datum i gamla systemet, flyttade till upplagan efter beställningsdagen:', $this->moved);
         $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
         $this->list('Betalda två gånger i samma klass (samma namn och födelsedatum). En är importerad; betala tillbaka den andra i gamla systemet:', $this->twice);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);

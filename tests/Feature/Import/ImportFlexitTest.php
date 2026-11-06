@@ -171,24 +171,26 @@ it('puts classes with a price list of their own in a race of their own', functio
         ->and($prices('Atea Kalmarmilen 13 år o yngre'))->toBe([10000, 15000]);
 });
 
-it('moves last year\'s registrations to last year\'s upplaga, also from a copy at the wrong date', function () {
+it('moves registrations to the first race day after they were ordered, also from a copy at the wrong date', function () {
     Organizer::factory()->create(['slug' => 'hogby-if']);
     $data = json_decode(file_get_contents(flexitFile([
         ['class' => 1, 'first_name' => 'Ny', 'ordered_at' => '2026-12-01T10:00:00', 'paid_at' => '2026-12-01T10:00:00'],
         ['class' => 1, 'first_name' => 'Gammal', 'ordered_at' => '2025-12-30T10:00:00', 'paid_at' => '2025-12-30T10:00:00'],
         ['class' => 9, 'first_name' => 'Kopia', 'ordered_at' => '2025-12-20T10:00:00', 'paid_at' => '2025-12-20T10:00:00'],
     ])), true);
-    $data['competitions'] = array_map(fn ($c) => $c + ['previous' => '2025-12-31'], $data['competitions']);
+    // The copy on 2026-12-30 is no race day: the active competition the day after wins.
+    $dates = [['d' => '2025-12-31', 'active' => 0, 'n' => 1, 'ok' => 0], ['d' => '2026-12-30', 'active' => 0, 'n' => 1, 'ok' => 0], ['d' => '2026-12-31', 'active' => 1, 'n' => 2, 'ok' => 1]];
+    $data['competitions'] = array_map(fn ($c) => $c + ['dates' => $dates], $data['competitions']);
     // The empty competition at last year's date, which last year's runners were moved out of.
-    $data['competitions'][] = ['id' => 8, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2025-12-31', 'name' => 'Sylvesterloppet', 'active' => false, 'previous' => null];
+    $data['competitions'][] = ['id' => 8, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2025-12-31', 'name' => 'Sylvesterloppet', 'active' => false, 'dates' => $dates];
     $data['classes'][] = ['id' => 8, 'competition' => 8, 'name' => '10 km Kvinnor', 'sort' => 1];
-    $data['competitions'][] = ['id' => 9, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2026-12-30', 'name' => 'Sylvesterloppet kopia', 'active' => false, 'previous' => '2025-12-31'];
+    $data['competitions'][] = ['id' => 9, 'arrangemang' => 'Sylvesterloppet', 'race' => 'Sylvesterloppet', 'date' => '2026-12-30', 'name' => 'Sylvesterloppet kopia', 'active' => false, 'dates' => $dates];
     $data['classes'][] = ['id' => 9, 'competition' => 9, 'name' => '10 km Kvinnor', 'sort' => 1];
     $file = tempnam(sys_get_temp_dir(), 'flexit');
     file_put_contents($file, json_encode($data));
 
     $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
-        ->expectsOutputToContain('Sylvesterloppet kopia (2026-12-30): 1 anmälningar beställda senast 2025-12-31, nu i den upplagan, inga andra kvar')
+        ->expectsOutputToContain('Sylvesterloppet kopia (2026-12-30): 1 anmälningar till upplagan 2025-12-31')
         ->assertSuccessful();
 
     $runners = fn (string $date) => Event::whereDate('date', $date)->sole()->registrations()->orderBy('first_name')->pluck('first_name')->all();
@@ -230,4 +232,33 @@ it('imports a team class with its size, and two teams from the same contact (#31
     expect(RaceClass::where('name', '10 km Kvinnor')->sole()->team_size)->toBe(3)
         ->and(Registration::orderBy('team_name')->get()->map(fn ($r) => [$r->team_name, $r->team_members])->all())
         ->toBe([['Kyrkans Gamlingar', ['D', 'E']], ['Kyrkans Löpare', ['A', 'B', 'C']]]);
+});
+
+it('moves this year\'s registrations out of a competition with an old date', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $dates = [['d' => '2023-08-25', 'ok' => 5], ['d' => '2023-11-07', 'ok' => 0], ['d' => '2024-02-06', 'ok' => 0], ['d' => '2024-08-23', 'ok' => 5], ['d' => '2025-08-22', 'ok' => 0]];
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode([
+        'competitions' => [
+            // Hagbloms Nattloppet 2025's runners, under 2023-11-07; 2025-08-22 is the empty competition they belong in.
+            ['id' => 1, 'arrangemang' => 'Hagbloms Nattloppet', 'race' => 'Hagbloms Nattloppet', 'date' => '2023-11-07', 'name' => 'Hagbloms Nattloppet', 'active' => false, 'dates' => $dates],
+            ['id' => 2, 'arrangemang' => 'Hagbloms Nattloppet', 'race' => 'Hagbloms Nattloppet', 'date' => '2025-08-22', 'name' => 'Hagbloms Nattloppet', 'active' => false, 'dates' => $dates],
+            // An empty copy at a date that is no race day makes no upplaga.
+            ['id' => 3, 'arrangemang' => 'Hagbloms Nattloppet', 'race' => 'Hagbloms Nattloppet', 'date' => '2024-02-06', 'name' => 'Kopia av Hagbloms Nattloppet', 'active' => false, 'dates' => $dates],
+        ],
+        'classes' => [['id' => 1, 'competition' => 1, 'name' => '10 km Män', 'sort' => 1], ['id' => 2, 'competition' => 2, 'name' => '10 km Män', 'sort' => 1], ['id' => 3, 'competition' => 3, 'name' => '10 km Män', 'sort' => 1]],
+        'prices' => [['class' => 1, 'until' => '2023-10-31', 'amount' => 35000], ['class' => 2, 'until' => '2025-08-15', 'amount' => 35000]],
+        'registrations' => [[
+            'class' => 1, 'first_name' => 'Erik', 'last_name' => 'Ek', 'birth' => '19800101', 'gender' => 'M', 'club' => null, 'email' => 'erik@example.com', 'phone' => null,
+            'price' => 35000, 'method' => 'VI', 'paid_at' => '2025-03-01T10:00:00', 'ordered_at' => '2025-03-01T10:00:00', 'campaign' => 'Standard', 'standard' => true,
+        ]],
+    ]));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])
+        ->expectsOutputToContain('Hagbloms Nattloppet (2023-11-07): 1 anmälningar till upplagan 2025-08-22')
+        ->assertSuccessful();
+
+    expect(Event::pluck('date')->map->toDateString()->all())->toBe(['2025-08-22'])
+        ->and(Event::sole()->registrations()->sole()->first_name)->toBe('Erik')
+        ->and(Event::sole()->raceClasses()->count())->toBe(1);
 });

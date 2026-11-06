@@ -3,8 +3,9 @@
 --
 --   sqlcmd -C -S localhost -U sa -P … -d Hogby -v from=2026-11-06 -i flexit.sql -y 0 -o flexit.json
 --
--- `from` is the first race day to export. The file holds names, birth dates, email and phone:
--- delete it once it is imported.
+-- `from` is the first race day to export. A competition with an earlier date comes along when it has
+-- registrations ordered since a month before: the old system kept them under wrong dates (#14).
+-- The file holds names, birth dates, email and phone: delete it once it is imported.
 
 SET NOCOUNT ON;
 
@@ -12,17 +13,31 @@ SET NOCOUNT ON;
 ALTER DATABASE CURRENT SET COMPATIBILITY_LEVEL = 150;
 GO
 
+DECLARE @ids TABLE (id int PRIMARY KEY);
+INSERT @ids SELECT c.CompetitionId FROM Competition c
+WHERE c.CompetitionDate >= '$(from)' OR EXISTS (
+    SELECT 1 FROM Class cl JOIN Registration r ON r.ClassId = cl.ClassId
+    JOIN OrderDetail od ON od.RegistrationId = r.RegistrationId JOIN [Order] o ON o.OrderId = od.OrderId
+    WHERE cl.CompetitionId = c.CompetitionId AND o.DateOrder >= DATEADD(day, -30, '$(from)'));
+
 -- FOR JSON straight to sqlcmd comes in rows of 2033 characters; one nvarchar(max) does not.
 DECLARE @json nvarchar(max) = (SELECT
     (SELECT c.CompetitionId AS id, RTRIM(g.EventGroupName) AS arrangemang, RTRIM(e.EventName) AS race,
             CONVERT(char(10), c.CompetitionDate, 23) AS date, RTRIM(c.CompetitionName) AS name, c.IsActive AS active,
-            -- The upplaga before, at least half a year earlier so that a copy with the wrong date does not count.
-            (SELECT CONVERT(char(10), MAX(p.CompetitionDate), 23) FROM Competition p JOIN Event pe ON pe.EventId = p.EventId
-             WHERE pe.EventGroupId = e.EventGroupId AND p.CompetitionDate < DATEADD(day, -180, c.CompetitionDate)) AS previous
+            -- Every date the arrangemang has had, for telling the race days from the wrong dates: whether a
+            -- competition on it is active, how many there are, and how many registrations were ordered in the year before it.
+            (SELECT x.d, MAX(x.active) AS active, COUNT(*) AS n, SUM(x.ok) AS ok
+             FROM (SELECT CONVERT(char(10), p.CompetitionDate, 23) AS d, CAST(p.IsActive AS int) AS active,
+                          (SELECT COUNT(*) FROM Class pcl JOIN Registration pr ON pr.ClassId = pcl.ClassId
+                           JOIN OrderDetail pod ON pod.RegistrationId = pr.RegistrationId JOIN [Order] po ON po.OrderId = pod.OrderId
+                           WHERE pcl.CompetitionId = p.CompetitionId AND po.DateOrder <= p.CompetitionDate
+                             AND po.DateOrder > DATEADD(day, -365, p.CompetitionDate)) AS ok
+                   FROM Competition p JOIN Event pe ON pe.EventId = p.EventId WHERE pe.EventGroupId = e.EventGroupId) x
+             GROUP BY x.d FOR JSON PATH) AS dates
      FROM Competition c
      JOIN Event e ON e.EventId = c.EventId
      JOIN EventGroup g ON g.EventGroupId = e.EventGroupId
-     WHERE c.CompetitionDate >= '$(from)'
+     WHERE c.CompetitionId IN (SELECT id FROM @ids)
      FOR JSON PATH) AS competitions,
 
     -- Active classes, and inactive ones that still have registrations.
@@ -30,8 +45,7 @@ DECLARE @json nvarchar(max) = (SELECT
             -- A team class names its members in team attributes ("För- och efternamn deltagare 1" …).
             CASE WHEN cl.IsTeam = 1 THEN (SELECT NULLIF(COUNT(*), 0) FROM Attribute a WHERE a.CompetitionId = cl.CompetitionId AND a.IsTeamAttribute = 1 AND a.IsActive = 1) END AS team_size
      FROM Class cl
-     JOIN Competition c ON c.CompetitionId = cl.CompetitionId
-     WHERE c.CompetitionDate >= '$(from)'
+     WHERE cl.CompetitionId IN (SELECT id FROM @ids)
        AND (cl.IsActive = 1 OR EXISTS (SELECT 1 FROM Registration r WHERE r.ClassId = cl.ClassId))
      FOR JSON PATH) AS classes,
 
@@ -41,7 +55,7 @@ DECLARE @json nvarchar(max) = (SELECT
      JOIN Campaign k ON k.CampaignId = pc.CampaignId AND k.IsDefault = 1
      JOIN Period p ON p.PeriodId = pc.PeriodId
      JOIN Competition c ON c.CompetitionId = p.CompetitionId
-     WHERE c.CompetitionDate >= '$(from)' AND pc.Price IS NOT NULL
+     WHERE c.CompetitionId IN (SELECT id FROM @ids) AND pc.Price IS NOT NULL
      FOR JSON PATH) AS prices,
 
     -- Only the birth date leaves the database, never the last four digits of the personnummer.
@@ -71,7 +85,7 @@ DECLARE @json nvarchar(max) = (SELECT
      LEFT JOIN OrderDetail od ON od.RegistrationId = r.RegistrationId
      LEFT JOIN [Order] o ON o.OrderId = od.OrderId
      LEFT JOIN PaymentMethod pm ON pm.PaymentMethodId = o.PaymentMethodId
-     WHERE c.CompetitionDate >= '$(from)'
+     WHERE c.CompetitionId IN (SELECT id FROM @ids)
      FOR JSON PATH, INCLUDE_NULL_VALUES) AS registrations
 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
 
