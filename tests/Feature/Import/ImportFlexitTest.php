@@ -5,6 +5,7 @@ use App\Models\Club;
 use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\Race;
+use App\Models\RaceClass;
 use App\Models\Registration;
 use App\Models\Series;
 use Illuminate\Support\Facades\Mail;
@@ -115,7 +116,7 @@ it('reads gender and distance from class names', function (string $name, ?string
     expect(ImportFlexit::genderFrom($name))->toBe($gender)->and(ImportFlexit::distanceFrom($name))->toBe($meters);
 })->with([
     ['10 km Män', 'M', 10000], ['K 10 km', 'K', 10000], ['10km M', 'M', 10000], ['F13 2 km', 'K', 2000],
-    ['P/F11 1,3 km', null, 1300], ['P5/F5 400m', null, 400], ['Promenad 5 km', null, 5000],
+    ['P/F11 1,3 km', null, 1300], ['P5/F5 400m', null, 400], ['Promenad 5 km', null, 5000], ['M/K 100 miles', null, 160934],
 ]);
 
 it('takes the active one when the old system has the same race twice on one day', function () {
@@ -188,4 +189,20 @@ it('leaves out registrations for last year\'s upplaga, and a copy that only has 
         ->assertSuccessful();
 
     expect(Registration::pluck('first_name')->all())->toBe(['Ny'])->and(Event::count())->toBe(1);
+});
+
+it('names a race in miles as the old system did', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode([
+        'competitions' => [['id' => 1, 'arrangemang' => 'Öland Lighthouse Challenge', 'race' => 'Öland Lighthouse Challenge', 'date' => '2026-05-29', 'name' => 'Öland Lighthouse Challenge', 'active' => true]],
+        'classes' => [['id' => 1, 'competition' => 1, 'name' => 'M/K 100 miles', 'sort' => 1], ['id' => 2, 'competition' => 1, 'name' => 'M/K 50 miles', 'sort' => 2], ['id' => 3, 'competition' => 1, 'name' => 'M/K 50 km', 'sort' => 3]],
+        'prices' => [['class' => 1, 'until' => '2026-05-22', 'amount' => 149000], ['class' => 2, 'until' => '2026-05-22', 'amount' => 99000], ['class' => 3, 'until' => '2026-05-22', 'amount' => 59000]],
+        'registrations' => [],
+    ]));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->assertSuccessful();
+
+    expect(Race::orderBy('name')->pluck('name')->all())->toBe(['Öland Lighthouse Challenge', 'Öland Lighthouse Challenge 50 km', 'Öland Lighthouse Challenge 50 miles'])
+        ->and(RaceClass::where('name', 'M/K 50 miles')->sole()->distance_meters)->toBe(80467);
 });

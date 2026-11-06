@@ -193,9 +193,11 @@ class ImportFlexit extends Command
         $distances = fn (Collection $names) => $names->map(fn ($name) => self::distanceFrom($name))->filter()->unique()->sortDesc()->values()->all();
         $own = $distances($names);
         if ($own && $own !== $distances($mainNames)) {
-            return collect($own)->map(fn ($m) => $m >= 1000 ? str_replace('.', ',', rtrim(rtrim(number_format($m / 1000, 1, '.', ''), '0'), '.')).' km' : "{$m} m")->join(', ', ' och ');
+            return $names->filter(fn ($name) => self::distanceFrom($name))
+                ->mapWithKeys(fn ($name) => [self::distanceFrom($name) => self::distanceLabel($name)])
+                ->sortKeysDesc()->join(', ', ' och ');
         }
-        $rest = $names->map(fn ($name) => self::clean(preg_replace('/\d+(?:[,.]\d+)?\s?k?m\b/iu', '', $name)))->filter()->values();
+        $rest = $names->map(fn ($name) => self::clean(preg_replace('/\d+(?:[,.]\d+)?\s?(?:k?m|miles?)\b/iu', '', $name)))->filter()->values();
         if ($rest->count() === 1 && $names->count() === 1) {
             return $rest->first();
         }
@@ -369,9 +371,24 @@ class ImportFlexit extends Command
         };
     }
 
-    /** "10 km", "1,3 km", "10km", "400m" → meters. */
+    /** How a race name says the distance: "50 miles" as written, else "1,4 km" or "800 m". */
+    private static function distanceLabel(string $name): string
+    {
+        if (preg_match('/(\d+(?:[,.]\d+)?)\s?miles?\b/iu', $name, $m)) {
+            return "{$m[1]} miles";
+        }
+        $meters = self::distanceFrom($name);
+
+        return $meters >= 1000 ? str_replace('.', ',', rtrim(rtrim(number_format($meters / 1000, 1, '.', ''), '0'), '.')).' km' : "{$meters} m";
+    }
+
+    /** "10 km", "1,3 km", "10km", "400m", "50 miles" → meters. */
     public static function distanceFrom(string $name): ?int
     {
+        // Öland Lighthouse Challenge runs 100 and 50 miles.
+        if (preg_match('/(\d+(?:[,.]\d+)?)\s?miles?\b/iu', $name, $m)) {
+            return (int) round((float) str_replace(',', '.', $m[1]) * 1609.344);
+        }
         if (preg_match('/(\d+(?:[,.]\d+)?)\s?km\b/iu', $name, $m)) {
             return (int) round((float) str_replace(',', '.', $m[1]) * 1000);
         }
