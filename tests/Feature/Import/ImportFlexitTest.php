@@ -131,3 +131,19 @@ it('takes the active one when the old system has the same race twice on one day'
 
     expect(Registration::pluck('first_name')->all())->toBe(['Anna']);
 });
+
+it('puts age group classes in Män and Kvinnor and counts the age groups from the birth date', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+    $data = json_decode(file_get_contents(flexitFile([['class' => 21, 'first_name' => 'Gun'], ['class' => 22, 'first_name' => 'Kim', 'gender' => 'K']])), true);
+    $data['competitions'][] = ['id' => 20, 'arrangemang' => 'Ölands Marathon', 'race' => 'Ölands Marathon', 'date' => '2026-08-08', 'name' => 'Ölands Marathon', 'active' => true];
+    array_push($data['classes'], ['id' => 20, 'competition' => 20, 'name' => 'Kvinnor', 'sort' => 1], ['id' => 21, 'competition' => 20, 'name' => 'K35', 'sort' => 2], ['id' => 22, 'competition' => 20, 'name' => 'K 40', 'sort' => 3]);
+    $file = tempnam(sys_get_temp_dir(), 'flexit');
+    file_put_contents($file, json_encode($data));
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => $file])->expectsOutputToContain('Ölands Marathon: 2 klasser')->assertSuccessful();
+
+    $event = Series::where('name', 'Ölands Marathon')->sole()->events()->sole();
+    expect($event->raceClasses()->pluck('name')->all())->toBe(['Kvinnor'])
+        ->and($event->races()->sole()->age_groups)->toBeTrue()
+        ->and($event->raceClasses()->sole()->registrations()->pluck('first_name')->sort()->values()->all())->toBe(['Gun', 'Kim']);
+});

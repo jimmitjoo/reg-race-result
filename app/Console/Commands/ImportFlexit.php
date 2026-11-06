@@ -42,6 +42,8 @@ class ImportFlexit extends Command
 
     private array $twice = [];
 
+    private array $ageGroups = [];
+
     // Registrations made by this run, to tell a runner who paid twice from one imported before.
     private array $created = [];
 
@@ -137,6 +139,14 @@ class ImportFlexit extends Command
     private function raceClass(Event $event, Race $race, array $class): RaceClass
     {
         $name = preg_replace('/\s+/u', ' ', trim($class['name']));
+
+        // M35, K40 … as classes of their own: here they are counted from the birth date, within Män and Kvinnor.
+        if (preg_match('/^([MK]) ?(\d{2})$/u', $name, $m) && (int) $m[2] >= 35) {
+            $name = $m[1] === 'M' ? 'Män' : 'Kvinnor';
+            $race->age_groups || $race->update(['age_groups' => true]);
+            $this->ageGroups[$race->name] = ($this->ageGroups[$race->name] ?? 0) + 1;
+        }
+
         $existing = $event->raceClasses()->where('race_id', $race->id)->where('name', $name)->first();
         $this->count('klasser', $existing ? 'fanns' : 'nya');
 
@@ -224,6 +234,7 @@ class ImportFlexit extends Command
 
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
         $this->list('Lopp där klasserna hade olika priser. Den dyraste prislistan används; dela loppet om barnklasserna ska vara billigare:', $this->differentPrices);
+        $this->list('Åldersklasser som var egna klasser, nu i Män och Kvinnor med åldersklasser i resultatet:', collect($this->ageGroups)->map(fn ($n, $race) => "{$race}: {$n} klasser")->values()->all());
         $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
         $this->list('Betalda två gånger i samma klass (samma namn och födelsedatum). En är importerad; betala tillbaka den andra i gamla systemet:', $this->twice);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);
