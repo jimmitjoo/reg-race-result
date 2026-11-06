@@ -127,9 +127,9 @@ class ImportFlexit extends Command
             $this->differentPrices[] = $race->name;
         }
 
-        // The dearest list, so that no class becomes cheaper than it was.
-        foreach ($curves->sortByDesc(fn ($curve) => array_sum(array_column($curve, 1)))->first() as [$until, $amount]) {
-            $race->priceSteps()->create(['until' => $until, 'amount' => $amount]);
+        // The highest price of each period, so that no class becomes cheaper than it was.
+        foreach ($perClass->flatten(1)->groupBy('until')->sortKeys() as $until => $steps) {
+            $race->priceSteps()->create(['until' => $until, 'amount' => $steps->max('amount')]);
         }
         $this->count('prislistor', 'nya');
     }
@@ -223,7 +223,7 @@ class ImportFlexit extends Command
         $this->table(['', 'nya', 'fanns', 'dubbla'], collect($this->counts)->map(fn ($c, $label) => [$label, $c['nya'] ?? 0, $c['fanns'] ?? 0, $c['dubbla'] ?? 0])->values());
 
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
-        $this->list('Lopp där klasserna hade olika priser. Den dyraste prislistan används; dela loppet om barnklasserna ska vara billigare:', $this->differentPrices);
+        $this->list('Lopp där klasserna hade olika priser. Det högsta priset i varje period används; dela loppet om några klasser ska vara billigare:', $this->differentPrices);
         $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
         $this->list('Betalda två gånger i samma klass (samma namn och födelsedatum). En är importerad; betala tillbaka den andra i gamla systemet:', $this->twice);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);
