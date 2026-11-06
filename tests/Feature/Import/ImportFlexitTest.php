@@ -86,6 +86,16 @@ it('imports paid registrations without mailing receipts, keeping only the birth 
         ->payment_method->toBe('free')->note->toBe('Kampanj: Högby IF')->and(Event::sole()->registrations()->count())->toBe(2);
 });
 
+it('imports a runner who paid twice in the same class once, and says so', function () {
+    Organizer::factory()->create(['slug' => 'hogby-if']);
+
+    $this->artisan('import:flexit', ['organizer' => 'hogby-if', 'file' => flexitFile([[], []])])
+        ->expectsOutputToContain('Anna Karlsson (10 km Kvinnor)')
+        ->assertSuccessful();
+
+    expect(Registration::count())->toBe(1);
+});
+
 it('adds nothing on a second run, and nothing at all on a dry run', function () {
     Organizer::factory()->create(['slug' => 'hogby-if']);
     $file = flexitFile([[]]);

@@ -40,6 +40,11 @@ class ImportFlexit extends Command
 
     private array $skipped = [];
 
+    private array $twice = [];
+
+    // Registrations made by this run, to tell a runner who paid twice from one imported before.
+    private array $created = [];
+
     private int $noBirthDate = 0;
 
     public function handle(): int
@@ -153,7 +158,7 @@ class ImportFlexit extends Command
 
     private function registration(Organizer $organizer, RaceClass $class, array $row): void
     {
-        $name = trim("{$row['first_name']} {$row['last_name']}");
+        $name = trim($row['first_name']).' '.trim($row['last_name']);
 
         // Gratis order (GO) has no payment date. Unpaid card orders were abandoned; bankgiro may still come.
         if (! $row['paid_at'] && $row['method'] !== 'GO') {
@@ -169,8 +174,13 @@ class ImportFlexit extends Command
         // The date is stored with a time, so it is compared as a date.
         $same = Registration::where(collect($attributes)->except('birth_date')->all())
             ->when($birthDate, fn ($q) => $q->whereDate('birth_date', $birthDate), fn ($q) => $q->whereNull('birth_date'));
-        if ($same->exists()) {
-            $this->count('anmälningar', 'fanns');
+        if ($existing = $same->first()) {
+            if (in_array($existing->id, $this->created, true)) {
+                $this->twice[] = "{$name} ({$class->name})";
+                $this->count('anmälningar', 'dubbla');
+            } else {
+                $this->count('anmälningar', 'fanns');
+            }
 
             return;
         }
@@ -191,6 +201,7 @@ class ImportFlexit extends Command
         ]);
         $registration->created_at = self::utc($row['ordered_at'], $organizer);
         $registration->save();
+        $this->created[] = $registration->id;
         $this->count('anmälningar', 'nya');
     }
 
@@ -209,11 +220,12 @@ class ImportFlexit extends Command
 
     private function report(): void
     {
-        $this->table(['', 'nya', 'fanns'], collect($this->counts)->map(fn ($c, $label) => [$label, $c['nya'] ?? 0, $c['fanns'] ?? 0])->values());
+        $this->table(['', 'nya', 'fanns', 'dubbla'], collect($this->counts)->map(fn ($c, $label) => [$label, $c['nya'] ?? 0, $c['fanns'] ?? 0, $c['dubbla'] ?? 0])->values());
 
         $this->list('Klasser utan starttid i gamla systemet, satta till '.self::PLACEHOLDER_START.'. Ändra dem i admin:', $this->needsStartTime);
         $this->list('Lopp där klasserna hade olika priser. Den dyraste prislistan används; dela loppet om barnklasserna ska vara billigare:', $this->differentPrices);
         $this->list('Samma lopp flera gånger samma dag i gamla systemet. Bara den aktiva är importerad; kontrollera de här och deras datum:', $this->skipped);
+        $this->list('Betalda två gånger i samma klass (samma namn och födelsedatum). En är importerad; betala tillbaka den andra i gamla systemet:', $this->twice);
         $this->list('Obetalda anmälningar, inte importerade (kort som avbröts, bankgiro som kanske kommer):', $this->unpaid);
         if ($this->noBirthDate) {
             $this->warn("{$this->noBirthDate} anmälningar saknar ett giltigt födelsedatum.");
