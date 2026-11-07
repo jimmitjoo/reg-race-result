@@ -294,7 +294,7 @@ it('rejects a start time like 25:00 instead of failing', function () {
 it('shows the public link and whether registration is open or ended per race', function () {
     $this->travelTo('2026-11-15 12:00:00');
     $user = organizerUser();
-    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id, 'date' => '2026-12-31']);
     $open = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet']);
     $open->priceSteps()->createMany([['until' => '2026-11-30', 'amount' => 25000], ['until' => '2026-12-30', 'amount' => 30000]]);
     $ended = Race::factory()->for($event)->create(['name' => 'Gamla loppet']);

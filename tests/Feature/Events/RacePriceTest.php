@@ -6,7 +6,7 @@ use Carbon\CarbonImmutable;
 
 function raceWithSteps(): Race
 {
-    $race = Race::factory()->for(Event::factory()->create(['timezone' => 'Europe/Stockholm']))->create(['onsite_price' => 35000]);
+    $race = Race::factory()->for(Event::factory()->create(['timezone' => 'Europe/Stockholm', 'date' => '2026-12-31']))->create(['onsite_price' => 35000]);
     $race->priceSteps()->createMany([
         ['until' => '2026-12-30', 'amount' => 30000],
         ['until' => '2026-11-30', 'amount' => 25000],
