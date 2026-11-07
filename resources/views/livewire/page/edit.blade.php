@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Event;
 use App\Support\Page;
 use App\Support\Theme;
 use Illuminate\Support\Facades\URL;
@@ -9,10 +10,13 @@ use Livewire\WithFileUploads;
 /*
  * The block editor for the organizer's page (#115): the page as it will look, a block changed where it
  * stands, added with + and moved by dragging or with the arrows. Every change is a draft; Publicera makes
- * it the page, once nothing on it would shut someone out.
+ * it the page, once nothing on it would shut someone out. The same for an upplaga's page, around its
+ * registration, each block shown always or only while the upplaga is in a state.
  */
 new class extends Component {
     use WithFileUploads;
+
+    public ?Event $event = null;
 
     public array $blocks = [];
 
@@ -29,15 +33,28 @@ new class extends Component {
 
     public $backgroundUpload = null;
 
-    public function mount(): void
+    public function mount(?Event $event = null): void
     {
         abort_unless(auth()->user()->organizer_id, 403);
-        $this->blocks = Page::for($this->organizer(), draft: true);
+        $this->event = $event?->exists ? $event : null;
+        $this->blocks = Page::for($this->owner(), draft: true);
     }
 
     private function organizer(): App\Models\Organizer
     {
         return auth()->user()->organizer;
+    }
+
+    /** Whose page this is: the upplaga's, or the organizer's. */
+    private function owner(): App\Models\Organizer|Event
+    {
+        return $this->event ?? $this->organizer();
+    }
+
+    /** The blocks that can be added: the page's kind, and one registration at most. */
+    private function types(): array
+    {
+        return array_values(array_filter(Page::types($this->owner()), fn ($type) => $type !== 'registration' || ! collect($this->blocks)->contains('type', 'registration')));
     }
 
     private function index(string $id): int
@@ -51,7 +68,7 @@ new class extends Component {
     private function save(): void
     {
         $this->validate(Page::rules());
-        $this->organizer()->update(['page_draft' => $this->blocks]);
+        $this->owner()->update(['page_draft' => $this->blocks]);
     }
 
     public function updated(string $property): void
@@ -138,7 +155,7 @@ new class extends Component {
 
     public function add(string $type, int $at): void
     {
-        abort_unless(in_array($type, Page::TYPES, true), 404);
+        abort_unless(in_array($type, $this->types(), true), 404);
         $block = Page::block($type);
         array_splice($this->blocks, max(0, min(count($this->blocks), $at)), 0, [$block]);
         [$this->addingAt, $this->removed] = [null, null];
@@ -192,7 +209,7 @@ new class extends Component {
             return;
         }
         $this->validate(Page::rules());
-        $this->organizer()->update(['page' => $this->blocks, 'page_draft' => null]);
+        $this->owner()->update(['page' => $this->blocks, 'page_draft' => null]);
         $this->removed = null;
         $this->dispatch('page-published');
     }
@@ -200,31 +217,42 @@ new class extends Component {
     /** Back to the published page. */
     public function discard(): void
     {
-        $this->organizer()->update(['page_draft' => null]);
+        $this->owner()->update(['page_draft' => null]);
         // Anew, since the text written in place is the browser's until then.
-        $this->redirectRoute('page.edit', navigate: true);
+        $this->event ? $this->redirectRoute('events.page', $this->event, navigate: true) : $this->redirectRoute('page.edit', navigate: true);
     }
 
     public function with(): array
     {
         $organizer = $this->organizer();
-        $theme = Theme::for($organizer, null, true);
+        $event = $this->event;
+        $theme = Theme::for($organizer, $event, true);
         $forms = Page::forms($organizer);
 
         return [
             'organizer' => $organizer,
+            'edition' => $event,
+            'types' => $this->types(),
             'editor' => true,
             'spans' => Page::spans($this->blocks),
             'spaces' => Page::spaces($this->blocks),
             'selected' => collect($this->blocks)->firstWhere('id', $this->editing),
             'problems' => collect(Page::problems($this->blocks, $forms->keys()->all()))->groupBy('id'),
             'forms' => $forms,
-            'unpublished' => $organizer->page_draft !== null,
+            'unpublished' => $this->owner()->page_draft !== null,
             'css' => Theme::css($theme, '.theme-preview'),
             'logo' => Theme::logoUrl($theme),
-            'pageUrl' => route('public.organizer', $organizer->slug),
-            'previewUrl' => URL::signedRoute('public.organizer', ['organizer' => $organizer->slug, 'forhandsvisning' => 1]),
-            ...Page::events($organizer),
+            'pageUrl' => $event ? $event->publicUrl() : route('public.organizer', $organizer->slug),
+            'previewUrl' => $event
+                ? URL::signedRoute('public.event', ['organizer' => $organizer->slug, 'event' => $event->slug, 'forhandsvisning' => 1])
+                : URL::signedRoute('public.organizer', ['organizer' => $organizer->slug, 'forhandsvisning' => 1]),
+            ...($event ? [
+                'races' => $event->races()->with('raceClasses')->ordered()->get(),
+                // The hero's way to the registration, shown as it will be while open.
+                'registering' => collect($this->blocks)->contains('type', 'registration'),
+                'next' => null,
+                ...Page::edition($event, true),
+            ] : Page::events($organizer)),
         ];
     }
 }; ?>
@@ -237,8 +265,8 @@ new class extends Component {
 
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex max-w-2xl flex-col gap-1">
-            <flux:heading size="xl">{{ __('page.title') }}</flux:heading>
-            <flux:text>{{ __('page.help') }}</flux:text>
+            <flux:heading size="xl">{{ $edition ? __('page.event_title_of', ['event' => $edition->name]) : __('page.title') }}</flux:heading>
+            <flux:text>{{ $edition ? __('page.event_help') : __('page.help') }}</flux:text>
             <a href="{{ $pageUrl }}" target="_blank" class="self-start text-sm text-zinc-500 underline underline-offset-2 hover:text-zinc-800 dark:hover:text-zinc-200">{{ preg_replace('#^https?://#', '', $pageUrl) }}</a>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -288,12 +316,18 @@ new class extends Component {
                     <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="group flex min-w-0 flex-col {{ \App\Support\Page::cell($spans[$block['id']]) }} {{ $spaces[$block['id']] }}">
                         <div @unless ($chosen) wire:click="edit('{{ $block['id'] }}')" @endunless
                             @class(['relative flex flex-col gap-2 rounded-[calc(var(--radius-card)+10px)] p-2 ring-1 transition', 'ring-2 ring-brand' => $chosen, 'ring-peach' => ! $chosen && $problems->has($block['id']), 'cursor-pointer ring-transparent hover:ring-zinc-300' => ! $chosen && ! $problems->has($block['id'])])>
-                            <div @class(['flex items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 text-sm text-zinc-800 shadow-rest ring-1 ring-zinc-200 transition dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700', 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100' => ! $chosen])>
-                                @include('livewire.events.drag-handle')
-                                <span class="px-1 font-medium">{{ __("page.type.{$block['type']}") }}</span>
-                                <flux:button size="xs" variant="ghost" icon="arrow-up" wire:click.stop="move('{{ $block['id'] }}', -1)" :disabled="$loop->first" :aria-label="__('page.move_up')" />
-                                <flux:button size="xs" variant="ghost" icon="arrow-down" wire:click.stop="move('{{ $block['id'] }}', 1)" :disabled="$loop->last" :aria-label="__('page.move_down')" />
-                                <flux:button size="xs" variant="ghost" icon="trash" wire:click.stop="remove('{{ $block['id'] }}')" :aria-label="__('page.remove')" />
+                            {{-- When the block shows, always in sight: the page the editor shows is every state at once. --}}
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div @class(['flex items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 text-sm text-zinc-800 shadow-rest ring-1 ring-zinc-200 transition dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700', 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100' => ! $chosen])>
+                                    @include('livewire.events.drag-handle')
+                                    <span class="px-1 font-medium">{{ __("page.type.{$block['type']}") }}</span>
+                                    <flux:button size="xs" variant="ghost" icon="arrow-up" wire:click.stop="move('{{ $block['id'] }}', -1)" :disabled="$loop->first" :aria-label="__('page.move_up')" />
+                                    <flux:button size="xs" variant="ghost" icon="arrow-down" wire:click.stop="move('{{ $block['id'] }}', 1)" :disabled="$loop->last" :aria-label="__('page.move_down')" />
+                                    <flux:button size="xs" variant="ghost" icon="trash" wire:click.stop="remove('{{ $block['id'] }}')" :aria-label="__('page.remove')" />
+                                </div>
+                                @if ($edition && $block['when'] !== 'always')
+                                    <span class="inline-flex items-center gap-1 rounded-pill bg-zinc-800 px-2.5 py-1 text-[12px] font-medium text-white dark:bg-zinc-200 dark:text-zinc-900"><flux:icon.clock variant="micro" />{{ __("page.whens.{$block['when']}") }}</span>
+                                @endif
                             </div>
                             <div class="lp-public text-ink" style="font-family: var(--font-sans)">
                                 @include('blocks.block')

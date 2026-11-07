@@ -5,7 +5,7 @@
         @if ($logo)
             <img src="{{ $logo }}" alt="" class="h-12 w-auto max-w-[180px] self-start object-contain">
         @endif
-        <x-editable :$editor :$block field="title" as="h1" class="text-[36px] leading-[40px] font-normal tracking-[-0.02em] text-balance sm:text-[48px] sm:leading-[52px]" :placeholder="$organizer->name" :fallback="$organizer->name" />
+        <x-editable :$editor :$block field="title" as="h1" class="text-[36px] leading-[40px] font-normal tracking-[-0.02em] text-balance sm:text-[48px] sm:leading-[52px]" :placeholder="$name" :fallback="$name" />
         <x-editable :$editor :$block field="intro" class="text-[18px] leading-[27px] text-pretty text-ink-soft" :placeholder="__('page.intro_placeholder')" />
         @include('blocks.hero.next', ['tone' => 'light', 'stack' => true, 'class' => 'border-t border-contour pt-5'])
     </div>
