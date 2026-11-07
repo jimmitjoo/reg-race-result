@@ -3,9 +3,10 @@
     <h1 class="sr-only">{{ $organizer->name }}</h1>
 @endunless
 @php($spans = \App\Support\Page::spans($blocks))
-<div class="grid grid-cols-12 gap-x-6 gap-y-12 sm:gap-y-16">
+@php($spaces = \App\Support\Page::spaces($blocks))
+<div class="grid grid-cols-12 gap-x-6">
     @foreach ($blocks as $block)
-        <div wire:key="block-{{ $block['id'] }}" class="{{ \App\Support\Page::cell($spans[$block['id']]) }} min-w-0">
+        <div wire:key="block-{{ $block['id'] }}" class="{{ \App\Support\Page::cell($spans[$block['id']]) }} {{ $spaces[$block['id']] }} min-w-0">
             @include('blocks.block', ['first' => $loop->first])
         </div>
     @endforeach

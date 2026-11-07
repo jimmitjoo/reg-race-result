@@ -65,6 +65,28 @@
                 @endif
             </div>
         @endif
+        @if (isset(\App\Support\Page::ITEM_FIELDS[$block['type']]))
+            <div class="flex flex-col gap-2">
+                <flux:heading size="sm">{{ __("page.items.{$block['type']}") }}</flux:heading>
+                <ol class="flex flex-col gap-1">
+                    @foreach ($block['items'] as $item)
+                        @php($label = $block['type'] === 'faq' ? $item['q'] : trim($item['value'].' '.$item['label']))
+                        <li wire:key="item-{{ $item['id'] }}" class="flex items-center justify-between gap-2 rounded-field bg-zinc-50 py-1 ps-3 pe-1 dark:bg-zinc-800">
+                            <span class="truncate">{{ $label !== '' ? $label : __('page.item_empty') }}</span>
+                            <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeItem('{{ $block['id'] }}', '{{ $item['id'] }}')" :aria-label="__('page.remove')" />
+                        </li>
+                    @endforeach
+                </ol>
+                <flux:button size="sm" icon="plus" wire:click="addItem('{{ $block['id'] }}')" class="self-start">{{ __("page.add_item.{$block['type']}") }}</flux:button>
+            </div>
+        @endif
+        @if ($i > 0)
+            <flux:radio.group wire:model.live="{{ $field('space') }}" :label="__('page.space')" variant="segmented" size="sm">
+                @foreach (\App\Support\Page::SPACES as $space)
+                    <flux:radio :value="$space" :label="__('page.spaces.'.$space)" />
+                @endforeach
+            </flux:radio.group>
+        @endif
         @if ($block['type'] !== 'hero')
             <div class="flex flex-col gap-3">
                 <flux:radio.group wire:model.live="{{ $field('size') }}" :label="__('page.size')" variant="segmented" size="sm">
