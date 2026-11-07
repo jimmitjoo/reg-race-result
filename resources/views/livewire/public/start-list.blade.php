@@ -77,9 +77,9 @@ new #[Layout('components.layouts.public')] class extends Component {
                     <thead class="text-left text-[13px] text-ink-soft">
                         <tr>
                             @if ($bibs)<th scope="col" class="w-16 pb-2 font-medium">{{ __('results.bib') }}</th>@endif
-                            <th scope="col" class="pb-2 font-medium">{{ $class->team_size ? __('registration.team_name') : __('results.name') }}</th>
-                            <th scope="col" class="hidden w-2/5 pb-2 font-medium sm:table-cell">{{ __('registration.club') }}</th>
-                            @unless ($class->team_size)<th scope="col" class="w-14 pb-2 text-right font-medium">{{ __('results.born') }}</th>@endunless
+                            <th scope="col" class="pb-2 font-medium sm:w-2/5">{{ $class->team_size ? __('registration.team_name') : __('results.name') }}</th>
+                            @unless ($class->team_size)<th scope="col" class="w-16 pb-2 font-medium">{{ __('results.born') }}</th>@endunless
+                            <th scope="col" class="hidden pb-2 font-medium sm:table-cell">{{ __('registration.club') }}</th>
                             @if ($class->race?->age_groups)
                                 <th scope="col" class="w-20 pb-2 text-right font-medium">{{ __('results.age_group') }}</th>
                             @endif
@@ -95,10 +95,10 @@ new #[Layout('components.layouts.public')] class extends Component {
                                         <span class="block text-[14px] text-ink-soft sm:hidden">{{ $runner->club }}</span>
                                     @endunless
                                 </td>
-                                <td class="hidden py-2.5 pe-3 align-top text-ink-soft sm:table-cell">{{ $runner->hidden_at ? '' : $runner->club }}</td>
                                 @unless ($class->team_size)
-                                    <td class="py-2.5 text-right align-top text-ink-soft tabular-nums">{{ $runner->hidden_at ? '' : $runner->birth_date?->format('y') }}</td>
+                                    <td class="py-2.5 pe-3 align-top text-ink-soft tabular-nums">{{ $runner->hidden_at ? '' : $runner->birth_date?->format('y') }}</td>
                                 @endunless
+                                <td class="hidden py-2.5 pe-3 align-top text-ink-soft sm:table-cell">{{ $runner->hidden_at ? '' : $runner->club }}</td>
                                 @if ($class->race?->age_groups)
                                     <td class="py-2.5 text-right align-top text-ink-soft">{{ $runner->hidden_at ? '' : $class->ageGroupOf($runner) }}</td>
                                 @endif

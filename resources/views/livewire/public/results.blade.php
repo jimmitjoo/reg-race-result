@@ -80,7 +80,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                             <tr>
                                 <th scope="col" class="w-10 pb-2 text-right font-medium">{{ __('results.placing') }}</th>
                                 <th scope="col" class="ps-3 pb-2 font-medium">{{ __('results.name') }}</th>
-                                <th scope="col" class="pe-3 pb-2 text-right font-medium">{{ __('results.born') }}</th>
+                                <th scope="col" class="w-14 pe-3 pb-2 font-medium">{{ __('results.born') }}</th>
                                 @if ($ageGroups)
                                     <th scope="col" class="pb-2 text-right font-medium">{{ __('results.age_group') }}</th>
                                 @endif
@@ -96,7 +96,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                         <span class="font-medium">{{ $row->name }}</span>
                                         @if ($row->club)<span class="block text-[14px] text-ink-soft">{{ $row->club }}</span>@endif
                                     </td>
-                                    <td class="py-2.5 pe-3 text-right align-top text-ink-soft tabular-nums">{{ $row->birthYear }}</td>
+                                    <td class="py-2.5 pe-3 align-top text-ink-soft tabular-nums">{{ $row->birthYear }}</td>
                                     @if ($ageGroups)
                                         <td class="py-2.5 pe-3 text-right align-top text-[14px] text-ink-soft">{{ $row->ageGroup ? $row->ageGroup.' '.$row->ageGroupPlacing : '' }}</td>
                                     @endif
