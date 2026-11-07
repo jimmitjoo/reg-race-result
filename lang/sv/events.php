@@ -136,4 +136,10 @@ return [
     'all_series' => 'Alla arrangemang',
     'latest' => 'Senast',
     'earlier_editions' => ':count tidigare upplaga|:count tidigare upplagor',
+    'remove_class' => 'Ta bort klassen',
+    'remove_class_confirm' => 'Ta bort klassen? Det går inte att ångra.',
+    'class_has_registrations' => 'Klassen har :count anmälningar och kan inte tas bort. Flytta dem till en annan klass först.',
+    'remove_race' => 'Ta bort loppet',
+    'remove_race_confirm' => 'Ta bort loppet med dess klasser och priser? Det går inte att ångra.',
+    'race_has_registrations' => 'Loppet har :count anmälningar och kan inte tas bort. Flytta dem till ett annat lopp först.',
 ];

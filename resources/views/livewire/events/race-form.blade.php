@@ -35,5 +35,8 @@
         @if ($editingRaceId || $addingRace)
             <flux:button variant="ghost" wire:click="cancelRace">{{ __('events.cancel') }}</flux:button>
         @endif
+        @if ($editingRaceId)
+            <flux:button variant="danger" icon="trash" class="ms-auto" wire:click="removeRace" wire:confirm="{{ __('events.remove_race_confirm') }}">{{ __('events.remove_race') }}</flux:button>
+        @endif
     </div>
 </form>

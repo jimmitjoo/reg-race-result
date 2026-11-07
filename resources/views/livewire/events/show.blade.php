@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Event;
+use App\Models\Registration;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\Rule;
@@ -328,6 +329,32 @@ new class extends Component {
         $this->timed = $class->timed;
         $this->startTime = $class->start_at->setTimezone($this->event->timezone)->format('H:i:s');
         $this->minTimeMinutes = intdiv($class->min_time_seconds, 60);
+    }
+
+    /** A class nobody has registered for, paid or not: one with registrations keeps them, so it stays. */
+    public function removeClass(): void
+    {
+        $class = $this->event->raceClasses()->findOrFail($this->editingId);
+        if ($count = Registration::where('race_class_id', $class->id)->count()) {
+            $this->addError('className', __('events.class_has_registrations', ['count' => $count]));
+
+            return;
+        }
+        $class->delete();
+        $this->cancel();
+    }
+
+    /** A race, with its classes and prices, when nobody has registered in any of them. */
+    public function removeRace(): void
+    {
+        $race = $this->event->races()->findOrFail($this->editingRaceId);
+        if ($count = Registration::whereIn('race_class_id', $race->raceClasses()->select('id'))->count()) {
+            $this->addError('raceName', __('events.race_has_registrations', ['count' => $count]));
+
+            return;
+        }
+        $race->delete();
+        $this->cancelRace();
     }
 
     public function cancel(): void

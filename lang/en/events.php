@@ -136,4 +136,10 @@ return [
     'all_series' => 'All events',
     'latest' => 'Latest',
     'earlier_editions' => ':count earlier edition|:count earlier editions',
+    'remove_class' => 'Remove the class',
+    'remove_class_confirm' => 'Remove the class? This cannot be undone.',
+    'class_has_registrations' => 'The class has :count registrations and cannot be removed. Move them to another class first.',
+    'remove_race' => 'Remove the race',
+    'remove_race_confirm' => 'Remove the race with its classes and prices? This cannot be undone.',
+    'race_has_registrations' => 'The race has :count registrations and cannot be removed. Move them to another race first.',
 ];
