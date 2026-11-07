@@ -2,6 +2,9 @@
 <x-layouts.public :organizer="$event->organizer" :event="$event" :title="__('public.title', ['page' => ($receipt['number'] ? __('receipt.title_number', ['number' => $receipt['number']]) : __('receipt.title')), 'event' => $event->name, 'organizer' => $event->organizer->name])">
     <x-breadcrumbs :event="$event" :page="__('receipt.title')" class="mx-auto mb-6 max-w-[720px] print:hidden" />
     <article class="mx-auto flex max-w-[720px] flex-col gap-6 rounded-card bg-white p-5 shadow-rest sm:p-8 print:max-w-none print:p-0 print:shadow-none">
+        @if ($logo = \App\Support\Theme::logoUrl(\App\Support\Theme::for($event->organizer, $event)))
+            <img src="{{ $logo }}" alt="{{ $event->organizer->name }}" class="h-14 w-auto max-w-[200px] self-start object-contain">
+        @endif
         <header class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
             <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em]">{{ ($receipt['number'] ? __('receipt.title_number', ['number' => $receipt['number']]) : __('receipt.title')) }}</h1>
             <p class="text-[15px] text-ink-soft">{{ __('receipt.paid_on', ['date' => $receipt['paidAt']]) }}</p>

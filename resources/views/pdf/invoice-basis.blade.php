@@ -18,10 +18,16 @@
         .num { text-align: right; font-variant-numeric: tabular-nums; }
         tfoot td { font-weight: 600; border-bottom: 0; border-top: 2px solid #18201c; }
         button { margin-top: 24px; }
-        @media print { button { display: none; } body { margin: 0; } }
+        .logo { float: right; max-height: 56px; max-width: 180px; margin: 0 0 8px 16px; }
+        /* No margin on the page leaves no room for the browser's date, address and page numbers. */
+        @page { margin: 0; }
+        @media print { button { display: none; } body { margin: 0; max-width: none; padding: 14mm; box-decoration-break: clone; -webkit-box-decoration-break: clone; } }
     </style>
 </head>
 <body>
+    @if ($logo = \App\Support\Theme::logoDataUri(\App\Support\Theme::for($event->organizer, $event)))
+        <img class="logo" src="{{ $logo }}" alt="{{ $event->organizer->name }}">
+    @endif
     <h1>{{ __('campaigns.invoice_basis') }}: {{ $campaign->name }}</h1>
     <p>{{ $event->name }}, {{ Format::date($event->date) }} · {{ $event->organizer->name }}@if ($event->organizer->org_number), {{ __('receipt.org_number') }} {{ $event->organizer->org_number }}@endif</p>
 
