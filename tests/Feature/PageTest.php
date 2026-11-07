@@ -150,3 +150,38 @@ it('lets the hero say something else than the club\'s name, and says the name ag
     $editor->call('setField', $hero, 'title', '')->call('publish');
     $this->get('/hogby-if')->assertSee('Högby IF</h1>', false);
 });
+
+it('shows as many races and years as chosen, as a list or cards, on the background chosen', function () {
+    $this->travelTo('2026-11-07 12:00');
+    $organizer = pageOrganizer();
+    $series = Series::create(['organizer_id' => $organizer->id, 'name' => 'Sylvesterloppet']);
+    foreach ([2026, 2025, 2024, 2023] as $year) {
+        $series->addEdition("{$year}-12-31");
+    }
+    Series::create(['organizer_id' => $organizer->id, 'name' => 'Vårloppet'])->addEdition('2027-04-01');
+
+    $organizer->update(['page' => [
+        array_merge(Page::block('upcoming'), ['layout' => 'list', 'limit' => 1, 'background' => 'brand']),
+        array_merge(Page::block('earlier'), ['years' => 2]),
+    ]]);
+
+    $this->get('/hogby-if')
+        ->assertSee('Sylvesterloppet 2026')->assertDontSee('Vårloppet 2027')
+        ->assertSee('on-brand bg-brand', false)
+        ->assertSeeInOrder(['>2025<', '>2024<', trans_choice('page.more_years', 1), '>2023<'], false);
+
+    $editor = Volt::test('page.edit');
+    $editor->call('edit', $editor->get('blocks')[0]['id'])
+        ->assertSee(__('page.layouts.feature'))->assertSee(__('page.backgrounds.brand'))->assertSee(__('page.limit_races'));
+});
+
+it('places blocks beside the one before them, up to four in a row, never beside the hero', function () {
+    $block = fn (string $type, bool $beside = false) => array_merge(Page::block($type), ['beside' => $beside]);
+    $blocks = [$block('hero'), $block('text', true), $block('image', true), $block('text'), $block('text', true), $block('text', true), $block('text', true), $block('text', true)];
+
+    expect(array_values(Page::spans($blocks)))->toBe([12, 6, 6, 3, 3, 3, 3, 12]);
+
+    $organizer = pageOrganizer();
+    $organizer->update(['page' => [array_merge($block('text'), ['heading' => 'Om oss']), array_merge($block('contact', true), ['name' => 'Anna', 'background' => 'brand'])]]);
+    $this->get('/hogby-if')->assertSee('col-span-12 lg:col-span-6', false)->assertSee('rounded-card p-6 shadow-rest sm:p-8', false);
+});

@@ -27,6 +27,8 @@ new class extends Component {
 
     public $upload = null;
 
+    public $backgroundUpload = null;
+
     public function mount(): void
     {
         abort_unless(auth()->user()->organizer_id, 403);
@@ -67,6 +69,15 @@ new class extends Component {
         [$width, $height] = getimagesize($this->upload->getRealPath()) ?: [null, null];
         $this->blocks[$at] = array_merge($this->blocks[$at], ['image' => $this->upload->store('pages', 'public'), 'width' => $width, 'height' => $height]);
         $this->upload = null;
+        $this->save();
+    }
+
+    public function updatedBackgroundUpload(): void
+    {
+        $this->validate(['backgroundUpload' => ['image', 'mimes:png,jpg,jpeg,webp', 'max:4096']], [], ['backgroundUpload' => __('page.background_image')]);
+        $at = $this->index((string) $this->editing);
+        $this->blocks[$at] = array_merge($this->blocks[$at], ['background' => 'image', 'background_image' => $this->backgroundUpload->store('pages', 'public')]);
+        $this->backgroundUpload = null;
         $this->save();
     }
 
@@ -177,6 +188,7 @@ new class extends Component {
         return [
             'organizer' => $organizer,
             'editor' => true,
+            'spans' => Page::spans($this->blocks),
             'selected' => collect($this->blocks)->firstWhere('id', $this->editing),
             'problems' => collect(Page::problems($this->blocks, $forms->keys()->all()))->groupBy('id'),
             'forms' => $forms,
@@ -243,10 +255,10 @@ new class extends Component {
         {{-- The page as runners see it, always light, written into where it stands; its links are not followed here. --}}
         <div class="theme-preview lp-editor min-w-0 rounded-panel bg-ground p-3 sm:p-6" x-on:click.capture="$event.target.closest('a') && $event.preventDefault()">
             @include('livewire.page.adder', ['at' => 0])
-            <div wire:sort="sortBlock" class="flex flex-col">
+            <div wire:sort="sortBlock" class="grid grid-cols-12 gap-x-4">
                 @foreach ($blocks as $i => $block)
                     @php($chosen = $editing === $block['id'])
-                    <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="group flex flex-col">
+                    <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="group flex min-w-0 flex-col {{ \App\Support\Page::cell($spans[$block['id']]) }}">
                         <div @unless ($chosen) wire:click="edit('{{ $block['id'] }}')" @endunless
                             @class(['relative flex flex-col gap-2 rounded-[calc(var(--radius-card)+10px)] p-2 ring-1 transition', 'ring-2 ring-brand' => $chosen, 'ring-peach' => ! $chosen && $problems->has($block['id']), 'cursor-pointer ring-transparent hover:ring-zinc-300' => ! $chosen && ! $problems->has($block['id'])])>
                             <div @class(['flex items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 text-sm text-zinc-800 shadow-rest ring-1 ring-zinc-200 transition dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700', 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100' => ! $chosen])>
@@ -257,7 +269,7 @@ new class extends Component {
                                 <flux:button size="xs" variant="ghost" icon="trash" wire:click.stop="remove('{{ $block['id'] }}')" :aria-label="__('page.remove')" />
                             </div>
                             <div class="lp-public text-ink" style="font-family: var(--font-sans)">
-                                @include('blocks.'.$block['type'])
+                                @include('blocks.block')
                             </div>
                         </div>
                         @include('livewire.page.adder', ['at' => $i + 1])

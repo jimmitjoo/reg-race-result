@@ -25,6 +25,15 @@ final class Page
 
     public const IMAGE_HEROES = ['image-full', 'split', 'split-full', 'image-card'];
 
+    /** Behind a block other than the hero: the page's ground, or a band of the club's tint, its colour or a picture. */
+    public const BACKGROUNDS = ['none', 'tint', 'brand', 'image'];
+
+    /** How wide a block's content is: the text's measure, the page's column, or the window. */
+    public const SIZES = ['text', 'wide', 'full'];
+
+    /** How a block of upplagor is laid out; the next one large is for the coming ones only. */
+    public const LAYOUTS = ['cards', 'list', 'feature'];
+
     /** The fields written straight into a block on the page, rather than in its settings. */
     public const INLINE = [
         'hero' => ['title', 'intro'],
@@ -47,11 +56,19 @@ final class Page
         return ['id' => Str::lower(Str::random(10)), 'type' => $type] + match ($type) {
             'hero' => ['variant' => 'brand', 'title' => '', 'intro' => '', 'image' => null, 'alt' => '', 'width' => null, 'height' => null],
             'text' => ['heading' => '', 'body' => ''],
-            'image' => ['image' => null, 'alt' => '', 'caption' => '', 'size' => 'text', 'width' => null, 'height' => null],
-            'upcoming', 'earlier' => ['heading' => ''],
+            'image' => ['image' => null, 'alt' => '', 'caption' => '', 'width' => null, 'height' => null],
             'form' => ['heading' => '', 'intro' => '', 'form_id' => null],
+            // How many: 0 is all.
+            'upcoming' => ['heading' => '', 'layout' => 'cards', 'limit' => 0],
+            'earlier' => ['heading' => '', 'layout' => 'cards', 'limit' => 0, 'years' => 5],
             'contact' => ['heading' => '', 'name' => '', 'email' => '', 'phone' => '', 'form_id' => null],
-        };
+        } + ($type === 'hero' ? [] : [
+            'size' => in_array($type, ['upcoming', 'earlier'], true) ? 'wide' : 'text',
+            // Beside the block before it, sharing its row.
+            'beside' => false,
+            'background' => 'none',
+            'background_image' => null,
+        ]);
     }
 
     public static function for(Organizer $organizer, bool $draft = false): array
@@ -77,12 +94,20 @@ final class Page
             "{$key}.*.body" => $text(10000),
             "{$key}.*.alt" => $text(250),
             "{$key}.*.caption" => $text(250),
-            "{$key}.*.size" => ['nullable', Rule::in(['text', 'wide'])],
+            "{$key}.*.size" => ['nullable', Rule::in(self::SIZES)],
+            "{$key}.*.beside" => ['nullable', 'boolean'],
             "{$key}.*.variant" => ['nullable', Rule::in(self::HEROES)],
             "{$key}.*.name" => $text(120),
             "{$key}.*.email" => ['nullable', 'email', 'max:255'],
             "{$key}.*.phone" => $text(40),
             "{$key}.*.form_id" => ['nullable', 'integer'],
+            "{$key}.*.background" => ['nullable', Rule::in(self::BACKGROUNDS)],
+            // Only pictures uploaded here.
+            "{$key}.*.image" => ['nullable', 'string', 'regex:#^pages/[A-Za-z0-9]+\.(png|jpe?g|webp)$#'],
+            "{$key}.*.background_image" => ['nullable', 'string', 'regex:#^pages/[A-Za-z0-9]+\.(png|jpe?g|webp)$#'],
+            "{$key}.*.layout" => ['nullable', Rule::in(self::LAYOUTS)],
+            "{$key}.*.limit" => ['nullable', 'integer', 'between:0,50'],
+            "{$key}.*.years" => ['nullable', 'integer', 'between:0,50'],
         ];
     }
 
@@ -105,6 +130,9 @@ final class Page
                 'contact' => [$blank('name', 'email', 'phone') && ! in_array((int) $block['form_id'], $forms, true) ? 'empty' : null],
                 default => [],
             };
+            if (($block['background'] ?? null) === 'image' && empty($block['background_image'])) {
+                $found[] = 'no_background';
+            }
             foreach (array_filter($found) as $problem) {
                 $problems[] = ['id' => $block['id'], 'problem' => $problem];
             }
@@ -137,6 +165,34 @@ final class Page
             ->blockElement('code')->blockElement('pre');
 
         return (new HtmlSanitizer($config))->sanitize(preg_replace('#<(/?)h[1-6]\b#i', '<$1h3', $html));
+    }
+
+    /**
+     * The columns of twelve each block takes: a block beside the one before it shares its row, up to four
+     * in a row; the hero always has its own.
+     *
+     * @return array<string, int>
+     */
+    public static function spans(array $blocks): array
+    {
+        $rows = [];
+        foreach ($blocks as $at => $block) {
+            $joins = $at > 0 && ! empty($block['beside']) && $block['type'] !== 'hero' && $blocks[$at - 1]['type'] !== 'hero' && count(end($rows)) < 4;
+            $joins ? $rows[array_key_last($rows)][] = $block['id'] : $rows[] = [$block['id']];
+        }
+
+        return collect($rows)->flatMap(fn ($row) => array_fill_keys($row, intdiv(12, count($row))))->all();
+    }
+
+    /** The grid cell of a block that takes $span columns; on a phone every block has its own row. */
+    public static function cell(int $span): string
+    {
+        return match ($span) {
+            6 => 'col-span-12 lg:col-span-6',
+            4 => 'col-span-12 lg:col-span-4',
+            3 => 'col-span-12 sm:col-span-6 lg:col-span-3',
+            default => 'col-span-12',
+        };
     }
 
     /** The organizer's forms the blocks can show, by id. */
