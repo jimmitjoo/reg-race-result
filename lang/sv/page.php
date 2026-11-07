@@ -2,11 +2,9 @@
 
 return [
     'title' => 'Sida',
-    'help' => 'Din startsida, som löparna ser den. Klicka i en text och skriv. Markera ett block för bild och inställningar i panelen bredvid, lägg till nya med + och dra dem för att flytta. Allt sparas som utkast tills du publicerar.',
     'preview' => 'Förhandsvisa',
     'publish' => 'Publicera',
     'published' => 'Publicerad.',
-    'draft' => 'Utkastet är sparat men inte publicerat.',
     'discard' => 'Släng utkastet',
     'discard_confirm' => 'Släng ändringarna och gå tillbaka till den publicerade sidan?',
     'problems_title' => 'Rätta det här innan du publicerar',
@@ -178,8 +176,6 @@ return [
         'large' => 'Stort',
     ],
     'event_title' => 'Loppsida',
-    'event_title_of' => 'Loppsida för :event',
-    'event_help' => 'Upplagans sida, som löparna ser den. Bygg den som din startsida, och välj när varje block visas: alltid, eller bara medan anmälan är öppen, före eller efter loppet, eller när resultaten är ute. Allt sparas som utkast tills du publicerar.',
     'when' => 'Visas',
     'when_help' => 'Sidan ändrar sig själv efter hur det ligger till med upplagan.',
     'whens' => [
@@ -196,4 +192,7 @@ return [
     'theme_draft' => 'Färgerna och typsnitten är inte publicerade',
     'theme_draft_help' => 'Du ser dem här, men löparna ser dem inte förrän du publicerar dem under Utseende.',
     'theme_draft_link' => 'Publicera utseendet',
+    'editing' => 'Redigerar :page',
+    'draft_short' => 'Utkast, inte publicerat',
+    'close' => 'Stäng',
 ];

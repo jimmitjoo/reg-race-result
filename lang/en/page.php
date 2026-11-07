@@ -2,11 +2,9 @@
 
 return [
     'title' => 'Page',
-    'help' => 'Your home page, as runners see it. Click in a text and type. Select a block for its image and settings in the panel beside it, add new ones with + and drag them to move. Everything is saved as a draft until you publish.',
     'preview' => 'Preview',
     'publish' => 'Publish',
     'published' => 'Published.',
-    'draft' => 'The draft is saved but not published.',
     'discard' => 'Discard draft',
     'discard_confirm' => 'Discard the changes and go back to the published page?',
     'problems_title' => 'Fix this before you publish',
@@ -178,8 +176,6 @@ return [
         'large' => 'Large',
     ],
     'event_title' => 'Race page',
-    'event_title_of' => 'Race page for :event',
-    'event_help' => 'The upplaga\'s page, as runners see it. Build it like your home page, and choose when each block shows: always, or only while registration is open, before or after the race, or once the results are out. Everything is saved as a draft until you publish.',
     'when' => 'Shown',
     'when_help' => 'The page changes by itself as the upplaga moves along.',
     'whens' => [
@@ -196,4 +192,7 @@ return [
     'theme_draft' => 'The colours and fonts are not published',
     'theme_draft_help' => 'You see them here, but runners do not until you publish them under Appearance.',
     'theme_draft_link' => 'Publish the appearance',
+    'editing' => 'Editing :page',
+    'draft_short' => 'Draft, not published',
+    'close' => 'Close',
 ];

@@ -7,5 +7,5 @@
     @php($variant = 'brand-full')
 @endif
 {{-- A full hero first on the page meets the frame's header; an upplaga's has the way back above it. --}}
-@php($top = in_array($variant, \App\Support\Page::FULL_HEROES, true) && ($first ?? false) && ! $editor && ! $edition ? '-mt-8 sm:-mt-12' : '')
+@php($top = in_array($variant, \App\Support\Page::FULL_HEROES, true) && ($first ?? false) && ! $edition ? '-mt-8 sm:-mt-12' : '')
 @include("blocks.hero.{$variant}")

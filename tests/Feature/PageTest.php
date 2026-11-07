@@ -38,7 +38,7 @@ it('keeps changes as a draft, seen in the preview, until Publicera', function ()
     $editor = Volt::test('page.edit')->call('add', 'text', 1);
     $id = $editor->get('blocks')[1]['id'];
     $editor->set('blocks.1.heading', 'Om klubben')->set('blocks.1.body', 'Vi springer **varje** tisdag.')
-        ->assertSet('editing', $id)->assertSee(__('page.draft'));
+        ->assertSet('editing', $id)->assertSee(__('page.draft_short'));
 
     $this->get('/hogby-if')->assertDontSee('Om klubben');
     $this->get(URL::signedRoute('public.organizer', ['organizer' => 'hogby-if', 'forhandsvisning' => 1]))
@@ -228,11 +228,19 @@ it('puts the way to edit above the organizer\'s own pages for its people only', 
     $organizer = pageOrganizer();
     $event = Event::factory()->create(['organizer_id' => $organizer->id, 'slug' => 'sylvesterloppet-2026']);
 
-    $this->get('/hogby-if')->assertSee(route('page.edit'))->assertSee(__('public.edit_page'));
+    $this->get('/hogby-if')->assertSee(route('page.edit'))->assertSee(__('public.mode_edit'));
     $this->get('/hogby-if/sylvesterloppet-2026')->assertSee(route('events.page', $event))->assertSee(route('events.show', $event));
 
     $this->actingAs(User::factory()->create(['organizer_id' => Organizer::factory()->create()->id]));
-    $this->get('/hogby-if')->assertDontSee(__('public.edit_page'));
+    $this->get('/hogby-if')->assertDontSee(route('page.edit'));
     auth()->logout();
-    $this->get('/hogby-if')->assertDontSee(__('public.edit_page'));
+    $this->get('/hogby-if')->assertDontSee(route('page.edit'));
+});
+
+it('edits the page in place, at its own width, the bar above switched to Redigera', function () {
+    pageOrganizer();
+
+    $this->get(route('page.edit'))->assertOk()
+        ->assertSee('aria-current="page"', false)->assertSee(__('page.publish'))->assertSee(route('public.organizer', 'hogby-if'))
+        ->assertDontSee('data-flux-sidebar', false);
 });

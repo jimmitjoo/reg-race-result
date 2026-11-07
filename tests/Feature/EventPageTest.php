@@ -53,7 +53,7 @@ it('edits the upplaga\'s page as a draft of its own, with one registration at mo
     $event = pageEvent();
 
     $editor = Volt::test('page.edit', ['event' => $event])
-        ->assertSee(__('page.event_title_of', ['event' => 'Sylvesterloppet 2026']))
+        ->assertSee('Sylvesterloppet 2026')
         ->call('add', 'faq', 3)->set('blocks.3.when', 'before');
     $editor->call('add', 'registration', 0)->assertNotFound();
 

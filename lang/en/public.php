@@ -16,9 +16,9 @@ return [
     'moved' => 'The race has been moved to :date.',
     'admin_bar' => 'Edit',
     'admin' => 'Admin',
-    'edit_page' => 'Edit the page',
-    'edit_event_page' => 'Edit the race page',
     'manage_event' => 'Manage the upplaga',
-    'manage_events' => 'Arrangemang',
     'previewing' => 'Preview',
+    'mode' => 'Mode',
+    'mode_view' => 'View',
+    'mode_edit' => 'Edit',
 ];

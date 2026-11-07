@@ -16,9 +16,9 @@ return [
     'moved' => 'Loppet är flyttat till :date.',
     'admin_bar' => 'Redigera',
     'admin' => 'Admin',
-    'edit_page' => 'Redigera sidan',
-    'edit_event_page' => 'Redigera loppsidan',
     'manage_event' => 'Hantera upplagan',
-    'manage_events' => 'Arrangemang',
     'previewing' => 'Förhandsvisning',
+    'mode' => 'Läge',
+    'mode_view' => 'Visa',
+    'mode_edit' => 'Redigera',
 ];

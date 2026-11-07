@@ -1,6 +1,6 @@
-@props(['title' => null, 'organizer' => null, 'event' => null])
-{{-- The organizer's theme (#112), or the draft behind a signed preview link. --}}
-@php($theme = \App\Support\Theme::for($organizer, $event, request()->boolean('forhandsvisning') && request()->hasValidSignature()))
+@props(['title' => null, 'organizer' => null, 'event' => null, 'editing' => false])
+{{-- The organizer's theme (#112), or the draft behind a signed preview link and in the editor. --}}
+@php($theme = \App\Support\Theme::for($organizer, $event, $editing || (request()->boolean('forhandsvisning') && request()->hasValidSignature())))
 {{-- The organizer's pages (#118): the organizer leads, nothing of Löpning.se above them; a quiet line at the foot says who handles registration and payment. Always light. --}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="lp-light">
@@ -12,9 +12,12 @@
     </head>
     <body class="lp-public min-h-screen overflow-x-clip bg-ground print:bg-white text-ink antialiased">
         <a href="#innehall" class="sr-only z-50 rounded-pill bg-white px-5 py-3 font-semibold text-ink shadow-raised focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{{ __('public.skip') }}</a>
-        <x-admin-bar :$organizer :$event />
+        {{-- The editor draws its own, with its actions in it. --}}
+        @unless ($editing)
+            <x-admin-bar :$organizer :$event />
+        @endunless
 
-        <main id="innehall" tabindex="-1" class="mx-auto max-w-[1100px] px-4 pt-8 pb-16 outline-none sm:px-6 sm:pt-12 print:p-0">
+        <main id="innehall" tabindex="-1" @class(['mx-auto max-w-[1100px] px-4 pb-16 outline-none sm:px-6 print:p-0', 'pt-8 sm:pt-12' => ! $editing])>
             {{ $slot }}
         </main>
 

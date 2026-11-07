@@ -495,7 +495,7 @@ new class extends Component {
                     <ul class="mt-1 grid {{ $group === 'raceday' ? 'sm:grid-cols-2' : '' }}">
                         @foreach ($links as [$route, $icon, $label])
                             <li>
-                                <a href="{{ route($route, $event) }}" @if ($route !== 'events.timing') wire:navigate @endif
+                                <a href="{{ route($route, $event) }}" @unless (in_array($route, ['events.timing', 'events.page'], true)) wire:navigate @endunless
                                     class="flex h-11 items-center gap-3 rounded-field px-2 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800">
                                     <flux:icon :name="$icon" variant="outline" class="size-5 text-zinc-500 dark:text-zinc-400" />{{ $label }}
                                 </a>
