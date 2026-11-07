@@ -5,10 +5,10 @@
     <head>
         @include('partials.head', ['title' => $title, 'light' => true])
     </head>
-    <body class="lp-public min-h-screen bg-ground text-ink antialiased">
+    <body class="lp-public min-h-screen bg-ground print:bg-white text-ink antialiased">
         <a href="#innehall" class="sr-only z-50 rounded-full bg-white px-5 py-3 font-semibold text-ink shadow-raised focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{{ __('public.skip') }}</a>
 
-        <header class="border-b border-contour/70">
+        <header class="border-b border-contour/70 print:hidden">
             <div class="mx-auto flex h-12 max-w-[1100px] items-center gap-3 px-4 sm:px-6">
                 <a href="https://löpning.se" class="flex items-center gap-2 rounded-full text-ink">
                     <x-lopning-logo class="h-4 w-auto" />
@@ -21,7 +21,7 @@
             {{ $slot }}
         </main>
 
-        <footer class="border-t border-contour/70">
+        <footer class="border-t border-contour/70 print:hidden">
             <div class="mx-auto flex max-w-[1100px] flex-wrap items-center gap-x-6 gap-y-2 px-4 pt-6 pb-24 text-[14px] text-ink-soft sm:px-6 lg:pb-6">
                 <span>{{ __('public.powered_by') }}</span>
                 @if ($organizer)

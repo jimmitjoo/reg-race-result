@@ -1,30 +1,31 @@
 <x-mail::message>
 # {{ __('receipt.heading') }}
 
-@if ($count > 1)
-{{ __('registration.confirmation_text_many', ['count' => $count, 'event' => $event->name]) }}
-@else
-{{ __('registration.confirmation_text', ['name' => $lines[0]['name'], 'class' => $registration->raceClass->name, 'event' => $event->name]) }}
-@endif
+{{ $intro }}
 
 {{ __('receipt.date') }}: {{ $date }}
 
+**{{ $receipt['number'] ? __('receipt.title_number', ['number' => $receipt['number']]) : __('receipt.title') }}** · {{ __('receipt.paid_on', ['date' => $receipt['paidAt']]) }}
+
 <x-mail::table>
-| {{ __('registration.runner') }} | {{ __('receipt.class') }} | {{ __('receipt.start') }} | {{ __('receipt.price') }} |
-|:--|:--|:--|--:|
-@foreach ($lines as $line)
-| {{ $line['name'] }} | {{ $line['class'] }} | {{ $line['start'] }} | {{ $line['price'] }} |
+| {{ __('receipt.participant') }} | {{ __('receipt.what') }} | {{ __('receipt.price') }} |
+|:--|:--|--:|
+@foreach ($receipt['lines'] as $line)
+| {{ $line['name'] }} | {{ $line['what'] }}, {{ $line['date'] }} | {{ $line['price'] }} |
 @endforeach
-| **{{ __('registration.total') }}** | | | **{{ $total }}**@if ($method) ({{ $method }})@endif |
+| **{{ __('registration.total') }}** | {{ $receipt['vat'] }}@if ($receipt['method']), {{ __('receipt.paid_with', ['method' => $receipt['method']]) }}@endif | **{{ $receipt['total'] }}** |
 </x-mail::table>
+
+{{ __('receipt.seller') }}: {{ implode(', ', $receipt['seller']) }}<br>
+{{ __('receipt.buyer') }}: {{ implode(', ', $receipt['buyer']) }}
 
 <x-mail::button :url="$url">
 {{ __('receipt.show') }}
 </x-mail::button>
 
+[{{ __('receipt.receipt_link') }}]({{ $receipt['url'] }}) · [{{ __('privacy.read_terms') }}]({{ $terms }})
+
 {{ __('receipt.reply') }}
 
-[{{ __('privacy.read_terms') }}]({{ $terms }})
-
-{{ $event->organizer->name }}
+{{ $receipt['via'] }}
 </x-mail::message>

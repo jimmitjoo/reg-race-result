@@ -65,6 +65,9 @@ Volt::route('{organizer}/{event}/results', 'public.results')->name('public.resul
 Route::get('{organizer}/{event}/registrations/{registration}', [PublicRegistrationController::class, 'show'])
     ->middleware('signed')
     ->name('public.registration');
+Route::get('{organizer}/{event}/registrations/{registration}/receipt', [PublicRegistrationController::class, 'receipt'])
+    ->middleware('signed')
+    ->name('public.receipt');
 Route::get('{organizer}/{event}/registrations/{registration}/calendar', [PublicRegistrationController::class, 'calendar'])
     ->middleware('signed')
     ->name('public.registration.calendar');

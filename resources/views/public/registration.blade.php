@@ -45,6 +45,7 @@
         <div class="flex flex-wrap gap-2">
             @if ($registration->paid_at)
                 <a href="{{ URL::signedRoute('public.registration.calendar', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $registration]) }}" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.add_to_calendar') }}</a>
+                <a href="{{ URL::signedRoute('public.receipt', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $order->first()]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('receipt.receipt_link') }}</a>
                 <a href="{{ route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}#anmalan-{{ $registration->id }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('registration.see_start_list') }}</a>
             @else
                 <a href="{{ $eventUrl }}#steg-3" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.try_again') }}</a>

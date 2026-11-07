@@ -2,12 +2,16 @@
 
 use App\Models\Club;
 use App\Models\Organizer;
+use App\Rules\OrgNumber;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.auth')] class extends Component {
     public string $name = '';
+
+    // For the receipts the club gives runners (#132); can wait until later.
+    public string $orgNumber = '';
 
     public function mount(): void
     {
@@ -24,11 +28,15 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function create(): void
     {
         $this->name = trim($this->name);
-        $this->validate(['name' => ['required', 'string', 'max:100']]);
+        $this->orgNumber = trim($this->orgNumber);
+        $this->validate(['name' => ['required', 'string', 'max:100'], 'orgNumber' => ['nullable', new OrgNumber]], [], ['orgNumber' => __('receipt.org_number_label')]);
 
         $user = auth()->user();
         abort_if($user->organizer_id, 409);
         $organizer = Organizer::open($this->name, $user);
+        if ($this->orgNumber !== '') {
+            $organizer->update(['org_number' => OrgNumber::format($this->orgNumber)]);
+        }
 
         // The platform wants to know who receives money through it.
         Mail::raw("{$organizer->name} (/{$organizer->slug}) skapades av {$user->name} <{$user->email}>.", fn ($message) => $message
@@ -44,6 +52,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
     <form wire:submit="create" class="flex flex-col gap-6">
         <flux:input wire:model="name" list="clubs" autocomplete="off" required autofocus :label="__('account.club_name')" :description="__('account.club_help')" />
+        <flux:input wire:model="orgNumber" :label="__('receipt.org_number_optional')" :description="__('receipt.org_number_help')" placeholder="NNNNNN-NNNN" inputmode="numeric" />
         <datalist id="clubs">
             @foreach ($clubs as $club)
                 <option value="{{ $club }}">

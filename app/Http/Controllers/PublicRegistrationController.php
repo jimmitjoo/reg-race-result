@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Payments\StripeCheckout;
+use App\Support\Receipt;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
@@ -25,6 +26,15 @@ class PublicRegistrationController extends Controller
         }
 
         return view('public.registration', ['registration' => $registration, 'order' => $registration->order(), 'event' => $registrationEvent]);
+    }
+
+    /** The receipt for the order, to print or save (#132); only once it is paid. */
+    public function receipt(string $organizer, string $event, Registration $registration): View
+    {
+        $registrationEvent = $this->event($organizer, $event, $registration);
+        abort_unless($registration->paid_at, 404);
+
+        return view('public.receipt', ['receipt' => Receipt::for($registration), 'event' => $registrationEvent]);
     }
 
     /** The race in the runner's calendar, once per participant in the order. */
