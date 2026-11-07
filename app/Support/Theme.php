@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Event;
 use App\Models\Organizer;
+use App\Models\Series;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -52,6 +53,12 @@ final class Theme
     private const WHITE = [255, 255, 255];
 
     private const GROUND = [238, 240, 236];
+
+    /** Whose theme an editor changes: an upplaga's arrangemang, so the next year looks the same, a lone upplaga, or the organizer. */
+    public static function owner(Organizer $organizer, ?Event $event = null): Organizer|Event|Series
+    {
+        return $event?->series ?? $event ?? $organizer;
+    }
 
     /** The theme in force: the organizer's, with what the arrangemang (or a lone upplaga) changes on top. */
     public static function for(?Organizer $organizer, ?Event $event = null, bool $draft = false): array

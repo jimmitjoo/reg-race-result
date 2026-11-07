@@ -72,12 +72,15 @@ it('opens no other organizer\'s upplaga in the editor', function () {
     $this->get(route('events.page', $event))->assertNotFound();
 });
 
-it('tells the editor when the colours it shows are not published yet, and where to publish them', function () {
+it('edits the look in a panel beside the page and publishes it with the page', function () {
     $event = pageEvent();
-    // The theme is the arrangemang's, kept from year to year.
-    $event->series->update(['theme_draft' => ['brand' => '#0011ff']]);
 
-    Volt::test('page.edit', ['event' => $event])->assertSee(__('page.theme_draft'))->assertSee(route('events.theme', $event));
-    $event->series->update(['theme' => ['brand' => '#0011ff'], 'theme_draft' => null]);
-    Volt::test('page.edit', ['event' => $event])->assertDontSee(__('page.theme_draft'));
+    $editor = Volt::test('page.edit', ['event' => $event])->call('theme')->assertSet('theming', true)->assertSee(__('theme.series_help'));
+    Volt::test('theme.edit', ['event' => $event, 'panel' => true])->set('brand', '#1b2a6b')->assertDispatched('theme-changed');
+
+    // The arrangemang's look, kept from year to year, shown as drafted and published with the page.
+    expect($event->series->fresh()->theme_draft)->toMatchArray(['brand' => '#1b2a6b']);
+    $editor->call('themeChanged')->assertSee('--brand:#1b2a6b', false)->assertSee(__('page.draft_short'))->call('publish');
+    expect($event->series->fresh())->theme->toMatchArray(['brand' => '#1b2a6b'])->theme_draft->toBeNull();
+    $this->get('/hogby-if/sylvesterloppet-2026')->assertSee('--brand:#1b2a6b', false);
 });

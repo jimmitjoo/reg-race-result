@@ -18,7 +18,7 @@
             @if ($editing)
                 {{ $slot }}
             @else
-                <a href="{{ $event ? route('events.theme', $event) : route('theme.edit') }}" class="{{ $link }}"><flux:icon.paint-brush variant="micro" />{{ __('theme.title') }}</a>
+                <a href="{{ $edit }}?utseende=1" class="{{ $link }}"><flux:icon.paint-brush variant="micro" />{{ __('theme.title') }}</a>
                 @if ($event)
                     <a href="{{ route('events.show', $event) }}" class="{{ $link }}"><flux:icon.cog-6-tooth variant="micro" />{{ __('public.manage_event') }}</a>
                 @endif

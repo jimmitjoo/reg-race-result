@@ -5,6 +5,7 @@ use App\Support\Page;
 use App\Support\Theme;
 use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
@@ -23,6 +24,10 @@ new #[Layout('components.layouts.public')] class extends Component {
 
     // The selected block, whose settings show beside the page.
     public ?string $editing = null;
+
+    // The look's panel open instead of a block's: logo, colours, fonts and shape.
+    #[\Livewire\Attributes\Url(as: 'utseende', except: false)]
+    public bool $theming = false;
 
     // Where the block chooser is open: the place a new block goes (0 first).
     public ?int $addingAt = null;
@@ -109,7 +114,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     public function edit(?string $id): void
     {
         $this->editing = $id === null ? null : $this->blocks[$this->index($id)]['id'];
-        $this->addingAt = null;
+        [$this->addingAt, $this->theming] = [null, false];
         $this->resetValidation();
     }
 
@@ -204,13 +209,29 @@ new #[Layout('components.layouts.public')] class extends Component {
         $this->save();
     }
 
+    public function theme(): void
+    {
+        [$this->theming, $this->editing, $this->addingAt] = [! $this->theming, null, null];
+    }
+
+    /** A change in the look's panel: the page is drawn anew in it. */
+    #[On('theme-changed')]
+    public function themeChanged(): void {}
+
+    /** The page and its look together, so that what the editor shows is what runners get. */
     public function publish(): void
     {
         if (Page::problems($this->blocks, Page::forms($this->organizer())->keys()->all())) {
             return;
         }
         $this->validate(Page::rules());
-        $this->owner()->update(['page' => $this->blocks, 'page_draft' => null]);
+        if ($this->owner()->page_draft !== null) {
+            $this->owner()->update(['page' => $this->blocks, 'page_draft' => null]);
+        }
+        $look = Theme::owner($this->organizer(), $this->event);
+        if ($look->theme_draft !== null) {
+            $look->update(['theme' => $look->theme_draft, 'theme_draft' => null]);
+        }
         $this->removed = null;
         $this->dispatch('page-published');
     }
@@ -246,10 +267,11 @@ new #[Layout('components.layouts.public')] class extends Component {
             'selected' => collect($this->blocks)->firstWhere('id', $this->editing),
             'problems' => collect(Page::problems($this->blocks, $forms->keys()->all()))->groupBy('id'),
             'forms' => $forms,
-            'unpublished' => $this->owner()->page_draft !== null,
+            'unpublished' => $this->owner()->page_draft !== null || Theme::owner($organizer, $event)->theme_draft !== null,
             // The editor shows the theme's draft; the page itself not until the theme too is published.
-            'themeDraft' => $organizer->theme_draft !== null || ($event?->series ?? $event)?->theme_draft !== null,
-            'themeUrl' => $event && ($event->series ?? $event)->theme_draft !== null ? route('events.theme', $event) : route('theme.edit'),
+            // The club's look, under an upplaga's page, is published on the club's own page.
+            'clubDraft' => $event && $organizer->theme_draft !== null,
+            'css' => Theme::css($theme),
             'logo' => Theme::logoUrl($theme),
             'pageUrl' => $event ? $event->publicUrl() : route('public.organizer', $organizer->slug),
             'previewUrl' => $event
@@ -270,6 +292,8 @@ new #[Layout('components.layouts.public')] class extends Component {
     @assets
         @vite('resources/js/editor.js')
     @endassets
+    {{-- The look as drafted, over the published one the page was loaded with, so a change in its panel shows at once. --}}
+    @if ($css)<style>{!! $css !!}</style>@endif
 
     {{-- The bar the published page has, switched to Redigera, with the editor's actions in it. --}}
     <x-admin-bar :$organizer :event="$edition" editing class="bleed sticky top-0 z-50">
@@ -279,6 +303,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             @if ($unpublished){{ __('page.draft_short') }}@endif
         </span>
         <span class="ms-auto"></span>
+        <button type="button" wire:click="theme" aria-pressed="{{ $theming ? 'true' : 'false' }}" @class(['inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[6px] px-2.5 font-medium', 'bg-white text-zinc-900' => $theming, 'hover:bg-white/10 hover:text-white' => ! $theming])><flux:icon.paint-brush variant="micro" /><span class="max-sm:sr-only">{{ __('theme.title') }}</span></button>
         @if ($unpublished)
             <button type="button" wire:click="discard" wire:confirm="{{ __('page.discard_confirm') }}" class="inline-flex h-8 shrink-0 items-center rounded-[6px] px-2.5 font-medium hover:bg-white/10 hover:text-white">{{ __('page.discard') }}</button>
         @endif
@@ -323,8 +348,19 @@ new #[Layout('components.layouts.public')] class extends Component {
         </div>
     </div>
 
-    {{-- The chosen block's settings, floating beside the page; at the foot of the screen on a phone. --}}
-    @if ($selected)
+    {{-- The look, or the chosen block's settings, floating beside the page; at the foot of the screen on a phone. --}}
+    @if ($theming)
+        <aside wire:key="theme-panel" class="fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto rounded-panel bg-white p-5 text-sm text-zinc-800 shadow-raised ring-1 ring-zinc-200 lg:inset-x-auto lg:top-14 lg:right-4 lg:bottom-4 lg:max-h-none lg:w-[380px]">
+            <div class="mb-4 flex items-start justify-between gap-2">
+                <div class="flex flex-col gap-1">
+                    <flux:heading size="lg">{{ __('theme.title') }}</flux:heading>
+                    <flux:text class="text-sm">{{ $edition ? __($edition->series ? 'theme.series_help' : 'theme.event_help') : __('theme.help') }}</flux:text>
+                </div>
+                <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="theme" :aria-label="__('page.close')" />
+            </div>
+            @livewire('theme.edit', ['event' => $edition, 'panel' => true], key('theme-'.($edition?->id ?? 'club')))
+        </aside>
+    @elseif ($selected)
         <aside wire:key="inspector-panel" class="fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto shadow-raised lg:inset-x-auto lg:top-14 lg:right-4 lg:bottom-4 lg:max-h-none lg:w-[340px]">
             @include('livewire.page.inspector')
         </aside>
@@ -358,10 +394,10 @@ new #[Layout('components.layouts.public')] class extends Component {
                 </ul>
             </div>
         @endif
-        @if ($themeDraft)
+        @if ($clubDraft)
             <div class="rounded-panel bg-white p-4 text-sm text-zinc-800 shadow-raised ring-1 ring-zinc-200">
                 <p class="font-semibold">{{ __('page.theme_draft') }}</p>
-                <p class="mt-1">{{ __('page.theme_draft_help') }} <a href="{{ $themeUrl }}" class="font-medium underline underline-offset-2">{{ __('page.theme_draft_link') }}</a></p>
+                <p class="mt-1">{{ __('page.theme_draft_help') }} <a href="{{ route('page.edit', ['utseende' => 1]) }}" class="font-medium underline underline-offset-2">{{ __('page.theme_draft_link') }}</a></p>
             </div>
         @endif
         @if ($removed)
