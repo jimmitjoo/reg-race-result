@@ -212,3 +212,13 @@ it('puts the room above a block as chosen, a block beside another lined up with 
 
     expect(array_values(Page::spaces($blocks)))->toBe(['', '', 'mt-20 lg:mt-28', 'mt-6 lg:mt-28', 'mt-6 lg:mt-8']);
 });
+
+it('lays coming races and earlier years across the window as a band, their cards kept in the page\'s column', function () {
+    $organizer = pageOrganizer();
+    $organizer->update(['page' => [['background' => 'brand', 'size' => 'full'] + Page::block('upcoming'), ['size' => 'full'] + Page::block('earlier')]]);
+
+    $this->get('/hogby-if')->assertOk()
+        ->assertSee('on-brand bg-brand', false)
+        ->assertSee('max-w-[calc(1100px+3rem)]', false)
+        ->assertSee('mx-auto w-full max-w-[1100px]', false);
+});
