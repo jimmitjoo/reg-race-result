@@ -159,3 +159,17 @@ it('copies the team size to a new upplaga', function () {
 
     expect($series->newEdition('2026-05-09')->raceClasses()->sole()->team_size)->toBe(11);
 });
+
+it('lists coming upplagor first and suggests the next upplaga a year after the latest', function () {
+    $this->actingAs($user = seriesUser());
+    $series = Series::factory()->create(['organizer_id' => $user->organizer_id, 'name' => 'Sylvesterloppet']);
+    $series->addEdition('2025-12-31');
+    $coming = $series->addEdition(today()->addDays(10)->toDateString());
+
+    Volt::test('events.index')
+        ->assertViewHas('upcoming', fn ($upcoming) => $upcoming->pluck('id')->all() === [$coming->id])
+        ->assertSee(trans_choice('events.earlier_editions', 1))
+        ->call('startEdition', $series->id)
+        ->assertSet('editionFor', $series->id)
+        ->assertSet("editionDate.{$series->id}", today()->addDays(10)->addYear()->toDateString());
+});

@@ -130,4 +130,10 @@ return [
     'min_time_short' => 'minsta tid :minutes min',
     'actions' => 'Åtgärder',
     'details_empty' => 'Ort, tävlingsledare, väder och kontakt',
+    'index_help' => 'Ett arrangemang är loppet som återkommer, som Sylvesterloppet. Varje gång det går är en upplaga, med egna lopp, klasser och anmälningar.',
+    'new_help' => 'Finns arrangemanget redan blir det här dess nästa upplaga.',
+    'upcoming' => 'Kommande',
+    'all_series' => 'Alla arrangemang',
+    'latest' => 'Senast',
+    'earlier_editions' => ':count tidigare upplaga|:count tidigare upplagor',
 ];
