@@ -6,6 +6,7 @@ return [
     'for_event' => 'Gäller :event',
     'help' => 'Er logga, era färger, ett typsnittspar och en form. Det gäller alla era lopp, och varje upplaga kan ändra det den vill.',
     'event_help' => 'Det ni inte ändrar här ärvs från klubbens utseende.',
+    'series_help' => 'Gäller arrangemanget, alla år. Det ni inte ändrar här ärvs från klubbens utseende.',
     'logo' => 'Logga',
     'logo_of' => 'Loggan för :name',
     'use_organizers' => 'Använd klubbens',

@@ -4,10 +4,12 @@ namespace App\Support;
 
 use App\Models\Event;
 use App\Models\Organizer;
+use App\Models\Series;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * An organizer's theme (#112), and an upplaga's on top of it: logo, one or two colours, a font pair and a
+ * An organizer's theme (#112), and an arrangemang's on top of it, kept from year to year; an upplaga
+ * without an arrangemang has its own. Logo, one or two colours, a font pair and a
  * shape. The colours an organizer picks are never used as they are: they are adjusted until text and
  * components on them meet WCAG 2.2 AA, so no choice can make a page unreadable.
  */
@@ -52,12 +54,18 @@ final class Theme
 
     private const GROUND = [238, 240, 236];
 
-    /** The theme in force: the organizer's, with what the upplaga changes on top. */
+    /** Whose theme an editor changes: an upplaga's arrangemang, so the next year looks the same, a lone upplaga, or the organizer. */
+    public static function owner(Organizer $organizer, ?Event $event = null): Organizer|Event|Series
+    {
+        return $event?->series ?? $event ?? $organizer;
+    }
+
+    /** The theme in force: the organizer's, with what the arrangemang (or a lone upplaga) changes on top. */
     public static function for(?Organizer $organizer, ?Event $event = null, bool $draft = false): array
     {
         $own = fn ($model) => array_filter((array) ($draft ? ($model?->theme_draft ?? $model?->theme) : $model?->theme), fn ($value) => $value !== null && $value !== '');
 
-        return array_merge(self::DEFAULTS, $own($organizer), $own($event));
+        return array_merge(self::DEFAULTS, $own($organizer), $own($event?->series), $own($event));
     }
 
     /**

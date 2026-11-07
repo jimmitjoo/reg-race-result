@@ -4,10 +4,10 @@
         @if ($logo)
             <img src="{{ $logo }}" alt="" class="h-16 w-auto max-w-[220px] self-start object-contain">
         @endif
-        <x-editable :$editor :$block field="title" as="h1" class="text-[48px] leading-[50px] font-normal tracking-[-0.035em] text-balance sm:text-[88px] sm:leading-[88px]" :placeholder="$organizer->name" :fallback="$organizer->name" />
+        <x-editable :$editor :$block field="title" as="h1" class="text-[48px] leading-[50px] font-normal tracking-[-0.035em] text-balance sm:text-[88px] sm:leading-[88px]" :placeholder="$name" :fallback="$name" />
         <x-editable :$editor :$block field="intro" class="max-w-[38rem] text-[20px] leading-[30px] text-pretty text-ink-soft" :placeholder="__('page.intro_placeholder')" />
     </div>
-    @if ($next)
+    @if ($next || $edition)
         <div class="rounded-card bg-white p-6 shadow-rest sm:p-7">
             @include('blocks.hero.next', ['tone' => 'light', 'stack' => true])
         </div>

@@ -1,11 +1,17 @@
-{{-- The selected block's settings, beside the page: what is not written into the page itself. --}}
-<div class="flex flex-col gap-4 rounded-panel bg-white p-5 text-sm text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700">
+{{--
+    The selected block's settings, beside the page: what is not written into the page itself. Drawn anew for
+    each block, so that no field stays bound to the block chosen before.
+--}}
+<div wire:key="inspector-{{ $selected['id'] ?? 'none' }}" class="flex flex-col gap-4 rounded-panel bg-white p-5 text-sm text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700">
     @if ($selected)
         @php($i = collect($blocks)->search(fn ($b) => $b['id'] === $selected['id']))
         @php($block = $selected)
         @php($field = fn ($name) => "blocks.{$i}.{$name}")
         <div class="flex flex-col gap-1">
-            <flux:heading size="lg">{{ __("page.type.{$block['type']}") }}</flux:heading>
+            <div class="flex items-start justify-between gap-2">
+                <flux:heading size="lg">{{ __("page.type.{$block['type']}") }}</flux:heading>
+                <flux:button size="sm" variant="ghost" icon="x-mark" wire:click="edit(null)" :aria-label="__('page.close')" />
+            </div>
             <flux:text>{{ __("page.about.{$block['type']}") }}</flux:text>
         </div>
         @if ($block['type'] === 'hero')
@@ -39,9 +45,9 @@
                 </flux:select>
                 @if ($chosen = $forms->get((int) $block['form_id']))
                     <flux:text class="text-sm">{{ __("forms.action_help.{$chosen->action}") }}@if ($chosen->action !== 'store') ({{ $chosen->recipient() }})@endif</flux:text>
-                    <a href="{{ route('forms.edit', $chosen) }}" wire:navigate class="self-start text-sm underline underline-offset-2">{{ __('page.edit_form') }}</a>
+                    <a href="{{ route('forms.edit', $chosen) }}" class="self-start text-sm underline underline-offset-2">{{ __('page.edit_form') }}</a>
                 @endif
-                <a href="{{ route('forms.index') }}" wire:navigate class="self-start text-sm underline underline-offset-2">{{ __('page.new_form') }}</a>
+                <a href="{{ route('forms.index') }}" class="self-start text-sm underline underline-offset-2">{{ __('page.new_form') }}</a>
             </div>
         @endif
         @if ($block['type'] === 'image')
@@ -79,6 +85,14 @@
                 </ol>
                 <flux:button size="sm" icon="plus" wire:click="addItem('{{ $block['id'] }}')" class="self-start">{{ __("page.add_item.{$block['type']}") }}</flux:button>
             </div>
+        @endif
+        {{-- On an upplaga's page, a block can wait for its moment; the top, with the page's h1, always shows. --}}
+        @if ($edition && $block['type'] !== 'hero')
+            <flux:select wire:model.live="{{ $field('when') }}" :label="__('page.when')" :description="__('page.when_help')">
+                @foreach (\App\Support\Page::WHENS as $when)
+                    <option value="{{ $when }}">{{ __("page.whens.{$when}") }}</option>
+                @endforeach
+            </flux:select>
         @endif
         @if ($i > 0)
             <flux:radio.group wire:model.live="{{ $field('space') }}" :label="__('page.space')" variant="segmented" size="sm">
@@ -131,13 +145,5 @@
             <flux:button size="sm" icon="arrow-down" wire:click="move('{{ $block['id'] }}', 1)" :disabled="$i === count($blocks) - 1">{{ __('page.move_down') }}</flux:button>
             <flux:button size="sm" variant="danger" icon="trash" wire:click="remove('{{ $block['id'] }}')">{{ __('page.remove') }}</flux:button>
         </div>
-    @else
-        <flux:heading size="lg">{{ __('page.how_title') }}</flux:heading>
-        <ul class="flex list-disc flex-col gap-2 ps-5 text-zinc-600 dark:text-zinc-300">
-            <li>{{ __('page.how_write') }}</li>
-            <li>{{ __('page.how_select') }}</li>
-            <li>{{ __('page.how_add') }}</li>
-            <li>{{ __('page.how_publish') }}</li>
-        </ul>
     @endif
 </div>

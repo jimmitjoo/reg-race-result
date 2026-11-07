@@ -6,6 +6,7 @@ return [
     'for_event' => 'Applies to :event',
     'help' => 'Your logo, your colours, a font pair and a shape. It applies to all your races, and each edition can change what it wants.',
     'event_help' => 'What you do not change here comes from the club appearance.',
+    'series_help' => 'Applies to the arrangemang, every year. What you do not change here comes from the club appearance.',
     'logo' => 'Logo',
     'logo_of' => 'The logo of :name',
     'use_organizers' => 'Use the club logo',
