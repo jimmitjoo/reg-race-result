@@ -2,6 +2,7 @@
 
 use App\Models\Event;
 use App\Models\Organizer;
+use App\Models\Series;
 use App\Models\User;
 use App\Support\Theme;
 use Illuminate\Http\UploadedFile;
@@ -102,4 +103,19 @@ it('takes an SVG logo, keeping its drawing but not its scripts, events or outsid
     expect($stored)->toContain('<circle')->not->toContain('script')->not->toContain('onload')->not->toContain('spår.example')->not->toContain('foreignObject');
 
     Volt::test('theme.edit')->set('upload', UploadedFile::fake()->createWithContent('trasig.svg', '<svg xmlns="http://www.w3.org/2000/svg"><circle'))->assertHasErrors('upload');
+});
+
+it('keeps the theme chosen for an upplaga of an arrangemang for its other years', function () {
+    $this->travelTo('2026-11-07 12:00');
+    $organizer = Organizer::factory()->create(['slug' => 'hogby-if', 'theme' => ['brand' => '#b60202']]);
+    $series = Series::create(['organizer_id' => $organizer->id, 'name' => 'Sylvesterloppet']);
+    $this->actingAs(User::factory()->create(['organizer_id' => $organizer->id]));
+    $now = $series->addEdition('2026-12-31');
+
+    Volt::test('theme.edit', ['event' => $now])->assertSee(__('theme.series_help'))->set('brand', '#1b2a6b')->call('publish');
+    $next = $series->addEdition('2027-12-31');
+
+    expect($series->fresh()->theme)->toMatchArray(['brand' => '#1b2a6b'])->and($now->fresh()->theme)->toBeNull()
+        ->and(Theme::for($organizer, $next))->toMatchArray(['brand' => '#1b2a6b'])
+        ->and(Theme::for($organizer))->toMatchArray(['brand' => '#b60202']);
 });

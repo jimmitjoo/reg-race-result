@@ -241,8 +241,8 @@ new class extends Component {
             'forms' => $forms,
             'unpublished' => $this->owner()->page_draft !== null,
             // The editor shows the theme's draft; the page itself not until the theme too is published.
-            'themeDraft' => $organizer->theme_draft !== null || $event?->theme_draft !== null,
-            'themeUrl' => $event && $event->theme_draft !== null ? route('events.theme', $event) : route('theme.edit'),
+            'themeDraft' => $organizer->theme_draft !== null || ($event?->series ?? $event)?->theme_draft !== null,
+            'themeUrl' => $event && ($event->series ?? $event)->theme_draft !== null ? route('events.theme', $event) : route('theme.edit'),
             'css' => Theme::css($theme, '.theme-preview'),
             'logo' => Theme::logoUrl($theme),
             'pageUrl' => $event ? $event->publicUrl() : route('public.organizer', $organizer->slug),

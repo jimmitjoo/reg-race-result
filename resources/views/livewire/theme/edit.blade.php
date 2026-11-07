@@ -36,7 +36,8 @@ new class extends Component {
 
     private function owner()
     {
-        return $this->event ?? auth()->user()->organizer;
+        // An upplaga of an arrangemang changes the arrangemang's, so the next year looks the same.
+        return $this->event?->series ?? $this->event ?? auth()->user()->organizer;
     }
 
     /** An SVG can carry script: only its sanitized drawing is kept, without scripts, events or outside references (#122). */
@@ -117,9 +118,9 @@ new class extends Component {
     <style>{!! $css !!}</style>
     <div>
         <flux:heading size="xl">{{ __('theme.title') }}</flux:heading>
-        <flux:subheading>{{ $event ? __('theme.for_event', ['event' => $event->name]) : __('theme.for_organizer') }}</flux:subheading>
+        <flux:subheading>{{ $event ? __('theme.for_event', ['event' => $event->series?->name ?? $event->name]) : __('theme.for_organizer') }}</flux:subheading>
     </div>
-    <flux:text>{{ $event ? __('theme.event_help') : __('theme.help') }}</flux:text>
+    <flux:text>{{ $event ? __($event->series ? 'theme.series_help' : 'theme.event_help') : __('theme.help') }}</flux:text>
 
     <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         <div class="flex flex-col gap-6">
