@@ -11,4 +11,7 @@ return [
     'upcoming' => 'Upcoming races',
     'no_upcoming' => 'No races are planned yet. Check back later.',
     'earlier' => 'Earlier years',
+    'breadcrumbs' => 'You are here',
+    'cancelled' => 'The race is cancelled.',
+    'moved' => 'The race has been moved to :date.',
 ];

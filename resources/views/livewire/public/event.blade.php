@@ -128,7 +128,8 @@ new #[Layout('components.layouts.public')] class extends Component {
             ->map(function ($race) use ($now, $canPay) {
                 $today = $now->copy()->setTimezone($this->raceEvent->timezone)->toDateString();
                 $steps = $race->priceSteps->filter(fn ($step) => $step->until->toDateString() >= $today)->values();
-                $price = $race->priceAt($now);
+                // A cancelled upplaga takes no registrations (#117).
+                $price = $this->raceEvent->cancelled_at ? null : $race->priceAt($now);
 
                 // A paid race waits until the organizer's Stripe account can take payments.
                 return ['race' => $race, 'price' => $price, 'until' => $steps->first()?->until, 'next' => $steps->get(1), 'soon' => $price > 0 && ! $canPay];
@@ -213,6 +214,12 @@ new #[Layout('components.layouts.public')] class extends Component {
             'participants.*.club' => __('registration.club'),
             'participants.*.code' => __('registration.code'),
         ]);
+
+        if ($this->raceEvent->cancelled_at) {
+            $this->addError('participants.0.raceClassId', __('registration.class_not_open'));
+
+            return;
+        }
 
         // Every participant is checked before anything is saved, and each error lands on its own participant.
         $classes = $this->classes();
@@ -344,13 +351,15 @@ new #[Layout('components.layouts.public')] class extends Component {
 @php($invoiced = $lines->first(fn ($line) => $line['campaign']?->invoice)['campaign'] ?? null)
 @php($max = $this::MAX_PARTICIPANTS)
 <div x-data="{ summaryInView: false }" class="flex flex-col gap-12">
+    {{-- What search engines and Löpning.se's calendar read (#117, #120): the race, its status and its prices, from the same data as the page. --}}
+    <script type="application/ld+json">{!! json_encode(App\Support\SchemaOrg::event($event, $races), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     <header class="flex flex-col gap-4">
         @php($logo = \App\Support\Theme::logoUrl(\App\Support\Theme::for($event->organizer, $event)))
-        <p class="text-[15px] text-ink-soft">
-            <a href="{{ route('public.organizer', $event->organizer->slug) }}" class="inline-flex items-center gap-3 underline decoration-contour hover:text-ink">
-                @if ($logo)<img src="{{ $logo }}" alt="" class="h-10 w-auto max-w-[160px] object-contain">@endif{{ $event->organizer->name }}
-            </a>
-        </p>
+        @if ($logo)
+            <a href="{{ route('public.organizer', $event->organizer->slug) }}" class="self-start"><img src="{{ $logo }}" alt="{{ $event->organizer->name }}" class="h-10 w-auto max-w-[160px] object-contain"></a>
+        @endif
+        <x-breadcrumbs :event="$event" />
+        <x-event-status :event="$event" />
         <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ $event->name }}</h1>
         <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</p>
         <div class="flex flex-wrap items-center gap-2 pt-2">

@@ -92,6 +92,26 @@ new class extends Component {
         ]);
     }
 
+    // A cancelled or moved upplaga (#117).
+    public string $newDate = '';
+
+    public function cancelEvent(): void
+    {
+        $this->event->update(['cancelled_at' => now()]);
+    }
+
+    public function reinstate(): void
+    {
+        $this->event->update(['cancelled_at' => null]);
+    }
+
+    public function move(): void
+    {
+        $this->validate(['newDate' => ['required', 'date_format:Y-m-d', Rule::notIn([$this->event->date->toDateString()])]], [], ['newDate' => __('events.new_date')]);
+        $this->event->moveTo($this->newDate);
+        $this->reset('newDate');
+    }
+
     public function editRace(int $id): void
     {
         $race = $this->event->races()->findOrFail($id);
@@ -307,6 +327,24 @@ new class extends Component {
         </div>
         <div><flux:button type="submit">{{ __('events.save') }}</flux:button></div>
     </form>
+
+    <section class="flex flex-col gap-3 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+        <flux:heading>{{ __('events.status') }}</flux:heading>
+        @if ($event->cancelled_at)
+            <flux:callout variant="danger" icon="x-circle" :heading="__('events.cancelled')" :text="__('events.cancelled_help')" />
+            <div><flux:button wire:click="reinstate">{{ __('events.reinstate') }}</flux:button></div>
+        @else
+            @if ($event->status() === 'moved')
+                <flux:callout icon="calendar" :heading="__('events.moved', ['from' => \App\Support\Format::date($event->moved_from), 'to' => \App\Support\Format::date($event->date)])" />
+            @endif
+            <div class="flex flex-wrap items-end gap-3">
+                <flux:input wire:model="newDate" type="date" :label="__('events.new_date')" class="w-48" />
+                <flux:button wire:click="move">{{ __('events.move') }}</flux:button>
+                <flux:button variant="danger" wire:click="cancelEvent" wire:confirm="{{ __('events.cancel_confirm') }}" class="ms-auto">{{ __('events.cancel_event') }}</flux:button>
+            </div>
+            <flux:text class="text-sm">{{ __('events.status_help') }}</flux:text>
+        @endif
+    </section>
     @endif
 
     @foreach ($races as $race)

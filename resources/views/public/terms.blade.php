@@ -1,7 +1,7 @@
 <x-layouts.public :organizer="$organizer" :title="__('privacy.terms_title').' – '.$organizer->name">
     <article class="mx-auto flex max-w-[720px] flex-col gap-8">
         <header class="flex flex-col gap-3">
-            <p class="text-[15px] text-ink-soft">{{ $organizer->name }}</p>
+            <nav aria-label="{{ __('public.breadcrumbs') }}" class="text-[15px] text-ink-soft"><a href="{{ route('public.organizer', $organizer->slug) }}" class="underline decoration-contour hover:text-ink">{{ $organizer->name }}</a></nav>
             <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] sm:text-[52px] sm:leading-[56px]">{{ __('privacy.terms_title') }}</h1>
             <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ __('privacy.terms_intro', ['organizer' => $organizer->name]) }}</p>
         </header>

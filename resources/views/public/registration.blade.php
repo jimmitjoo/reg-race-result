@@ -5,7 +5,7 @@
 <x-layouts.public :organizer="$event->organizer" :event="$event" :title="__('public.title', ['page' => __('registration.confirmation_heading'), 'event' => $event->name, 'organizer' => $event->organizer->name])">
     <div class="mx-auto flex max-w-[720px] flex-col gap-8">
         <header class="flex flex-col gap-3">
-            <p class="text-[15px] text-ink-soft">{{ $event->organizer->name }}</p>
+            <x-breadcrumbs :event="$event" :page="__('registration.your_registration')" />
             @if ($registration->paid_at || $registration->payment_method === 'invoice')
                 <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ __('registration.confirmation_heading') }}</h1>
                 <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ $order->count() > 1 ? __('registration.confirmation_text_many', ['count' => $order->count(), 'event' => $event->name]) : __('registration.confirmation_text', ['name' => $registration->displayName(), 'class' => $class->name, 'event' => $event->name]) }}</p>

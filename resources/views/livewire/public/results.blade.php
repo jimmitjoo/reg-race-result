@@ -48,7 +48,8 @@ new #[Layout('components.layouts.public')] class extends Component {
 
 <div class="flex flex-col gap-8" @if ($event->results_public_at) wire:poll.15s @endif>
     <header class="flex flex-col gap-3">
-        <p class="text-[15px] text-ink-soft"><a href="{{ route('public.event', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}" class="underline decoration-contour hover:text-ink">{{ $event->name }}</a></p>
+        <x-breadcrumbs :event="$event" :page="__('live.title')" />
+        <x-event-status :event="$event" />
         <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] sm:text-[52px] sm:leading-[56px]">{{ __('live.title') }}</h1>
         <p class="text-[17px] text-ink-soft">{{ \App\Support\Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</p>
     </header>

@@ -11,4 +11,7 @@ return [
     'upcoming' => 'Kommande lopp',
     'no_upcoming' => 'Inga lopp är inlagda än. Titta gärna tillbaka senare.',
     'earlier' => 'Tidigare år',
+    'breadcrumbs' => 'Du är här',
+    'cancelled' => 'Loppet är inställt.',
+    'moved' => 'Loppet är flyttat till :date.',
 ];
