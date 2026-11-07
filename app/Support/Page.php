@@ -6,6 +6,8 @@ use App\Models\Organizer;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 /**
  * The organizer's own page as blocks (#115, #116): structured data per block, rendered on the server to
@@ -15,6 +17,16 @@ use Illuminate\Validation\Rule;
 final class Page
 {
     public const TYPES = ['hero', 'text', 'image', 'upcoming', 'earlier', 'contact'];
+
+    /** The fields written straight into a block on the page, rather than in its settings. */
+    public const INLINE = [
+        'hero' => ['intro'],
+        'text' => ['heading', 'body'],
+        'image' => ['caption'],
+        'upcoming' => ['heading'],
+        'earlier' => ['heading'],
+        'contact' => ['heading', 'name', 'email', 'phone'],
+    ];
 
     /** What a page nobody has edited shows: the club, what is coming and earlier years. */
     public static function default(): array
@@ -91,15 +103,27 @@ final class Page
     /** A link that says nothing about where it goes, read out of context by a screen reader. */
     private static function vagueLink(string $body): bool
     {
-        return (bool) preg_match('/\[\s*(klicka här|klicka|här|läs mer|click here|here|read more)\s*\]\(/iu', $body);
+        $vague = '\s*(klicka här|klicka|här|läs mer|click here|here|read more)\s*';
+
+        return (bool) preg_match("/\\[{$vague}\\]\\(|<a\\b[^>]*>{$vague}<\\/a>/iu", $body);
     }
 
-    /** Markdown without HTML or unsafe links, its headings as h3 under the block's h2. */
-    public static function markdown(string $body): string
+    /**
+     * A text's body as safe HTML: paragraphs, emphasis, lists, quotes, links and its own headings as h3
+     * under the block's h2, nothing else. Written in the editor as HTML, or earlier as Markdown.
+     */
+    public static function html(string $body): string
     {
-        $html = Str::markdown($body, ['html_input' => 'strip', 'allow_unsafe_links' => false]);
+        $html = str_starts_with(ltrim($body), '<') ? $body : Str::markdown($body, ['html_input' => 'strip', 'allow_unsafe_links' => false]);
+        $config = (new HtmlSanitizerConfig)
+            ->allowElement('p')->allowElement('br')->allowElement('strong')->allowElement('em')
+            ->allowElement('ul')->allowElement('ol')->allowElement('li')->allowElement('blockquote')->allowElement('h3')
+            ->allowElement('a', ['href'])->allowLinkSchemes(['https', 'http', 'mailto', 'tel'])->allowRelativeLinks()
+            // Kept as their text, not dropped with it.
+            ->blockElement('div')->blockElement('span')->blockElement('b')->blockElement('i')->blockElement('u')->blockElement('s')
+            ->blockElement('code')->blockElement('pre');
 
-        return preg_replace('#<(/?)h[1-6]\b#', '<$1h3', $html);
+        return (new HtmlSanitizer($config))->sanitize(preg_replace('#<(/?)h[1-6]\b#i', '<$1h3', $html));
     }
 
     /** The upplagor the blocks show: the coming ones in date order, earlier years per arrangemang. */

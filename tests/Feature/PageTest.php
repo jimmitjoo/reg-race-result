@@ -95,3 +95,20 @@ it('will not publish an image without alt text, an empty block or a link that sa
     expect($organizer->fresh()->page[1])->toMatchArray(['alt' => 'Löpare i snön vid start', 'width' => 1, 'height' => 1]);
     $this->get('/hogby-if')->assertSee('alt="Löpare i snön vid start"', false);
 });
+
+it('takes text written straight into a block, the text\'s HTML cleaned to what a text may hold', function () {
+    $organizer = pageOrganizer();
+    $editor = Volt::test('page.edit')->call('add', 'text', 1);
+    $id = $editor->get('blocks')[1]['id'];
+
+    $editor->call('setField', $id, 'heading', 'Om klubben')
+        ->call('setField', $id, 'body', '<h2>Historia</h2><p onclick="x()">Grundad <strong>1932</strong> <a href="javascript:alert(1)">x</a> <a href="https://hogbyif.se" target="_blank">vår sajt</a></p><script>alert(1)</script><img src=x onerror=alert(1)>');
+
+    expect($organizer->fresh()->page_draft[1])->toMatchArray([
+        'heading' => 'Om klubben',
+        'body' => '<h3>Historia</h3><p>Grundad <strong>1932</strong> <a>x</a> <a href="https://hogbyif.se">vår sajt</a></p>',
+    ]);
+
+    // Only the fields written on the page, never the image or the type.
+    $editor->call('setField', $id, 'type', 'hero')->assertNotFound();
+});

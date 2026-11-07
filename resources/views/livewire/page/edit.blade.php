@@ -16,6 +16,7 @@ new class extends Component {
 
     public array $blocks = [];
 
+    // The selected block, whose settings show beside the page.
     public ?string $editing = null;
 
     // Where the block chooser is open: the place a new block goes (0 first).
@@ -76,11 +77,20 @@ new class extends Component {
         $this->save();
     }
 
-    public function edit(string $id): void
+    public function edit(?string $id): void
     {
-        $this->editing = $this->editing === $id ? null : $id;
+        $this->editing = $id === null ? null : $this->blocks[$this->index($id)]['id'];
         $this->addingAt = null;
         $this->resetValidation();
+    }
+
+    /** Text written straight into a block on the page. */
+    public function setField(string $id, string $field, string $value): void
+    {
+        $at = $this->index($id);
+        abort_unless(in_array($field, Page::INLINE[$this->blocks[$at]['type']], true), 404);
+        $this->blocks[$at][$field] = $field === 'body' ? Page::html($value) : $value;
+        $this->save();
     }
 
     public function choose(?int $at): void
@@ -96,7 +106,7 @@ new class extends Component {
         array_splice($this->blocks, max(0, min(count($this->blocks), $at)), 0, [$block]);
         [$this->addingAt, $this->removed] = [null, null];
         // Blocks with something to fill in open for it at once.
-        $this->editing = in_array($type, ['upcoming', 'earlier'], true) ? null : $block['id'];
+        $this->editing = $block['id'];
         $this->save();
     }
 
@@ -154,8 +164,8 @@ new class extends Component {
     public function discard(): void
     {
         $this->organizer()->update(['page_draft' => null]);
-        $this->blocks = Page::for($this->organizer()->fresh());
-        [$this->editing, $this->addingAt, $this->removed] = [null, null, null];
+        // Anew, since the text written in place is the browser's until then.
+        $this->redirectRoute('page.edit', navigate: true);
     }
 
     public function with(): array
@@ -165,6 +175,8 @@ new class extends Component {
 
         return [
             'organizer' => $organizer,
+            'editor' => true,
+            'selected' => collect($this->blocks)->firstWhere('id', $this->editing),
             'problems' => collect(Page::problems($this->blocks))->groupBy('id'),
             'unpublished' => $organizer->page_draft !== null,
             'css' => Theme::css($theme, '.theme-preview'),
@@ -177,6 +189,9 @@ new class extends Component {
 }; ?>
 
 <div class="flex flex-col gap-6">
+    @assets
+        @vite('resources/js/editor.js')
+    @endassets
     @if ($css)<style>{!! $css !!}</style>@endif
 
     <div class="flex flex-wrap items-start justify-between gap-4">
@@ -222,37 +237,35 @@ new class extends Component {
     @endif
 
     {{-- The page as it will look, in the organizer's theme. --}}
-    {{-- The toolbars and forms are admin, light or dark; only the page itself is always light, as runners see it. --}}
-    <div class="theme-preview rounded-panel bg-ground p-3 sm:p-6">
-        @include('livewire.page.adder', ['at' => 0])
-        <div wire:sort="sortBlock" class="flex flex-col">
-            @foreach ($blocks as $i => $block)
-                <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="flex flex-col">
-                    <div @class(['flex flex-col gap-2 rounded-[calc(var(--radius-card)+10px)] p-2 ring-1 transition', 'ring-2 ring-brand' => $editing === $block['id'], 'ring-peach' => $editing !== $block['id'] && $problems->has($block['id']), 'ring-transparent hover:ring-zinc-300' => $editing !== $block['id'] && ! $problems->has($block['id'])])>
-                        <div class="flex flex-wrap items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 text-sm text-zinc-800 shadow-rest ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700">
-                            @include('livewire.events.drag-handle')
-                            <span class="px-1 font-medium">{{ __("page.type.{$block['type']}") }}</span>
-                            <flux:button size="xs" variant="ghost" icon="arrow-up" wire:click="move('{{ $block['id'] }}', -1)" :disabled="$loop->first" :aria-label="__('page.move_up')" />
-                            <flux:button size="xs" variant="ghost" icon="arrow-down" wire:click="move('{{ $block['id'] }}', 1)" :disabled="$loop->last" :aria-label="__('page.move_down')" />
-                            <flux:button size="xs" variant="ghost" icon="pencil-square" wire:click="edit('{{ $block['id'] }}')" :aria-expanded="$editing === $block['id'] ? 'true' : 'false'">{{ $editing === $block['id'] ? __('page.done') : __('page.edit') }}</flux:button>
-                            <flux:button size="xs" variant="ghost" icon="trash" wire:click="remove('{{ $block['id'] }}')">{{ __('page.remove') }}</flux:button>
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        {{-- The page as runners see it, always light, written into where it stands; its links are not followed here. --}}
+        <div class="theme-preview min-w-0 rounded-panel bg-ground p-3 sm:p-6" x-on:click.capture="$event.target.closest('a') && $event.preventDefault()">
+            @include('livewire.page.adder', ['at' => 0])
+            <div wire:sort="sortBlock" class="flex flex-col">
+                @foreach ($blocks as $i => $block)
+                    @php($chosen = $editing === $block['id'])
+                    <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="group flex flex-col">
+                        <div @unless ($chosen) wire:click="edit('{{ $block['id'] }}')" @endunless
+                            @class(['relative flex flex-col gap-2 rounded-[calc(var(--radius-card)+10px)] p-2 ring-1 transition', 'ring-2 ring-brand' => $chosen, 'ring-peach' => ! $chosen && $problems->has($block['id']), 'cursor-pointer ring-transparent hover:ring-zinc-300' => ! $chosen && ! $problems->has($block['id'])])>
+                            <div @class(['flex items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 text-sm text-zinc-800 shadow-rest ring-1 ring-zinc-200 transition dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700', 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100' => ! $chosen])>
+                                @include('livewire.events.drag-handle')
+                                <span class="px-1 font-medium">{{ __("page.type.{$block['type']}") }}</span>
+                                <flux:button size="xs" variant="ghost" icon="arrow-up" wire:click.stop="move('{{ $block['id'] }}', -1)" :disabled="$loop->first" :aria-label="__('page.move_up')" />
+                                <flux:button size="xs" variant="ghost" icon="arrow-down" wire:click.stop="move('{{ $block['id'] }}', 1)" :disabled="$loop->last" :aria-label="__('page.move_down')" />
+                                <flux:button size="xs" variant="ghost" icon="trash" wire:click.stop="remove('{{ $block['id'] }}')" :aria-label="__('page.remove')" />
+                            </div>
+                            <div class="lp-public text-ink" style="font-family: var(--font-sans)">
+                                @include('blocks.'.$block['type'])
+                            </div>
                         </div>
-
-                        {{-- inert: the links and buttons in the page are not followed while editing. --}}
-                        <div inert class="lp-public text-ink" style="font-family: var(--font-sans)">
-                            @include('blocks.'.$block['type'])
-                            @if ($block['type'] === 'image' && ! $block['image'])
-                                <p class="rounded-card border-2 border-dashed border-contour p-10 text-center text-ink-soft">{{ __('page.no_image_yet') }}</p>
-                            @endif
-                        </div>
-
-                        @if ($editing === $block['id'])
-                            @include('livewire.page.form')
-                        @endif
+                        @include('livewire.page.adder', ['at' => $i + 1])
                     </div>
-                    @include('livewire.page.adder', ['at' => $i + 1])
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         </div>
+
+        <aside class="lg:sticky lg:top-4">
+            @include('livewire.page.inspector')
+        </aside>
     </div>
 </div>

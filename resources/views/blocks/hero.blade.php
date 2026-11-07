@@ -7,9 +7,7 @@
         @endif
         <div class="flex flex-col gap-4">
             <h1 class="text-[40px] leading-[44px] font-normal tracking-[-0.02em] text-balance sm:text-[56px] sm:leading-[60px]">{{ $organizer->name }}</h1>
-            @if (trim($block['intro']) !== '')
-                <p class="max-w-[38rem] text-[19px] leading-[28px] text-pretty">{{ $block['intro'] }}</p>
-            @endif
+            <x-editable :$editor :$block field="intro" class="max-w-[38rem] text-[19px] leading-[28px] text-pretty" :placeholder="__('page.intro_placeholder')" />
         </div>
         @if ($next)
             <div class="mt-auto flex flex-col gap-3 border-t border-current/25 pt-6 sm:flex-row sm:items-center sm:justify-between">

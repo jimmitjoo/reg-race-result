@@ -1,7 +1,8 @@
 {{-- Earlier years per arrangemang, the latest five in view: the results once published, otherwise who ran. --}}
-@if ($earlier->isNotEmpty())
+@if ($earlier->isNotEmpty() || $editor)
     <section class="flex flex-col gap-4">
-        <h2 class="text-[26px] leading-[32px] font-medium sm:text-[32px] sm:leading-[38px]">{{ trim($block['heading']) ?: __('public.earlier') }}</h2>
+        <x-editable :$editor :$block field="heading" as="h2" class="text-[26px] leading-[32px] font-medium sm:text-[32px] sm:leading-[38px]" :placeholder="__('public.earlier')" :fallback="__('public.earlier')" />
+        @if ($earlier->isEmpty())<p class="text-[17px] text-ink-soft">{{ __('page.no_earlier') }}</p>@endif
         <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($earlier as $name => $years)
                 <li class="flex flex-col gap-3 rounded-card bg-white p-5 shadow-rest">

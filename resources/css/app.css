@@ -278,3 +278,16 @@ select:focus[data-flux-control] {
         -webkit-box-decoration-break: clone;
     }
 }
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* The block editor's text (#115): the placeholder of an empty text. */
+.ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    opacity: 0.55;
+    pointer-events: none;
+}

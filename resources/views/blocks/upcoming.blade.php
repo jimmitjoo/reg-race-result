@@ -1,7 +1,7 @@
 {{-- The coming upplagor, read from the arrangemang: they cannot go out of date. --}}
 @use('App\Support\Format')
 <section class="flex flex-col gap-4">
-    <h2 class="text-[26px] leading-[32px] font-medium sm:text-[32px] sm:leading-[38px]">{{ trim($block['heading']) ?: __('public.upcoming') }}</h2>
+    <x-editable :$editor :$block field="heading" as="h2" class="text-[26px] leading-[32px] font-medium sm:text-[32px] sm:leading-[38px]" :placeholder="__('public.upcoming')" :fallback="__('public.upcoming')" />
     @if ($upcoming->isEmpty())
         <p class="rounded-card bg-white p-7 text-[17px] text-ink-soft shadow-rest">{{ __('public.no_upcoming') }}</p>
     @else
