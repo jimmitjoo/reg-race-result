@@ -91,4 +91,17 @@ return [
         'earlier' => 'Åren hämtas automatiskt. Rubriken kan du skriva om direkt i blocket.',
         'contact' => 'Skriv namn, e-post och telefon direkt i blocket.',
     ],
+    'hero_look' => 'Utseende',
+    'full_width' => 'hela bredden',
+    'needs_image' => 'Varianten behöver en bild. Utan bild visas Färgband.',
+    'heroes' => [
+        'brand' => 'Färgkort',
+        'brand-full' => 'Färgband',
+        'image-full' => 'Helbild',
+        'split' => 'Delad',
+        'split-full' => 'Delad, helbredd',
+        'centered' => 'Centrerad',
+        'minimal' => 'Luftig',
+        'image-card' => 'Bildkort',
+    ],
 ];

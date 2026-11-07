@@ -8,6 +8,24 @@
             <flux:heading size="lg">{{ __("page.type.{$block['type']}") }}</flux:heading>
             <flux:text>{{ __("page.about.{$block['type']}") }}</flux:text>
         </div>
+        @if ($block['type'] === 'hero')
+            {{-- Inside the theme, so the sketches show the club's colour. --}}
+            <fieldset class="theme-preview flex flex-col gap-2">
+                <legend class="mb-2 text-sm font-medium">{{ __('page.hero_look') }}</legend>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach (\App\Support\Page::HEROES as $variant)
+                        <label wire:key="look-{{ $variant }}" class="flex cursor-pointer flex-col gap-1.5 rounded-field p-1.5 ring-1 ring-transparent hover:bg-zinc-50 has-checked:bg-zinc-100 has-checked:ring-zinc-800 has-focus-visible:outline-2 dark:hover:bg-zinc-800 dark:has-checked:bg-zinc-800 dark:has-checked:ring-zinc-200">
+                            <input type="radio" class="sr-only" value="{{ $variant }}" wire:model.live="{{ $field('variant') }}">
+                            @include('livewire.page.hero-thumb')
+                            <span class="text-[13px] leading-tight">{{ __("page.heroes.{$variant}") }}@if (in_array($variant, \App\Support\Page::FULL_HEROES, true))<span class="text-zinc-500"> · {{ __('page.full_width') }}</span>@endif</span>
+                        </label>
+                    @endforeach
+                </div>
+                @if (! $block['image'] && in_array($block['variant'], \App\Support\Page::IMAGE_HEROES, true))
+                    <flux:text class="text-sm">{{ __('page.needs_image') }}</flux:text>
+                @endif
+            </fieldset>
+        @endif
         @if (in_array($block['type'], ['hero', 'image'], true))
             @include('livewire.page.image-field')
         @endif

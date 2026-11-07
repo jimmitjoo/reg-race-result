@@ -18,6 +18,13 @@ final class Page
 {
     public const TYPES = ['hero', 'text', 'image', 'upcoming', 'earlier', 'contact'];
 
+    /** The looks of the hero; the full ones reach the window's edges, their content kept in the page's column. */
+    public const HEROES = ['brand', 'brand-full', 'image-full', 'split', 'split-full', 'centered', 'minimal', 'image-card'];
+
+    public const FULL_HEROES = ['brand-full', 'image-full', 'split-full', 'centered'];
+
+    public const IMAGE_HEROES = ['image-full', 'split', 'split-full', 'image-card'];
+
     /** The fields written straight into a block on the page, rather than in its settings. */
     public const INLINE = [
         'hero' => ['intro'],
@@ -37,7 +44,7 @@ final class Page
     public static function block(string $type): array
     {
         return ['id' => Str::lower(Str::random(10)), 'type' => $type] + match ($type) {
-            'hero' => ['intro' => '', 'image' => null, 'alt' => '', 'width' => null, 'height' => null],
+            'hero' => ['variant' => 'brand', 'intro' => '', 'image' => null, 'alt' => '', 'width' => null, 'height' => null],
             'text' => ['heading' => '', 'body' => ''],
             'image' => ['image' => null, 'alt' => '', 'caption' => '', 'size' => 'text', 'width' => null, 'height' => null],
             'upcoming', 'earlier' => ['heading' => ''],
@@ -68,6 +75,7 @@ final class Page
             "{$key}.*.alt" => $text(250),
             "{$key}.*.caption" => $text(250),
             "{$key}.*.size" => ['nullable', Rule::in(['text', 'wide'])],
+            "{$key}.*.variant" => ['nullable', Rule::in(self::HEROES)],
             "{$key}.*.name" => $text(120),
             "{$key}.*.email" => ['nullable', 'email', 'max:255'],
             "{$key}.*.phone" => $text(40),
@@ -86,7 +94,7 @@ final class Page
         foreach ($blocks as $block) {
             $blank = fn (string ...$fields) => collect($fields)->every(fn ($field) => trim((string) ($block[$field] ?? '')) === '');
             $found = match ($block['type']) {
-                'hero' => [! empty($block['image']) && $blank('alt') ? 'alt' : null],
+                'hero' => [empty($block['image']) ? (in_array($block['variant'], self::IMAGE_HEROES, true) ? 'no_image' : null) : ($blank('alt') ? 'alt' : null)],
                 'image' => [empty($block['image']) ? 'no_image' : ($blank('alt') ? 'alt' : null)],
                 'text' => [$blank('heading', 'body') ? 'empty' : null, self::vagueLink((string) $block['body']) ? 'link_text' : null],
                 'contact' => [$blank('name', 'email', 'phone') ? 'empty' : null],

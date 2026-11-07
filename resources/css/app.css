@@ -291,3 +291,12 @@ select:focus[data-flux-control] {
     opacity: 0.55;
     pointer-events: none;
 }
+
+/* A block as wide as the window (#116), its content kept in the page's column; in the editor, as wide as the page shown. */
+.bleed {
+    margin-inline: calc(50% - 50vw);
+}
+
+.lp-editor .bleed {
+    margin-inline: 0;
+}

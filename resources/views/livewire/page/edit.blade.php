@@ -239,7 +239,7 @@ new class extends Component {
     {{-- The page as it will look, in the organizer's theme. --}}
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         {{-- The page as runners see it, always light, written into where it stands; its links are not followed here. --}}
-        <div class="theme-preview min-w-0 rounded-panel bg-ground p-3 sm:p-6" x-on:click.capture="$event.target.closest('a') && $event.preventDefault()">
+        <div class="theme-preview lp-editor min-w-0 rounded-panel bg-ground p-3 sm:p-6" x-on:click.capture="$event.target.closest('a') && $event.preventDefault()">
             @include('livewire.page.adder', ['at' => 0])
             <div wire:sort="sortBlock" class="flex flex-col">
                 @foreach ($blocks as $i => $block)

@@ -91,4 +91,17 @@ return [
         'earlier' => 'The years are fetched automatically. You can rewrite the heading straight in the block.',
         'contact' => 'Write name, email and phone straight into the block.',
     ],
+    'hero_look' => 'Look',
+    'full_width' => 'full width',
+    'needs_image' => 'This look needs a picture. Without one, Colour band shows.',
+    'heroes' => [
+        'brand' => 'Colour card',
+        'brand-full' => 'Colour band',
+        'image-full' => 'Full picture',
+        'split' => 'Split',
+        'split-full' => 'Split, full width',
+        'centered' => 'Centred',
+        'minimal' => 'Airy',
+        'image-card' => 'Picture card',
+    ],
 ];

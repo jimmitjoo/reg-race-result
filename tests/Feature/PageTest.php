@@ -112,3 +112,29 @@ it('takes text written straight into a block, the text\'s HTML cleaned to what a
     // Only the fields written on the page, never the image or the type.
     $editor->call('setField', $id, 'type', 'hero')->assertNotFound();
 });
+
+it('draws the hero in the look picked, the full ones to the window\'s edges, and asks a picture of those that need one', function () {
+    $organizer = pageOrganizer();
+    $hero = fn (string $variant, ?string $image = null) => array_merge(Page::block('hero'), ['variant' => $variant, 'image' => $image, 'alt' => 'Start i snön']);
+
+    foreach (Page::HEROES as $variant) {
+        $organizer->update(['page' => [$hero($variant, 'pages/start.jpg')]]);
+        $html = $this->get('/hogby-if')->assertOk()->getContent();
+        expect(substr_count($html, '<h1'))->toBe(1)
+            ->and(str_contains($html, 'class="bleed'))->toBe(in_array($variant, Page::FULL_HEROES, true));
+    }
+
+    // Without its picture a picture hero is the colour band, and will not be published so.
+    $organizer->update(['page' => [$hero('image-full')]]);
+    expect($this->get('/hogby-if')->getContent())->toContain('class="bleed -mt-8 sm:-mt-12 bg-brand')
+        ->and(array_column(Page::problems([$hero('image-full')]), 'problem'))->toBe(['no_image'])
+        ->and(Page::problems([$hero('brand-full')]))->toBe([]);
+});
+
+it('puts nothing of Löpning.se above the organizer\'s page, only a quiet line at its foot', function () {
+    pageOrganizer();
+
+    $html = $this->get('/hogby-if')->getContent();
+    expect($html)->not->toContain('<header')
+        ->and(strpos($html, __('public.powered_by')))->toBeGreaterThan(strpos($html, '</main>'));
+});
