@@ -256,6 +256,7 @@ new class extends Component {
         @unless ($setup)
         <div class="flex flex-wrap gap-2">
             <flux:button :href="route('events.campaigns', $event)" icon="ticket" wire:navigate>{{ __('campaigns.title') }}</flux:button>
+            <flux:button :href="route('events.theme', $event)" icon="paint-brush" wire:navigate>{{ __('theme.title') }}</flux:button>
             <flux:button :href="route('events.chips', $event)" icon="tag" wire:navigate>{{ __('chips.title') }}</flux:button>
             <flux:button :href="route('events.onsite', $event)" icon="user-plus" wire:navigate>{{ __('onsite.title') }}</flux:button>
             <flux:button :href="route('events.timing', $event)" icon="clock">{{ __('timing.title') }}</flux:button>

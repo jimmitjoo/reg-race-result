@@ -21,7 +21,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     public function rendering($view): void
     {
         $view->title(__('public.title', ['page' => __('onsite.start_list'), 'event' => $this->raceEvent->name, 'organizer' => $this->raceEvent->organizer->name]))
-            ->layoutData(['organizer' => $this->raceEvent->organizer]);
+            ->layoutData(['organizer' => $this->raceEvent->organizer, 'event' => $this->raceEvent]);
     }
 
     public function with(): array

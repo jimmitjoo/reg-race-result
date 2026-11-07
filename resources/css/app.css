@@ -132,6 +132,7 @@
     --radius-card: 28px;
     --radius-panel: 18px;
     --radius-field: 12px;
+    --radius-pill: 9999px;
 
     /* Soft, green-tinted shadows. */
     --shadow-rest: 0 6px 20px rgb(31 92 70 / 0.08);
@@ -223,7 +224,7 @@ select:focus[data-flux-control] {
 .lp-public input[data-flux-control]:not([type='checkbox'], [type='radio']),
 .lp-public select[data-flux-control] {
     height: 3rem;
-    border-radius: 9999px;
+    border-radius: var(--radius-pill);
     border: 1.5px solid var(--color-contour);
     padding-inline: 1.25rem;
     font-size: 1rem;
@@ -258,4 +259,9 @@ select:focus[data-flux-control] {
 
 :root.lp-light {
     color-scheme: light !important;
+}
+
+/* An organizer's heading font (#112); the body font is --font-sans. */
+.lp-public :is(h1, h2, h3) {
+    font-family: var(--font-display, var(--font-sans));
 }

@@ -115,7 +115,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     public function rendering($view): void
     {
         $view->title(__('public.title', ['page' => __('registration.title'), 'event' => $this->raceEvent->name, 'organizer' => $this->raceEvent->organizer->name]))
-            ->layoutData(['organizer' => $this->raceEvent->organizer]);
+            ->layoutData(['organizer' => $this->raceEvent->organizer, 'event' => $this->raceEvent]);
     }
 
     public function with(): array
@@ -345,16 +345,21 @@ new #[Layout('components.layouts.public')] class extends Component {
 @php($max = $this::MAX_PARTICIPANTS)
 <div x-data="{ summaryInView: false }" class="flex flex-col gap-12">
     <header class="flex flex-col gap-4">
-        <p class="text-[15px] text-ink-soft"><a href="{{ route('public.organizer', $event->organizer->slug) }}" class="underline decoration-contour hover:text-ink">{{ $event->organizer->name }}</a></p>
+        @php($logo = \App\Support\Theme::logoUrl(\App\Support\Theme::for($event->organizer, $event)))
+        <p class="text-[15px] text-ink-soft">
+            <a href="{{ route('public.organizer', $event->organizer->slug) }}" class="inline-flex items-center gap-3 underline decoration-contour hover:text-ink">
+                @if ($logo)<img src="{{ $logo }}" alt="" class="h-10 w-auto max-w-[160px] object-contain">@endif{{ $event->organizer->name }}
+            </a>
+        </p>
         <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ $event->name }}</h1>
         <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</p>
         <div class="flex flex-wrap items-center gap-2 pt-2">
             @if ($open)
-                <a href="#steg-1" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.cta') }}</a>
+                <a href="#steg-1" class="inline-flex h-11 items-center rounded-pill bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.cta') }}</a>
             @endif
-            <a href="{{ route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('onsite.start_list') }}</a>
+            <a href="{{ route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-11 items-center rounded-pill bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('onsite.start_list') }}</a>
             @if ($event->results_public_at)
-                <a href="{{ route('public.results', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('live.title') }}</a>
+                <a href="{{ route('public.results', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-11 items-center rounded-pill bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('live.title') }}</a>
             @endif
         </div>
     </header>
@@ -382,7 +387,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                         <p class="text-[14px] text-ink-soft">{{ __('registration.open_until', ['date' => Format::shortDate($until)]) }}</p>
                                     @endif
                                 @else
-                                    <p class="rounded-full bg-peach-light px-3 py-1 text-[14px] font-medium text-peach-deep">{{ $soon ? __('registration.opens_soon') : __('registration.closed') }}</p>
+                                    <p class="rounded-pill bg-peach-light px-3 py-1 text-[14px] font-medium text-peach-deep">{{ $soon ? __('registration.opens_soon') : __('registration.closed') }}</p>
                                 @endif
                             </div>
                         </div>
@@ -390,7 +395,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                             @foreach (Format::classOrder($race->raceClasses) as $class)
                                 <label wire:key="class-{{ $class->id }}" class="group relative">
                                     <input type="radio" name="participants.0.raceClassId" value="{{ $class->id }}" wire:model.live="participants.0.raceClassId" class="peer sr-only" @disabled(! $available)>
-                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-full border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
+                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-pill border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
                                         <span class="text-[15px] font-medium">{{ $class->name }}</span>
                                         <span class="text-[13px] opacity-80">{{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($class->team_size) · {{ __('events.team_of', ['size' => $class->team_size]) }}@endif</span>
                                     </span>
@@ -434,7 +439,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                                 @php($available = $racePrice !== null && ! $soon)
                                                 <label wire:key="lopp-{{ $i }}-{{ $race->id }}">
                                                     <input type="radio" name="participants.{{ $i }}.raceId" value="{{ $race->id }}" wire:model.live="participants.{{ $i }}.raceId" @checked($raceId === $race->id) class="peer sr-only" @disabled(! $available)>
-                                                    <span class="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-[1.5px] border-contour bg-white px-4 text-[15px] font-medium transition-colors peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
+                                                    <span class="flex min-h-11 cursor-pointer items-center gap-2 rounded-pill border-[1.5px] border-contour bg-white px-4 text-[15px] font-medium transition-colors peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
                                                         {{ $race->name }}@if ($available)<span class="font-normal tabular-nums opacity-80">{{ Money::format($racePrice, $currency) }}</span>@endif
                                                     </span>
                                                 </label>
@@ -452,7 +457,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                             @foreach (Format::classOrder($raceRow['race']->raceClasses) as $class)
                                                 <label wire:key="klass-{{ $i }}-{{ $class->id }}">
                                                     <input type="radio" name="participants.{{ $i }}.raceClassId" value="{{ $class->id }}" wire:model.live="participants.{{ $i }}.raceClassId" class="peer sr-only" @disabled($raceRow['price'] === null || $raceRow['soon'])>
-                                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-full border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
+                                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-pill border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
                                                         <span class="text-[15px] font-medium">{{ $class->name }}</span>
                                                         <span class="text-[13px] opacity-80">{{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($class->team_size) · {{ __('events.team_of', ['size' => $class->team_size]) }}@endif</span>
                                                     </span>
@@ -485,7 +490,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                         @foreach (['K' => __('registration.gender_k'), 'M' => __('registration.gender_m')] as $value => $label)
                                             <label class="flex-1">
                                                 <input type="radio" name="participants.{{ $i }}.gender" value="{{ $value }}" wire:model.live="participants.{{ $i }}.gender" class="peer sr-only">
-                                                <span class="flex h-12 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-contour text-base font-medium peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand hover:border-ink-soft">{{ $label }}</span>
+                                                <span class="flex h-12 cursor-pointer items-center justify-center rounded-pill border-[1.5px] border-contour text-base font-medium peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand hover:border-ink-soft">{{ $label }}</span>
                                             </label>
                                         @endforeach
                                     </div>
@@ -516,7 +521,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                     </datalist>
 
                     @if (count($participants) < $max)
-                        <button type="button" wire:click="addParticipant" class="inline-flex h-11 items-center gap-2 self-start rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">
+                        <button type="button" wire:click="addParticipant" class="inline-flex h-11 items-center gap-2 self-start rounded-pill bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">
                             <flux:icon.plus class="size-4" />{{ __('registration.add_participant') }}
                         </button>
                     @endif
@@ -588,7 +593,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                         </div>
                     @endif
 
-                    <button type="submit" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90 disabled:opacity-60" wire:loading.attr="disabled">
+                    <button type="submit" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-pill bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90 disabled:opacity-60" wire:loading.attr="disabled">
                         <span wire:loading.remove wire:target="register">{{ $invoiced ? __('registration.submit_invoice') : ($total ? __('registration.pay', ['price' => Money::format($total, $currency)]) : __('registration.submit_free')) }}</span>
                         <span wire:loading wire:target="register">{{ __('registration.working') }}</span>
                     </button>
@@ -610,7 +615,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             <ul class="flex flex-wrap gap-2">
                 @foreach ($earlier as $edition)
                     <li wire:key="earlier-{{ $edition->id }}">
-                        <a href="{{ route('public.results', ['organizer' => $event->organizer->slug, 'event' => $edition->slug]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-medium shadow-rest hover:shadow-hover">{{ $edition->name }}</a>
+                        <a href="{{ route('public.results', ['organizer' => $event->organizer->slug, 'event' => $edition->slug]) }}" class="inline-flex h-11 items-center rounded-pill bg-white px-5 text-[15px] font-medium shadow-rest hover:shadow-hover">{{ $edition->name }}</a>
                     </li>
                 @endforeach
             </ul>
@@ -620,7 +625,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     {{-- On a phone, once a class is chosen, the way to pay stays at hand until the summary is in view. --}}
     @if ($lines[0]['class'])
         <div x-show="! summaryInView" x-transition.opacity class="fixed inset-x-0 bottom-0 z-40 border-t border-contour bg-white/95 px-4 py-3 lg:hidden">
-            <a href="#steg-3" class="flex h-12 w-full items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">{{ $invoiced ? __('registration.submit_invoice') : ($total ? __('registration.pay', ['price' => Money::format($total, $currency)]) : __('registration.submit_free')) }}</a>
+            <a href="#steg-3" class="flex h-12 w-full items-center justify-center rounded-pill bg-brand text-[15px] font-semibold text-brand-contrast">{{ $invoiced ? __('registration.submit_invoice') : ($total ? __('registration.pay', ['price' => Money::format($total, $currency)]) : __('registration.submit_free')) }}</a>
         </div>
     @endif
 </div>
