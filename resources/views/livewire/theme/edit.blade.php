@@ -91,7 +91,8 @@ new class extends Component {
             'css' => Theme::allFaces().Theme::css($theme, '.theme-preview'),
             'logoUrl' => Theme::logoUrl($theme),
             'previewUrl' => $page,
-            'unpublished' => $this->values() != array_filter((array) $this->owner()->theme),
+            // Löpning.se's own fonts and shape are no change from a page without a theme.
+            'unpublished' => array_diff_assoc($this->values(), ['fonts' => 'lopning', 'shape' => 'soft']) != array_diff_assoc(array_filter((array) $this->owner()->theme), ['fonts' => 'lopning', 'shape' => 'soft']),
             'name' => $organizer->name,
         ];
     }
