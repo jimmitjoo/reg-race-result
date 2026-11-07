@@ -4,6 +4,6 @@
 @endunless
 @foreach ($blocks as $block)
     <div wire:key="block-{{ $block['id'] }}" class="contents">
-        @include('blocks.'.$block['type'], ['first' => $loop->first])
+        @include('blocks.block', ['first' => $loop->first])
     </div>
 @endforeach

@@ -257,7 +257,7 @@ new class extends Component {
                                 <flux:button size="xs" variant="ghost" icon="trash" wire:click.stop="remove('{{ $block['id'] }}')" :aria-label="__('page.remove')" />
                             </div>
                             <div class="lp-public text-ink" style="font-family: var(--font-sans)">
-                                @include('blocks.'.$block['type'])
+                                @include('blocks.block')
                             </div>
                         </div>
                         @include('livewire.page.adder', ['at' => $i + 1])

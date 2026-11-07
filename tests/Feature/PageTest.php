@@ -150,3 +150,27 @@ it('lets the hero say something else than the club\'s name, and says the name ag
     $editor->call('setField', $hero, 'title', '')->call('publish');
     $this->get('/hogby-if')->assertSee('Högby IF</h1>', false);
 });
+
+it('shows as many races and years as chosen, as a list or cards, on the background chosen', function () {
+    $this->travelTo('2026-11-07 12:00');
+    $organizer = pageOrganizer();
+    $series = Series::create(['organizer_id' => $organizer->id, 'name' => 'Sylvesterloppet']);
+    foreach ([2026, 2025, 2024, 2023] as $year) {
+        $series->addEdition("{$year}-12-31");
+    }
+    Series::create(['organizer_id' => $organizer->id, 'name' => 'Vårloppet'])->addEdition('2027-04-01');
+
+    $organizer->update(['page' => [
+        array_merge(Page::block('upcoming'), ['layout' => 'list', 'limit' => 1, 'background' => 'brand']),
+        array_merge(Page::block('earlier'), ['years' => 2]),
+    ]]);
+
+    $this->get('/hogby-if')
+        ->assertSee('Sylvesterloppet 2026')->assertDontSee('Vårloppet 2027')
+        ->assertSee('class="bleed py-12 sm:py-16 on-brand bg-brand"', false)
+        ->assertSeeInOrder(['>2025<', '>2024<', trans_choice('page.more_years', 1), '>2023<'], false);
+
+    $editor = Volt::test('page.edit');
+    $editor->call('edit', $editor->get('blocks')[0]['id'])
+        ->assertSee(__('page.layouts.feature'))->assertSee(__('page.backgrounds.brand'))->assertSee(__('page.limit_races'));
+});

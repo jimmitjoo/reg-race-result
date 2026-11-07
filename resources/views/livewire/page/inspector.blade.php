@@ -50,6 +50,40 @@
                 <option value="wide">{{ __('page.size_wide') }}</option>
             </flux:select>
         @endif
+        @if (in_array($block['type'], ['upcoming', 'earlier'], true))
+            <flux:radio.group wire:model.live="{{ $field('layout') }}" :label="__('page.layout')">
+                @foreach ($block['type'] === 'upcoming' ? \App\Support\Page::LAYOUTS : ['cards', 'list'] as $layout)
+                    <flux:radio :value="$layout" :label="__('page.layouts.'.$layout)" />
+                @endforeach
+            </flux:radio.group>
+            <div class="grid grid-cols-2 gap-3">
+                <flux:select wire:model.live="{{ $field('limit') }}" :label="__($block['type'] === 'upcoming' ? 'page.limit_races' : 'page.limit_series')">
+                    <option value="0">{{ __('page.all') }}</option>
+                    @foreach ([1, 2, 3, 4, 6, 8, 9, 12] as $n)<option value="{{ $n }}">{{ $n }}</option>@endforeach
+                </flux:select>
+                @if ($block['type'] === 'earlier')
+                    <flux:select wire:model.live="{{ $field('years') }}" :label="__('page.limit_years')">
+                        <option value="0">{{ __('page.all') }}</option>
+                        @foreach ([1, 3, 5, 8, 10] as $n)<option value="{{ $n }}">{{ $n }}</option>@endforeach
+                    </flux:select>
+                @endif
+            </div>
+        @endif
+        @if ($block['type'] !== 'hero')
+            {{-- Inside the theme, so the swatches show the club's colours. --}}
+            <fieldset class="theme-preview flex flex-col gap-2">
+                <legend class="mb-2 text-sm font-medium">{{ __('page.background') }}</legend>
+                <div class="grid grid-cols-3 gap-2">
+                    @foreach (\App\Support\Page::BACKGROUNDS as $background)
+                        <label wire:key="bg-{{ $background }}" class="flex cursor-pointer flex-col items-center gap-1.5 rounded-field p-1.5 text-[13px] ring-1 ring-transparent hover:bg-zinc-50 has-checked:bg-zinc-100 has-checked:ring-zinc-800 has-focus-visible:outline-2 dark:hover:bg-zinc-800 dark:has-checked:bg-zinc-800 dark:has-checked:ring-zinc-200">
+                            <input type="radio" class="sr-only" value="{{ $background }}" wire:model.live="{{ $field('background') }}">
+                            <span @class(['h-8 w-full rounded-[6px] ring-1 ring-zinc-200 dark:ring-zinc-700', 'bg-ground' => $background === 'none', 'bg-brand-surface' => $background === 'tint', 'bg-brand' => $background === 'brand']) aria-hidden="true"></span>
+                            {{ __('page.backgrounds.'.$background) }}
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+        @endif
         <flux:text>{{ __("page.inline.{$block['type']}") }}</flux:text>
         <div class="flex flex-wrap gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
             <flux:button size="sm" icon="arrow-up" wire:click="move('{{ $block['id'] }}', -1)" :disabled="$i === 0">{{ __('page.move_up') }}</flux:button>

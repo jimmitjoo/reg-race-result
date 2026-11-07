@@ -300,3 +300,16 @@ select:focus[data-flux-control] {
 .lp-editor .bleed {
     margin-inline: 0;
 }
+
+/* A block on the club's colour (#116): its own text in the colour's contrast; the white cards on it read as on the page. */
+.on-brand {
+    color: var(--color-brand-contrast);
+    --color-ink-soft: var(--color-brand-contrast);
+    --color-contour: color-mix(in srgb, var(--color-brand-contrast) 40%, transparent);
+}
+
+.on-brand :where(.bg-white) {
+    color: var(--color-ink);
+    --color-ink-soft: #4f5a53;
+    --color-contour: #d9ded6;
+}

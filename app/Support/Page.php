@@ -25,6 +25,12 @@ final class Page
 
     public const IMAGE_HEROES = ['image-full', 'split', 'split-full', 'image-card'];
 
+    /** Behind a block other than the hero: the page's ground, or a band of the club's tint or colour. */
+    public const BACKGROUNDS = ['none', 'tint', 'brand'];
+
+    /** How a block of upplagor is laid out; the next one large is for the coming ones only. */
+    public const LAYOUTS = ['cards', 'list', 'feature'];
+
     /** The fields written straight into a block on the page, rather than in its settings. */
     public const INLINE = [
         'hero' => ['title', 'intro'],
@@ -48,10 +54,12 @@ final class Page
             'hero' => ['variant' => 'brand', 'title' => '', 'intro' => '', 'image' => null, 'alt' => '', 'width' => null, 'height' => null],
             'text' => ['heading' => '', 'body' => ''],
             'image' => ['image' => null, 'alt' => '', 'caption' => '', 'size' => 'text', 'width' => null, 'height' => null],
-            'upcoming', 'earlier' => ['heading' => ''],
             'form' => ['heading' => '', 'intro' => '', 'form_id' => null],
+            // How many: 0 is all.
+            'upcoming' => ['heading' => '', 'layout' => 'cards', 'limit' => 0],
+            'earlier' => ['heading' => '', 'layout' => 'cards', 'limit' => 0, 'years' => 5],
             'contact' => ['heading' => '', 'name' => '', 'email' => '', 'phone' => '', 'form_id' => null],
-        };
+        } + ($type === 'hero' ? [] : ['background' => 'none']);
     }
 
     public static function for(Organizer $organizer, bool $draft = false): array
@@ -83,6 +91,10 @@ final class Page
             "{$key}.*.email" => ['nullable', 'email', 'max:255'],
             "{$key}.*.phone" => $text(40),
             "{$key}.*.form_id" => ['nullable', 'integer'],
+            "{$key}.*.background" => ['nullable', Rule::in(self::BACKGROUNDS)],
+            "{$key}.*.layout" => ['nullable', Rule::in(self::LAYOUTS)],
+            "{$key}.*.limit" => ['nullable', 'integer', 'between:0,50'],
+            "{$key}.*.years" => ['nullable', 'integer', 'between:0,50'],
         ];
     }
 

@@ -115,4 +115,20 @@ return [
     'new_form' => 'Create a new form',
     'no_form_yet' => 'No form chosen yet. Choose one in the panel.',
     'form_intro_placeholder' => 'A few words before the form (optional)',
+    'layout' => 'Look',
+    'limit_races' => 'Number of races',
+    'limit_series' => 'Number of events',
+    'limit_years' => 'Years per event',
+    'all' => 'All',
+    'background' => 'Background',
+    'layouts' => [
+        'cards' => 'Cards',
+        'list' => 'List',
+        'feature' => 'Next race large',
+    ],
+    'backgrounds' => [
+        'none' => 'None',
+        'tint' => 'Light tint',
+        'brand' => 'Club colour',
+    ],
 ];
