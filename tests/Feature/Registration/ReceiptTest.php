@@ -8,7 +8,11 @@ use App\Models\RaceClass;
 use App\Models\Registration;
 use App\Models\User;
 use App\Payments\StripeCheckout;
+use App\Support\Money;
+use App\Support\Receipt;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Livewire\Volt\Volt;
 
 // #10: the runner gets a receipt by email when the registration is paid, once.
 beforeEach(function () {
@@ -82,8 +86,8 @@ it('writes the receipt in Swedish with the event details and the organizer as re
         ->assertSeeInHtml('Kvinnor 10 km')
         ->assertSeeInHtml('torsdag 31 december 2026')
         ->assertSeeInHtml('kl 11.00')
-        ->assertSeeInHtml(e(App\Support\Money::format(25000, 'SEK')))
-        ->assertSeeInHtml(__('registrations.method.stripe'))
+        ->assertSeeInHtml(e(Money::format(25000, 'SEK')))
+        ->assertSeeInHtml(Illuminate\Support\Str::lcfirst(__('registrations.method.stripe')))
         ->assertSeeInHtml(e($registration->confirmationUrl()))
         ->assertSeeInHtml(route('public.terms', 'hogby-if'));
 });
@@ -94,3 +98,67 @@ it('falls back to a club user as reply address when the event has no contact', f
 
     (new RegistrationReceipt(receiptRegistration($class)))->assertHasReplyTo('kansli@hogbyif.se');
 });
+
+// #132: a receipt that holds for the books and for friskvårdsbidrag.
+it('numbers receipts per organizer, once per order, and shows the seller with its organisation number', function () {
+    $class = receiptClass();
+    $class->event->organizer->update(['org_number' => '802000-1239', 'address' => 'Box 12, 380 74 Löttorp']);
+    $first = receiptRegistration($class, ['order_ref' => 'order-a']);
+    receiptRegistration($class, ['order_ref' => 'order-a', 'first_name' => 'Bo']);
+    $other = receiptRegistration($class, ['order_ref' => 'order-b']);
+
+    $first->markPaid('stripe');
+    $first->markPaid('stripe');
+    $other->markPaid('swish_onsite');
+
+    expect(Registration::where('order_ref', 'order-a')->pluck('receipt_number')->unique()->all())->toBe([1])
+        ->and($other->fresh()->receipt_number)->toBe(2)
+        ->and(tap(receiptRegistration(receiptClassFor(Organizer::factory()->create()), ['order_ref' => 'x']), fn ($r) => $r->markPaid('free'))->fresh()->receipt_number)->toBe(1);
+
+    $receipt = Receipt::for($first->fresh());
+    $this->get($receipt['url'])->assertOk()
+        ->assertSee(__('receipt.title_number', ['number' => 1]))
+        ->assertSee(['Högby IF', 'Org.nr 802000-1239', 'Box 12, 380 74 Löttorp', 'Anna Karlsson', 'anna@example.com', 'Bo Karlsson'])
+        ->assertSee(__('receipt.vat_exempt'))
+        ->assertSee(e(Money::format(50000, 'SEK')), false);
+    (new RegistrationReceipt($first->fresh()))->assertSeeInHtml('802000-1239')->assertSeeInHtml(__('receipt.title_number', ['number' => 1]));
+});
+
+it('shows VAT for an organizer that charges it, and the refund', function () {
+    $class = receiptClass();
+    $class->event->organizer->update(['vat_percent' => 6]);
+    $registration = receiptRegistration($class, ['order_ref' => 'order-a', 'price' => 10600]);
+    $registration->markPaid('stripe');
+    $registration->update(['refunded_at' => now()]);
+
+    $this->get(Receipt::for($registration->fresh())['url'])
+        ->assertSee(__('receipt.vat', ['percent' => 6, 'amount' => Money::format(600, 'SEK')]))
+        ->assertSee(__('receipt.refunded'));
+});
+
+it('keeps the receipt behind a signed link, and only once paid', function () {
+    $registration = receiptRegistration(receiptClass());
+    $url = URL::signedRoute('public.receipt', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026', 'registration' => $registration]);
+
+    $this->get($url)->assertNotFound();
+    $this->get(route('public.receipt', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026', 'registration' => $registration]))->assertForbidden();
+});
+
+it('lets the club give its organisation number, checked with its check digit', function () {
+    $user = User::factory()->create(['organizer_id' => receiptClass()->event->organizer_id]);
+    $this->actingAs($user);
+
+    Volt::test('payments.index')
+        ->set('orgNumber', '802000-1234')->call('saveReceipt')->assertHasErrors(['orgNumber'])
+        ->set('orgNumber', '8020001239')->set('vatPercent', '25')->call('saveReceipt')->assertHasNoErrors()
+        ->assertSet('orgNumber', '802000-1239');
+
+    expect($user->organizer->fresh())->org_number->toBe('802000-1239')->vat_percent->toBe(25);
+});
+
+function receiptClassFor(Organizer $organizer): RaceClass
+{
+    $event = Event::factory()->create(['organizer_id' => $organizer->id]);
+
+    return RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => Race::factory()->for($event)->create()->id]);
+}

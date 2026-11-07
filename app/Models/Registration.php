@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
@@ -44,8 +45,19 @@ class Registration extends Model
      */
     public function markPaid(string $method, ?string $paymentIntent = null): void
     {
-        $marked = $this->orderQuery()->whereNull('paid_at')
-            ->update(['paid_at' => now(), 'payment_method' => $method, 'stripe_payment_intent_id' => $paymentIntent ?? $this->stripe_payment_intent_id]);
+        // The order's receipt number (#132) comes from the organizer's counter in the same transaction, so numbers have no gaps.
+        $marked = DB::transaction(function () use ($method, $paymentIntent) {
+            $marked = $this->orderQuery()->whereNull('paid_at')
+                ->update(['paid_at' => now(), 'payment_method' => $method, 'stripe_payment_intent_id' => $paymentIntent ?? $this->stripe_payment_intent_id]);
+
+            if ($marked) {
+                $organizer = Organizer::whereKey($this->raceClass->event->organizer_id)->lockForUpdate()->firstOrFail();
+                $organizer->increment('receipt_counter');
+                $this->orderQuery()->update(['receipt_number' => $organizer->receipt_counter]);
+            }
+
+            return $marked;
+        });
         $this->refresh();
 
         if ($marked && $this->email) {

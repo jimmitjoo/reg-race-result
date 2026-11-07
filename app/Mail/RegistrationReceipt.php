@@ -5,7 +5,7 @@ namespace App\Mail;
 use App\Models\Registration;
 use App\Models\User;
 use App\Support\Format;
-use App\Support\Money;
+use App\Support\Receipt;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -40,22 +40,15 @@ class RegistrationReceipt extends Mailable implements ShouldQueue
     {
         $registration = $this->registration->loadMissing('raceClass.race', 'raceClass.event.organizer');
         $event = $registration->raceClass->event;
-        $currency = $event->organizer->currency;
-        $order = $registration->order();
+        $count = $registration->order()->count();
 
         return new Content(markdown: 'mail.receipt', with: [
-            'registration' => $registration,
             'event' => $event,
-            'lines' => $order->map(fn ($entry) => [
-                'name' => $entry->displayName(),
-                'class' => trim("{$entry->raceClass->race?->name} – {$entry->raceClass->name}", ' –'),
-                'start' => Format::time($entry->raceClass->start_at->setTimezone($event->timezone)),
-                'price' => Money::format((int) $entry->price, $currency),
-            ]),
-            'count' => $order->count(),
+            'intro' => $count > 1
+                ? __('registration.confirmation_text_many', ['count' => $count, 'event' => $event->name])
+                : __('registration.confirmation_text', ['name' => $registration->displayName(), 'class' => $registration->raceClass->name, 'event' => $event->name]),
             'date' => Format::date($event->date),
-            'total' => Money::format((int) $order->sum('price'), $currency),
-            'method' => $registration->payment_method ? __("registrations.method.{$registration->payment_method}") : null,
+            'receipt' => Receipt::for($registration),
             'url' => $registration->confirmationUrl(),
             'terms' => route('public.terms', $event->organizer->slug),
         ]);
