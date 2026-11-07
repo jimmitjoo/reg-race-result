@@ -3,7 +3,7 @@
 return [
     'title' => 'Resultat',
     'not_public' => 'Resultaten är inte publicerade än. Titta in igen när loppet har startat.',
-    'search' => 'Sök namn eller startnummer',
+    'search' => 'Sök namn, förening eller startnummer',
     'all_classes' => 'Alla klasser',
     'updated' => 'Uppdateras automatiskt',
     'nobody_found' => 'Ingen hittades.',

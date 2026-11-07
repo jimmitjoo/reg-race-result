@@ -17,7 +17,9 @@ new #[Layout('components.layouts.public')] class extends Component {
 
     public Event $raceEvent;
 
-    // A string, not null: a null select value makes the browser show the first class as chosen.
+    // What the runner has filled in survives a reload or a step back from Stripe, per upplaga (#118).
+    private const REMEMBERED = ['raceClassId', 'firstName', 'lastName', 'birthDate', 'gender', 'club', 'email', 'phone', 'teamName', 'members'];
+
     public string $raceClassId = '';
     public string $firstName = '';
     public string $lastName = '';
@@ -38,6 +40,31 @@ new #[Layout('components.layouts.public')] class extends Component {
         $organizer = Organizer::where('slug', $organizer)->firstOrFail();
         $this->raceEvent = $organizer->series()->where('slug', $event)->first()?->current()
             ?? $organizer->events()->where('slug', $event)->firstOrFail();
+
+        foreach (session($this->rememberKey(), []) as $field => $value) {
+            if (in_array($field, self::REMEMBERED, true)) {
+                $this->{$field} = $value;
+            }
+        }
+    }
+
+    public function updated(string $property): void
+    {
+        $field = strtok($property, '.');
+        if (in_array($field, self::REMEMBERED, true)) {
+            session()->put("{$this->rememberKey()}.{$field}", $this->{$field});
+        }
+    }
+
+    private function rememberKey(): string
+    {
+        return "registration.{$this->raceEvent->id}";
+    }
+
+    public function rendering($view): void
+    {
+        $view->title(__('public.title', ['page' => __('registration.title'), 'event' => $this->raceEvent->name, 'organizer' => $this->raceEvent->organizer->name]))
+            ->layoutData(['organizer' => $this->raceEvent->organizer]);
     }
 
     public function with(): array
@@ -47,10 +74,16 @@ new #[Layout('components.layouts.public')] class extends Component {
 
         return [
             'event' => $this->raceEvent,
-            'races' => $this->raceEvent->races()->with(['raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get()
-                ->map(fn ($race) => ['race' => $race, 'price' => $race->priceAt($now)])
-                // A paid race waits until the organizer's Stripe account can take payments.
-                ->map(fn ($r) => $r + ['soon' => $r['price'] > 0 && ! $canPay]),
+            'races' => $this->raceEvent->races()->with(['priceSteps', 'raceClasses'])->orderBy('name')->get()
+                ->map(function ($race) use ($now, $canPay) {
+                    $today = $now->copy()->setTimezone($this->raceEvent->timezone)->toDateString();
+                    $steps = $race->priceSteps->filter(fn ($step) => $step->until->toDateString() >= $today)->values();
+                    $price = $race->priceAt($now);
+
+                    // A paid race waits until the organizer's Stripe account can take payments.
+                    return ['race' => $race, 'price' => $price, 'until' => $steps->first()?->until, 'next' => $steps->get(1), 'soon' => $price > 0 && ! $canPay];
+                }),
+            'selected' => $this->selectedClass(),
             'currency' => $this->raceEvent->organizer->currency,
             'ageGroup' => $this->ageGroup(),
             'teamSize' => $this->selectedClass()?->team_size,
@@ -82,6 +115,10 @@ new #[Layout('components.layouts.public')] class extends Component {
     {
         foreach (['firstName', 'lastName', 'club', 'email', 'phone'] as $field) {
             $this->{$field} = trim($this->{$field});
+        }
+        // "19910403", "1991 04 03" and "1991-4-3" are the same date as "1991-04-03".
+        if (preg_match('/^(\d{4})\D*(\d{1,2})\D*(\d{1,2})$/', trim($this->birthDate), $m)) {
+            $this->birthDate = sprintf('%s-%02d-%02d', $m[1], $m[2], $m[3]);
         }
 
         $this->validate([
@@ -161,104 +198,199 @@ new #[Layout('components.layouts.public')] class extends Component {
     }
 }; ?>
 
-<div class="flex flex-col gap-8">
-    <div>
-        <flux:heading size="xl">{{ $event->name }}</flux:heading>
-        <flux:subheading>{{ Format::date($event->date) }} · {{ $event->organizer->name }}</flux:subheading>
-        <div class="flex gap-4">
-            <flux:link :href="route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" class="text-sm">{{ __('onsite.start_list') }}</flux:link>
+@php($open = $races->contains(fn ($r) => $r['price'] !== null && ! $r['soon']))
+@php($price = $selected ? $races->firstWhere('race.id', $selected->race_id)['price'] ?? null : null)
+<div x-data="{ summaryInView: false }" class="flex flex-col gap-12">
+    <header class="flex flex-col gap-4">
+        <p class="text-[15px] text-ink-soft"><a href="{{ route('public.organizer', $event->organizer->slug) }}" class="underline decoration-contour hover:text-ink">{{ $event->organizer->name }}</a></p>
+        <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ $event->name }}</h1>
+        <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</p>
+        <div class="flex flex-wrap items-center gap-2 pt-2">
+            @if ($open)
+                <a href="#steg-1" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.cta') }}</a>
+            @endif
+            <a href="{{ route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('onsite.start_list') }}</a>
             @if ($event->results_public_at)
-                <flux:link :href="route('public.results', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" class="text-sm">{{ __('live.title') }}</flux:link>
+                <a href="{{ route('public.results', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('live.title') }}</a>
             @endif
         </div>
-    </div>
+    </header>
 
-    <section class="flex flex-col gap-3">
-        <flux:heading size="lg">{{ __('registration.classes') }}</flux:heading>
-        @foreach ($races as ['race' => $race, 'price' => $price, 'soon' => $soon])
-            <div wire:key="race-{{ $race->id }}" class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                <div class="flex justify-between font-semibold">
-                    <span>{{ $race->name }}</span>
-                    <span>{{ match (true) { $price === null => __('registration.closed'), $soon => __('registration.opens_soon'), default => Money::format($price, $currency) } }}</span>
-                </div>
-                <ul class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                    @foreach (Format::classOrder($race->raceClasses) as $class)
-                        <li>{{ $class->name }} · {{ Format::time($class->start_at->setTimezone($event->timezone)) }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endforeach
-    </section>
+    <form wire:submit="register" class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start" novalidate>
+        <div class="flex flex-col gap-10">
+            <section aria-labelledby="steg-1" class="flex scroll-mt-6 flex-col gap-4" id="steg-1-section">
+                <h2 id="steg-1" class="flex scroll-mt-6 items-center gap-3 text-[21px] font-medium sm:text-[26px]">
+                    <span aria-hidden="true" class="grid size-8 place-items-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">1</span>
+                    {{ __('registration.step_choose') }}
+                </h2>
+                @error('raceClassId')<p class="text-[15px] font-medium text-danger">{{ $message }}</p>@enderror
 
-    <form wire:submit="register" class="flex flex-col gap-4">
-        <flux:heading size="lg">{{ __('registration.title') }}</flux:heading>
+                @foreach ($races as ['race' => $race, 'price' => $racePrice, 'until' => $until, 'next' => $next, 'soon' => $soon])
+                    @php($available = $racePrice !== null && ! $soon)
+                    <fieldset wire:key="race-{{ $race->id }}" class="rounded-card bg-white p-5 shadow-rest sm:p-7" @disabled(! $available)>
+                        <legend class="sr-only">{{ $race->name }}</legend>
+                        <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+                            <h3 class="text-[21px] font-medium" aria-hidden="true">{{ $race->name }}</h3>
+                            <div class="sm:text-right">
+                                @if ($available)
+                                    <p class="text-[21px] font-medium tabular-nums">{{ Money::format($racePrice, $currency) }}</p>
+                                    @if ($next)
+                                        <p class="text-[14px] text-ink-soft">{{ __('registration.price_then', ['date' => Format::shortDate($until), 'price' => Money::format($next->amount, $currency)]) }}</p>
+                                    @elseif ($until)
+                                        <p class="text-[14px] text-ink-soft">{{ __('registration.open_until', ['date' => Format::shortDate($until)]) }}</p>
+                                    @endif
+                                @else
+                                    <p class="rounded-full bg-peach-light px-3 py-1 text-[14px] font-medium text-peach-deep">{{ $soon ? __('registration.opens_soon') : __('registration.closed') }}</p>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            @foreach (Format::classOrder($race->raceClasses) as $class)
+                                <label wire:key="class-{{ $class->id }}" class="group relative">
+                                    <input type="radio" name="raceClassId" value="{{ $class->id }}" wire:model.live="raceClassId" class="peer sr-only" @disabled(! $available)>
+                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-full border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
+                                        <span class="text-[15px] font-medium">{{ $class->name }}</span>
+                                        <span class="text-[13px] opacity-80">{{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($class->team_size) · {{ __('events.team_of', ['size' => $class->team_size]) }}@endif</span>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                @endforeach
+            </section>
 
-        <flux:select wire:model.live="raceClassId" :label="__('registration.class')" :placeholder="__('registration.choose_class')">
-            @foreach ($races as ['race' => $race, 'price' => $price, 'soon' => $soon])
-                @if ($price !== null && ! $soon)
-                    @foreach ($race->raceClasses->filter(fn ($class) => ! $class->gender || ! $gender || $class->gender === $gender) as $class)
-                        <option value="{{ $class->id }}">{{ $race->name }} – {{ $class->name }} ({{ Money::format($price, $currency) }})</option>
-                    @endforeach
+            <section aria-labelledby="steg-2" class="flex flex-col gap-4">
+                    <h2 id="steg-2" class="flex scroll-mt-6 items-center gap-3 text-[21px] font-medium sm:text-[26px]">
+                        <span aria-hidden="true" class="grid size-8 place-items-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">2</span>
+                        {{ $teamSize ? __('registration.step_team') : __('registration.step_who') }}
+                    </h2>
+                    @if (! $selected)
+                        <p class="rounded-card bg-white/60 px-5 py-4 text-[15px] text-ink-soft sm:px-7">{{ __('registration.who_after_class') }}</p>
+                    @else
+                    <div class="flex flex-col gap-5 rounded-card bg-white p-5 shadow-rest sm:p-7">
+                        @if ($teamSize)
+                            <flux:input wire:model="teamName" :label="__('registration.team_name')" />
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                @for ($i = 0; $i < $teamSize; $i++)
+                                    <flux:input wire:key="member-{{ $i }}" wire:model="members.{{ $i }}" :label="__('registration.team_member_n', ['n' => $i + 1])" autocomplete="off" />
+                                @endfor
+                            </div>
+                            <flux:text class="text-[15px]">{{ __('registration.team_help') }}</flux:text>
+                            <h3 class="pt-2 text-[17px] font-medium">{{ __('registration.team_contact') }}</h3>
+                        @endif
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <flux:input wire:model="firstName" :label="__('registration.first_name')" autocomplete="given-name" />
+                            <flux:input wire:model="lastName" :label="__('registration.last_name')" autocomplete="family-name" />
+                            <flux:input wire:model.live.blur="birthDate" :label="__('registration.birth_date')" :description:trailing="__('registration.birth_date_help')" placeholder="ÅÅÅÅ-MM-DD" inputmode="numeric" autocomplete="bday" maxlength="10" />
+                            <fieldset class="flex flex-col">
+                                <legend class="mb-2 text-sm leading-tight font-medium text-zinc-800">{{ __('registration.gender') }}</legend>
+                                <div class="flex gap-2">
+                                    @foreach (['K' => __('registration.gender_k'), 'M' => __('registration.gender_m')] as $value => $label)
+                                        <label class="flex-1">
+                                            <input type="radio" name="gender" value="{{ $value }}" wire:model.live="gender" class="peer sr-only">
+                                            <span class="flex h-12 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-contour text-base font-medium peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand hover:border-ink-soft">{{ $label }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @error('gender')<p class="text-sm font-medium text-danger">{{ $message }}</p>@enderror
+                            </fieldset>
+                        </div>
+                        @if ($ageGroup)
+                            <p class="text-[15px] text-ink-soft" aria-live="polite">{{ __('registration.your_age_group', ['group' => $ageGroup]) }}</p>
+                        @endif
+
+                        <flux:input wire:model="club" list="clubs" autocomplete="off" :label="__('registration.club_optional')" :description:trailing="__('registration.club_help')" />
+                        <datalist id="clubs">
+                            @foreach ($clubs as $name)
+                                <option value="{{ $name }}">
+                            @endforeach
+                        </datalist>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <flux:input wire:model="email" type="email" :label="__('registration.email')" :description:trailing="__('registration.email_help')" autocomplete="email" />
+                            <flux:input wire:model="phone" type="tel" inputmode="tel" :label="__('registration.phone_optional')" autocomplete="tel" />
+                        </div>
+                    </div>
+                    @endif
+            </section>
+        </div>
+
+        <aside aria-labelledby="steg-3" x-intersect:enter="summaryInView = true" x-intersect:leave="summaryInView = false" class="flex scroll-mt-6 flex-col gap-4 lg:sticky lg:top-6" id="steg-3-section">
+            <h2 id="steg-3" class="flex scroll-mt-6 items-center gap-3 text-[21px] font-medium sm:text-[26px]">
+                <span aria-hidden="true" class="grid size-8 place-items-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">3</span>
+                {{ __('registration.step_pay') }}
+            </h2>
+            <div class="flex flex-col gap-5 rounded-card bg-white p-5 shadow-rest sm:p-7" aria-live="polite">
+                @if ($selected)
+                    <dl class="flex flex-col gap-1">
+                        <dt class="sr-only">{{ __('registration.class') }}</dt>
+                        <dd class="text-[17px] font-medium">{{ $selected->race?->name }} – {{ $selected->name }}</dd>
+                        <dt class="sr-only">{{ __('receipt.start') }}</dt>
+                        <dd class="text-[15px] text-ink-soft">{{ Format::date($event->date) }}, {{ Format::time($selected->start_at->setTimezone($event->timezone)) }}</dd>
+                    </dl>
+                    <div class="flex items-baseline justify-between border-t border-contour pt-4">
+                        <span class="text-[15px] text-ink-soft">{{ __('registration.total') }}</span>
+                        <span class="text-[26px] font-medium tabular-nums">{{ $price === null ? '–' : Money::format($price, $currency) }}</span>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <flux:checkbox wire:model="acceptTerms" :label="__('privacy.accept_terms')" />
+                        <p class="text-[14px] text-ink-soft">{{ __('registration.publication_notice') }}
+                            <a href="{{ route('public.terms', $event->organizer->slug) }}" target="_blank" class="underline">{{ __('privacy.read_terms') }}<span class="sr-only"> {{ __('public.new_tab') }}</span></a>
+                        </p>
+                    </div>
+
+                    @if ($errors->any())
+                        {{-- Where the runner pressed pay; each line takes them to its field. --}}
+                        <div role="alert" tabindex="-1" x-init="$el.focus()" class="rounded-[18px] bg-danger-surface px-5 py-4 text-danger outline-none">
+                            <h3 class="text-[15px] font-semibold">{{ __('registration.errors_heading') }}</h3>
+                            <ul class="mt-2 flex flex-col gap-1 text-[15px]">
+                                @foreach ($errors->messages() as $field => $messages)
+                                    <li>
+                                        <a href="#" class="underline" @click.prevent="
+                                            const field = [...document.querySelectorAll('input, select, textarea')]
+                                                .find(el => [...el.attributes].some(a => a.name.startsWith('wire:model') && a.value === @js($field)))
+                                                ?? document.querySelector('[name=' + @js($field) + ']');
+                                            field?.scrollIntoView({ block: 'center' }); field?.focus();
+                                        ">{{ $messages[0] }}</a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <button type="submit" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90 disabled:opacity-60" wire:loading.attr="disabled">
+                        <span wire:loading.remove wire:target="register">{{ $price ? __('registration.pay', ['price' => Money::format($price, $currency)]) : __('registration.submit_free') }}</span>
+                        <span wire:loading wire:target="register">{{ __('registration.working') }}</span>
+                    </button>
+                    @if ($price)
+                        <p class="text-[13px] text-ink-soft">{{ __('registration.secure_payment') }}</p>
+                    @endif
+                @else
+                    <p class="text-[15px] text-ink-soft">{{ $open ? __('registration.choose_first') : __('registration.not_open') }}</p>
                 @endif
-            @endforeach
-        </flux:select>
-
-        @if ($ageGroup)
-            <flux:text class="text-sm">{{ __('registration.your_age_group', ['group' => $ageGroup]) }}</flux:text>
-        @endif
-
-        @if ($teamSize)
-            <div class="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                <flux:input wire:model="teamName" :label="__('registration.team_name')" />
-                <div class="grid gap-3 sm:grid-cols-2">
-                    @for ($i = 0; $i < $teamSize; $i++)
-                        <flux:input wire:key="member-{{ $i }}" wire:model="members.{{ $i }}" :label="__('registration.team_member_n', ['n' => $i + 1])" />
-                    @endfor
-                </div>
-                <flux:text class="text-sm">{{ __('registration.team_help') }}</flux:text>
             </div>
-        @endif
-
-        <div class="grid gap-4 sm:grid-cols-2">
-            <flux:input wire:model="firstName" :label="__('registration.first_name')" autocomplete="given-name" />
-            <flux:input wire:model="lastName" :label="__('registration.last_name')" autocomplete="family-name" />
-            <flux:input wire:model.live.blur="birthDate" type="date" :label="__('registration.birth_date')" autocomplete="bday" />
-            <flux:select wire:model.live="gender" :label="__('registration.gender')" :placeholder="__('registration.gender')">
-                <option value="K">{{ __('registration.gender_k') }}</option>
-                <option value="M">{{ __('registration.gender_m') }}</option>
-            </flux:select>
-        </div>
-
-        <flux:input wire:model="club" list="clubs" autocomplete="off" :label="__('registration.club')" :description="__('registration.club_help')" />
-        <datalist id="clubs">
-            @foreach ($clubs as $name)
-                <option value="{{ $name }}">
-            @endforeach
-        </datalist>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-            <flux:input wire:model="email" type="email" :label="__('registration.email')" autocomplete="email" />
-            <flux:input wire:model="phone" type="tel" :label="__('registration.phone')" autocomplete="tel" />
-        </div>
-
-        <flux:text class="text-sm">{{ __('registration.publication_notice') }}
-            <flux:link :href="route('public.terms', $event->organizer->slug)" target="_blank">{{ __('privacy.read_terms') }}</flux:link>
-        </flux:text>
-        <flux:checkbox wire:model="acceptTerms" :label="__('privacy.accept_terms')" />
-
-        <div><flux:button type="submit" variant="primary">{{ __('registration.submit') }}</flux:button></div>
+        </aside>
     </form>
 
     @if ($earlier->isNotEmpty())
-        <section class="flex flex-col gap-2">
-            <flux:heading size="lg">{{ __('registration.earlier_results') }}</flux:heading>
-            <ul class="flex flex-col gap-1 text-sm">
+        <section aria-labelledby="tidigare" class="flex flex-col gap-3">
+            <h2 id="tidigare" class="text-[21px] font-medium">{{ __('registration.earlier_results') }}</h2>
+            <ul class="flex flex-wrap gap-2">
                 @foreach ($earlier as $edition)
                     <li wire:key="earlier-{{ $edition->id }}">
-                        <flux:link :href="route('public.results', ['organizer' => $event->organizer->slug, 'event' => $edition->slug])">{{ $edition->name }}</flux:link>
+                        <a href="{{ route('public.results', ['organizer' => $event->organizer->slug, 'event' => $edition->slug]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-medium shadow-rest hover:shadow-hover">{{ $edition->name }}</a>
                     </li>
                 @endforeach
             </ul>
         </section>
+    @endif
+
+    {{-- On a phone, once a class is chosen, the way to pay stays at hand until the summary is in view. --}}
+    @if ($selected && $price !== null)
+        <div x-show="! summaryInView" x-transition.opacity class="fixed inset-x-0 bottom-0 z-40 border-t border-contour bg-white/95 px-4 py-3 lg:hidden">
+            <a href="#steg-3" class="flex h-12 w-full items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">{{ $price ? __('registration.pay', ['price' => Money::format($price, $currency)]) : __('registration.submit_free') }}</a>
+        </div>
     @endif
 </div>

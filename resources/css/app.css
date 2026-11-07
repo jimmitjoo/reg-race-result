@@ -6,7 +6,8 @@
 @source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
 @source '../../vendor/livewire/flux/stubs/**/*.blade.php';
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Dark mode is the admin's. A page marked lp-light stays light even if Flux's script adds .dark from the system setting. */
+@custom-variant dark (&:where(.dark:not(.lp-light), .dark:not(.lp-light) *));
 
 /* Hanken Grotesk Variable, latin subset (covers å, ä, ö), as on Löpning.se. */
 @font-face {
@@ -194,8 +195,9 @@
     }
 }
 
+/* Fields start at the top, so a neighbour's help text does not push the label and the input apart. */
 [data-flux-field] {
-    @apply grid gap-2;
+    @apply grid content-start gap-2;
 }
 
 [data-flux-label] {
@@ -206,4 +208,54 @@ input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
     @apply outline-hidden ring-[3px] ring-accent/25 border-accent;
+}
+
+/*
+    Public pages (#118): the organizer's colour is Flux's accent, and fields take Löpning.se's form: 48 px, fully rounded,
+    16 px text (no zoom on focus in iOS). Unlayered, so it wins over Flux's own utilities.
+*/
+.lp-public {
+    --color-accent: var(--color-brand);
+    --color-accent-content: var(--color-brand);
+    --color-accent-foreground: var(--color-brand-contrast);
+}
+
+.lp-public input[data-flux-control]:not([type='checkbox'], [type='radio']),
+.lp-public select[data-flux-control] {
+    height: 3rem;
+    border-radius: 9999px;
+    border: 1.5px solid var(--color-contour);
+    padding-inline: 1.25rem;
+    font-size: 1rem;
+    box-shadow: none;
+}
+
+/* Room for Flux's leading icon (the search glass), placed inside the pill's curve and in ink-soft. */
+.lp-public input[data-flux-control].ps-10 {
+    padding-inline-start: 3rem;
+}
+
+.lp-public [data-flux-input] > .start-0 {
+    padding-inline-start: 1.25rem;
+    color: var(--color-ink-soft);
+}
+
+.lp-public input[data-flux-control]::placeholder {
+    color: var(--color-ink-soft);
+}
+
+/* One chevron down instead of Flux's up-and-down, in ink-soft, also on hover. */
+.lp-public select[data-flux-select-native],
+.lp-public select[data-flux-select-native]:hover:not(:disabled) {
+    background-image: url("data:image/svg+xml,%3csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M7 10L12 15L17 10' stroke='%234f5a53' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    background-position: right 1rem center;
+    padding-inline-end: 3rem;
+}
+
+.lp-public input[data-flux-control][aria-invalid='true'] {
+    border-color: var(--color-danger);
+}
+
+:root.lp-light {
+    color-scheme: light !important;
 }

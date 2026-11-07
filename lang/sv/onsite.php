@@ -15,6 +15,6 @@ return [
     'bib_without_chip' => 'Nummerlapp :bib har inget chip. Ta en annan nummerlapp eller läs in chiplistan.',
     'bib_invalid' => 'Ogiltigt nummer.',
     'start_list' => 'Startlista',
-    'search' => 'Sök namn eller startnummer',
+    'search' => 'Sök namn, förening eller startnummer',
     'nobody_found' => 'Ingen hittades.',
 ];

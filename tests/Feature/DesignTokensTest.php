@@ -11,7 +11,8 @@ it('uses only the design tokens for colour in views', function () {
 
     foreach (Finder::create()->files()->in(resource_path('views'))->exclude(['pdf', 'mail', 'vendor'])->name('*.blade.php') as $file) {
         foreach (explode("\n", $file->getContents()) as $number => $line) {
-            if (str_contains($line, 'theme-color')) {
+            // Comments name issues (#118), not colours.
+            if (str_contains($line, 'theme-color') || preg_match('~^\s*(//|\*|/\*|\{\{--)~', $line)) {
                 continue;
             }
             if (preg_match("/(?<![\\w-])(?:{$utilities})-(?:{$palettes})-\\d{2,3}\\b/", $line, $m) || preg_match('/(?<![&\w])#(?:[0-9a-fA-F]{3}){1,2}\b/', $line, $m)) {

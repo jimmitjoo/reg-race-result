@@ -15,10 +15,10 @@ function publicResultsEvent(bool $public = true): array
     $event = Event::factory()->create(['organizer_id' => $organizer->id, 'slug' => 'nattloppet-2026', 'date' => '2026-08-21', 'results_public_at' => $public ? now() : null]);
     $women = RaceClass::factory()->create(['event_id' => $event->id, 'name' => 'Kvinnor 5 km', 'start_at' => '2026-08-21 20:00:00', 'min_time_seconds' => 600]);
     $men = RaceClass::factory()->create(['event_id' => $event->id, 'name' => 'Män 5 km', 'start_at' => '2026-08-21 20:00:00', 'min_time_seconds' => 600]);
-    foreach ([[$women, 367, 'Lova', 'Jönsson', '20:18:00'], [$men, 12, 'Erik', 'Svensson', '20:16:30']] as [$class, $bib, $first, $last, $finish]) {
+    foreach ([[$women, 367, 'Lova', 'Jönsson', '20:18:00', 'Kalmar', '1993-05-01'], [$men, 12, 'Erik', 'Svensson', '20:16:30', 'Högby IF', '1988-02-14']] as [$class, $bib, $first, $last, $finish, $club, $born]) {
         Chip::create(['event_id' => $event->id, 'code' => "c{$bib}", 'bib' => $bib]);
         ChipRead::create(['event_id' => $event->id, 'reader' => '240', 'chip' => "c{$bib}", 'read_at' => "2026-08-21 {$finish}", 'unit' => 1, 'antenna' => 1]);
-        Registration::factory()->for($class)->create(['bib' => $bib, 'first_name' => $first, 'last_name' => $last]);
+        Registration::factory()->for($class)->create(['bib' => $bib, 'first_name' => $first, 'last_name' => $last, 'club' => $club, 'birth_date' => $born]);
     }
 
     return [$event, $women, $men];
@@ -31,6 +31,7 @@ it('shows live results to anyone once the organizer made them public', function 
         ->assertOk()
         ->assertSee('Lova Jönsson')->assertSee('18:00')
         ->assertSee('Erik Svensson')->assertSee('16:30')
+        ->assertSee(__('results.born'))->assertSeeHtml('>93</td>')
         ->assertSee('wire:poll', false);
 });
 
@@ -40,12 +41,13 @@ it('hides the results until they are made public', function () {
     $this->get('/hogby-if/nattloppet-2026/results')->assertOk()->assertSee(__('live.not_public'))->assertDontSee('Lova Jönsson');
 });
 
-it('finds a runner by name or bib and filters by class', function () {
+it('finds a runner by name, club or bib and filters by class', function () {
     [, $women] = publicResultsEvent();
     $page = Volt::test('public.results', ['organizer' => 'hogby-if', 'event' => 'nattloppet-2026']);
 
     $page->set('search', '367')->assertSee('Lova Jönsson')->assertDontSee('Erik Svensson');
     $page->set('search', 'svens')->assertSee('Erik Svensson')->assertDontSee('Lova Jönsson');
+    $page->set('search', 'kalm')->assertSee('Lova Jönsson')->assertDontSee('Erik Svensson');
     $page->set('search', '')->set('classId', (string) $women->id)->assertSee('Lova Jönsson')->assertDontSee('Erik Svensson');
 });
 
