@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Event extends Model
@@ -17,7 +19,7 @@ class Event extends Model
 
     protected function casts(): array
     {
-        return ['date' => 'immutable_date', 'results_public_at' => 'immutable_datetime', 'theme' => 'array', 'theme_draft' => 'array'];
+        return ['date' => 'immutable_date', 'results_public_at' => 'immutable_datetime', 'theme' => 'array', 'theme_draft' => 'array', 'cancelled_at' => 'immutable_datetime', 'moved_from' => 'immutable_date'];
     }
 
     protected static function booted(): void
@@ -51,6 +53,31 @@ class Event extends Model
         $slug = $this->series?->current()?->is($this) ? $this->series->slug : $this->slug;
 
         return route('public.event', ['organizer' => $this->organizer->slug, 'event' => $slug]);
+    }
+
+    /**
+     * Moves the upplaga to another day (#117): the start times keep their clock time, and the first date is
+     * remembered so that the page and schema.org can say it was moved.
+     */
+    public function moveTo(string $date): void
+    {
+        DB::transaction(function () use ($date) {
+            $days = (int) $this->date->diffInDays(CarbonImmutable::parse($date), false);
+            foreach ($this->raceClasses as $class) {
+                $class->update(['start_at' => $class->start_at->addDays($days)]);
+            }
+            $this->update(['moved_from' => $this->moved_from ?? $this->date, 'date' => $date]);
+        });
+    }
+
+    /** scheduled, cancelled or moved, as schema.org's EventStatusType names them. */
+    public function status(): string
+    {
+        return match (true) {
+            $this->cancelled_at !== null => 'cancelled',
+            $this->moved_from !== null && ! $this->moved_from->isSameDay($this->date) => 'moved',
+            default => 'scheduled',
+        };
     }
 
     public function campaigns(): HasMany

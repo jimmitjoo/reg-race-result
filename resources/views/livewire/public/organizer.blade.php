@@ -51,6 +51,9 @@ new #[Layout('components.layouts.public')] class extends Component {
                 <span class="flex flex-col gap-1">
                     <span class="text-[21px] font-medium group-hover:underline">{{ $event->name }}</span>
                     <span class="text-[15px] text-ink-soft">{{ Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</span>
+                    @if ($event->status() !== 'scheduled')
+                        <span class="text-[15px] font-medium {{ $event->status() === 'cancelled' ? 'text-danger' : 'text-peach-deep' }}">{{ $event->status() === 'cancelled' ? __('public.cancelled') : __('public.moved', ['date' => Format::date($event->date)]) }}</span>
+                    @endif
                 </span>
                 <flux:icon.arrow-right class="size-5 shrink-0 text-ink-soft" />
             </a>
