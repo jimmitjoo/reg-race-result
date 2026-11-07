@@ -97,5 +97,5 @@ return [
     'move' => 'Flytta loppet',
     'cancel_event' => 'Ställ in loppet',
     'cancel_confirm' => 'Ställa in loppet? Sidan säger det högst upp och anmälan stängs.',
-    'status_help' => 'Flyttar ni loppet behåller klasserna sina starttider på det nya datumet, och sidan säger att det är flyttat.',
+    'status_help' => 'Flyttar ni loppet behåller klasserna sina starttider på det nya datumet, och sidan säger att det är flyttat. Prisperioderna flyttas inte: lägg till en period om anmälan ska vara öppen fram till det nya datumet.',
 ];

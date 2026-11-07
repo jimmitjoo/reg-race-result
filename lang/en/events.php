@@ -97,5 +97,5 @@ return [
     'move' => 'Move the race',
     'cancel_event' => 'Cancel the race',
     'cancel_confirm' => 'Cancel the race? The page says so at the top and registration closes.',
-    'status_help' => 'If you move the race, the classes keep their start times on the new date, and the page says it has been moved.',
+    'status_help' => 'If you move the race, the classes keep their start times on the new date, and the page says it has been moved. The price periods do not move: add a period if registration should stay open until the new date.',
 ];
