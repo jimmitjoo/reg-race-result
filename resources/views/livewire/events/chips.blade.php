@@ -34,7 +34,7 @@ new class extends Component {
         return [
             'hasBibs' => $bibs->isNotEmpty(),
             'missing' => $bibs->diff($chipped)->sort()->values(),
-            'races' => $this->event->races()->orderBy('name')->get()->map(fn ($race) => [
+            'races' => $this->event->races()->ordered()->get()->map(fn ($race) => [
                 'race' => $race,
                 'withoutBib' => $this->event->registrations()->whereRelation('raceClass', 'race_id', $race->id)->whereNull('bib')->count(),
             ]),

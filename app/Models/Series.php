@@ -100,7 +100,7 @@ class Series extends Model
 
             $raceIds = [];
             foreach ($previous->races as $race) {
-                $copy = $event->races()->create($race->only(['name', 'onsite_price', 'type', 'course_measurer', 'measured_on', 'age_groups', 'championship', 'championship_districts', 'championship_veterans']));
+                $copy = $event->races()->create($race->only(['name', 'position', 'onsite_price', 'type', 'course_measurer', 'measured_on', 'age_groups', 'championship', 'championship_districts', 'championship_veterans']));
                 $raceIds[$race->id] = $copy->id;
 
                 foreach ($race->priceSteps as $step) {
@@ -109,7 +109,7 @@ class Series extends Model
 
                 foreach ($previous->raceClasses->where('race_id', $race->id) as $class) {
                     $time = $class->start_at->setTimezone($event->timezone)->format('H:i:s');
-                    $event->raceClasses()->create($class->only(['name', 'distance_meters', 'team_size', 'gender', 'timed', 'min_time_seconds']) + [
+                    $event->raceClasses()->create($class->only(['name', 'position', 'distance_meters', 'team_size', 'gender', 'timed', 'min_time_seconds']) + [
                         'race_id' => $copy->id,
                         'start_at' => CarbonImmutable::parse("{$event->date->toDateString()} {$time}", $event->timezone),
                     ]);

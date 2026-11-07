@@ -8,5 +8,11 @@
     @if ($class->timed)
         <span class="text-sm text-zinc-500">{{ __('events.min_time_minutes') }}: {{ intdiv($class->min_time_seconds, 60) }}</span>
     @endif
-    <flux:button size="sm" variant="ghost" class="ms-auto" wire:click="editClass({{ $class->id }})">{{ __('events.edit') }}</flux:button>
+    <div class="ms-auto flex items-center">
+        @isset($loop)
+            <flux:button size="sm" variant="ghost" icon="chevron-up" wire:click="moveClass({{ $class->id }}, -1)" :disabled="$loop->first" :aria-label="__('events.move_up', ['name' => $class->name])" />
+            <flux:button size="sm" variant="ghost" icon="chevron-down" wire:click="moveClass({{ $class->id }}, 1)" :disabled="$loop->last" :aria-label="__('events.move_down', ['name' => $class->name])" />
+        @endisset
+        <flux:button size="sm" variant="ghost" wire:click="editClass({{ $class->id }})">{{ __('events.edit') }}</flux:button>
+    </div>
 </div>

@@ -45,12 +45,50 @@ new class extends Component {
         $this->raceDirector = $this->event->race_director ?? '';
         $this->weather = $this->event->weather ?? '';
         $this->contactEmail = $this->event->contact_email ?? '';
-        $this->raceId = $this->event->races()->orderBy('name')->value('id');
+        $this->raceId = $this->event->races()->ordered()->value('id');
+    }
+
+    /** One step up (-1) or down (1) among the event's races. */
+    public function moveRace(int $id, int $step): void
+    {
+        $this->renumber($this->event->races()->ordered()->get(), $id, $step);
+        $this->renumberClasses();
+    }
+
+    /** One step up (-1) or down (1) among its race's classes. */
+    public function moveClass(int $id, int $step): void
+    {
+        $class = $this->event->raceClasses()->findOrFail($id);
+        $this->renumber(\App\Support\Format::classOrder($this->event->raceClasses()->where('race_id', $class->race_id)->get()), $id, $step);
+        $this->renumberClasses();
+    }
+
+    private function renumber($items, int $id, int $step): void
+    {
+        $items = $items->values()->all();
+        $at = collect($items)->search(fn ($item) => $item->id === $id);
+        abort_if($at === false, 404);
+        $to = max(0, min(count($items) - 1, $at + $step));
+        [$items[$at], $items[$to]] = [$items[$to], $items[$at]];
+        foreach ($items as $i => $item) {
+            $item->update(['position' => $i + 1]);
+        }
+    }
+
+    /** Classes numbered through the event race by race, so lists of every class keep the races' order. */
+    private function renumberClasses(): void
+    {
+        $position = 0;
+        foreach ($this->event->races()->ordered()->with('raceClasses')->get() as $race) {
+            foreach (\App\Support\Format::classOrder($race->raceClasses) as $class) {
+                $class->update(['position' => ++$position]);
+            }
+        }
     }
 
     public function with(): array
     {
-        $races = $this->event->races()->with(['priceSteps', 'raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get();
+        $races = $this->event->races()->with(['priceSteps', 'raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->ordered()->get();
 
         // Setting up an event is a walk through these steps; until it is done the page shows only the next one.
         $unpriced = fn ($race) => $race->priceSteps->isEmpty() && $race->onsite_price === null;
@@ -352,7 +390,11 @@ new class extends Component {
             <div class="flex items-center gap-3">
                 <flux:heading size="lg">{{ $race->name }}</flux:heading>
                 <span class="text-sm text-zinc-500">{{ $race->type }}@if ($race->championship) · {{ $race->championship }}{{ $race->championship_veterans ? ' / V'.$race->championship : '' }}@endif @if ($race->course_measurer) · {{ __('events.measured_by', ['name' => $race->course_measurer, 'date' => $race->measured_on?->toDateString()]) }}@endif</span>
-                <flux:button size="sm" variant="ghost" class="ms-auto" wire:click="editRace({{ $race->id }})">{{ __('events.edit') }}</flux:button>
+                <div class="ms-auto flex items-center">
+                    <flux:button size="sm" variant="ghost" icon="chevron-up" wire:click="moveRace({{ $race->id }}, -1)" :disabled="$loop->first" :aria-label="__('events.move_up', ['name' => $race->name])" />
+                    <flux:button size="sm" variant="ghost" icon="chevron-down" wire:click="moveRace({{ $race->id }}, 1)" :disabled="$loop->last" :aria-label="__('events.move_down', ['name' => $race->name])" />
+                    <flux:button size="sm" variant="ghost" wire:click="editRace({{ $race->id }})">{{ __('events.edit') }}</flux:button>
+                </div>
             </div>
 
             @if (! $setup || $setup === 'price' && $unpriced($race))

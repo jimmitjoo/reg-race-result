@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Results\Districts;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,12 @@ class Race extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /** In the organizer's order, races not yet placed last, then by name. */
+    public function scopeOrdered(Builder $query): void
+    {
+        $query->orderByRaw('position is null')->orderBy('position')->orderBy('name');
     }
 
     public function raceClasses(): HasMany

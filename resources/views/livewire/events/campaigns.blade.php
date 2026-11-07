@@ -32,7 +32,7 @@ new class extends Component {
         return [
             'campaigns' => $this->event->campaigns()->withCount(['codes', 'codes as used_codes_count' => fn ($q) => $q->whereNotNull('used_at')])
                 ->with(['registrations' => fn ($q) => $q->whereNull('refunded_at')])->orderBy('name')->get(),
-            'races' => $this->event->races()->orderBy('name')->get(),
+            'races' => $this->event->races()->ordered()->get(),
             'currency' => $this->event->organizer->currency,
         ];
     }

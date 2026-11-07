@@ -30,6 +30,8 @@ return [
     'save' => 'Spara',
     'cancel' => 'Avbryt',
     'edit' => 'Ändra',
+    'move_up' => 'Flytta upp :name',
+    'move_down' => 'Flytta ner :name',
     'saved' => 'Sparat.',
     'prices' => 'Priser',
     'public_link' => 'Publik länk till anmälan',
