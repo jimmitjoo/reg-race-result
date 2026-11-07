@@ -75,25 +75,25 @@ new #[Layout('components.layouts.public')] class extends Component {
                 @php($ageGroups = $results->raceClass->race?->age_groups)
                 <section wire:key="live-{{ $id }}" aria-labelledby="resultat-{{ $id }}" class="rounded-card bg-white p-5 shadow-rest sm:p-7">
                     <h2 id="resultat-{{ $id }}" class="text-[21px] font-medium">{{ $results->raceClass->name }}</h2>
-                    <table class="mt-4 w-full text-[15px]">
+                    <table data-sortable class="mt-4 w-full text-[15px]">
                         <caption class="sr-only">{{ __('live.title') }}, {{ $results->raceClass->name }}</caption>
                         <thead class="text-left text-[13px] text-ink-soft">
                             <tr>
-                                <th scope="col" class="w-10 pb-2 text-right font-medium">{{ __('results.placing') }}</th>
-                                <th scope="col" class="ps-3 pb-2 font-medium">{{ __('results.name') }}</th>
-                                <th scope="col" class="w-14 pe-3 pb-2 font-medium">{{ __('results.born') }}</th>
+                                <x-sort-header class="w-10 pb-2 text-right font-medium">{{ __('results.placing') }}</x-sort-header>
+                                <x-sort-header class="ps-3 pb-2 font-medium">{{ __('results.name') }}</x-sort-header>
+                                <x-sort-header class="w-14 pe-3 pb-2 font-medium">{{ __('results.born') }}</x-sort-header>
                                 @if ($ageGroups)
-                                    <th scope="col" class="pb-2 text-right font-medium">{{ __('results.age_group') }}</th>
+                                    <x-sort-header class="pb-2 text-right font-medium">{{ __('results.age_group') }}</x-sort-header>
                                 @endif
-                                <th scope="col" class="pb-2 text-right font-medium">{{ __('results.time') }}</th>
-                                <th scope="col" class="hidden w-14 pb-2 text-right font-medium sm:table-cell">{{ __('results.bib') }}</th>
+                                <x-sort-header class="pb-2 text-right font-medium">{{ __('results.time') }}</x-sort-header>
+                                <x-sort-header class="hidden w-14 pb-2 text-right font-medium sm:table-cell">{{ __('results.bib') }}</x-sort-header>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($rows as $row)
                                 <tr class="border-t border-contour">
                                     <td class="py-2.5 text-right align-top font-medium tabular-nums">{{ $row->placing }}</td>
-                                    <td class="py-2.5 ps-3 pe-3 align-top">
+                                    <td class="py-2.5 ps-3 pe-3 align-top" data-sort="{{ trim($row->lastName.' '.$row->firstName) }}">
                                         <span class="font-medium">{{ $row->name }}</span>
                                         @if ($row->club)<span class="block text-[14px] text-ink-soft">{{ $row->club }}</span>@endif
                                     </td>

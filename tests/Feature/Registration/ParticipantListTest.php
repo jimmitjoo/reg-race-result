@@ -77,3 +77,18 @@ it('does not show or download another organizer\'s registrations', function () {
     $this->get(route('events.exports.registrations', $other))->assertNotFound();
     expect($event->organizer_id)->not->toBe($other->organizer_id);
 });
+
+it('sorts on the column whose header is clicked, the other way on a second click', function () {
+    [$event, , $women, $kids] = participantEvent();
+    Registration::factory()->for($women)->create(['bib' => 2, 'first_name' => 'Åsa', 'last_name' => 'Berg']);
+    Registration::factory()->for($kids)->create(['bib' => 1, 'first_name' => 'Kalle', 'last_name' => 'Öberg']);
+    Registration::factory()->for($kids)->create(['bib' => null, 'first_name' => 'Ada', 'last_name' => 'Ek']);
+    $names = fn ($page) => $page->viewData('registrations')->pluck('first_name')->all();
+
+    $page = Volt::test('events.registrations', ['event' => $event])->call('sortBy', 'name');
+    expect($names($page))->toBe(['Åsa', 'Ada', 'Kalle']);
+    $page->call('sortBy', 'name');
+    expect($names($page))->toBe(['Kalle', 'Ada', 'Åsa']);
+    $page->call('sortBy', 'bib')->assertSet('dir', 'asc');
+    expect($names($page))->toBe(['Kalle', 'Åsa', 'Ada']);
+});

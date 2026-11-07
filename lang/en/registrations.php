@@ -32,4 +32,7 @@ return [
     'per_age_group' => 'Paid per age group',
     'campaign' => 'Campaign code',
     'invoiced' => 'Invoiced',
+    'paid_count' => ':count paid|:count paid',
+    'unpaid_count' => ':count unpaid|:count unpaid',
+    'shown' => ':count registration|:count registrations',
 ];
