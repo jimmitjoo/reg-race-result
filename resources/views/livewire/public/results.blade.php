@@ -38,7 +38,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                     'results' => $results,
                     'rows' => array_filter($results->rows, fn ($row) => $search === ''
                         || (string) $row->bib === $search
-                        || str_contains(mb_strtolower($row->name), $search)),
+                        || str_contains(mb_strtolower($row->name), $search)
+                        || str_contains(mb_strtolower((string) $row->club), $search)),
                 ])
                 ->filter(fn ($entry) => $entry['rows'] !== []),
         ];

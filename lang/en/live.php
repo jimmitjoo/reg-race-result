@@ -3,7 +3,7 @@
 return [
     'title' => 'Results',
     'not_public' => 'The results are not published yet. Check again once the race has started.',
-    'search' => 'Search name or bib',
+    'search' => 'Search name, club or bib',
     'all_classes' => 'All classes',
     'updated' => 'Updates automatically',
     'nobody_found' => 'Nobody found.',

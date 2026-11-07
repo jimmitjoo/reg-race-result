@@ -39,7 +39,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                     'class' => $class,
                     'runners' => $class->registrations->filter(fn ($r) => $search === ''
                         || (string) $r->bib === $search
-                        || str_contains(mb_strtolower($r->publicName()), $search)),
+                        || str_contains(mb_strtolower($r->publicName()), $search)
+                        || (! $r->hidden_at && str_contains(mb_strtolower((string) $r->club), $search))),
                 ])
                 ->filter(fn ($row) => $row['runners']->isNotEmpty()),
         ];

@@ -15,6 +15,6 @@ return [
     'bib_without_chip' => 'Bib :bib has no chip. Take another bib or import the chip list.',
     'bib_invalid' => 'Invalid number.',
     'start_list' => 'Start list',
-    'search' => 'Search name or bib',
+    'search' => 'Search name, club or bib',
     'nobody_found' => 'Nobody found.',
 ];
