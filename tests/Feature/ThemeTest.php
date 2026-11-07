@@ -87,3 +87,19 @@ it('leaves a page without a theme as Löpning.se made it', function () {
     expect(Theme::css(Theme::for(Organizer::first())))->toBe('');
     $this->get('/hogby-if')->assertOk()->assertDontSee('--brand:', false);
 });
+
+it('takes an SVG logo, keeping its drawing but not its scripts, events or outside references', function () {
+    Storage::fake('public');
+    $organizer = Organizer::factory()->create();
+    $this->actingAs(User::factory()->create(['organizer_id' => $organizer->id]));
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10"><script>alert(1)</script>'
+        .'<circle cx="5" cy="5" r="4" fill="#1f5c46" onload="alert(2)"/><image xlink:href="https://spår.example/pixel.png"/>'
+        .'<foreignObject><div>x</div></foreignObject></svg>';
+
+    Volt::test('theme.edit')->set('upload', UploadedFile::fake()->createWithContent('logga.svg', $svg))->assertHasNoErrors();
+
+    $stored = Storage::disk('public')->get($organizer->fresh()->theme_draft['logo']);
+    expect($stored)->toContain('<circle')->not->toContain('script')->not->toContain('onload')->not->toContain('spår.example')->not->toContain('foreignObject');
+
+    Volt::test('theme.edit')->set('upload', UploadedFile::fake()->createWithContent('trasig.svg', '<svg xmlns="http://www.w3.org/2000/svg"><circle'))->assertHasErrors('upload');
+});
