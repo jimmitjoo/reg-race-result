@@ -138,6 +138,18 @@ final class Theme
         return $theme['logo'] ? Storage::disk('public')->url($theme['logo']) : null;
     }
 
+    /** The logo inside the document itself, for a PDF that fetches nothing (dompdf) and a page saved offline. */
+    public static function logoDataUri(array $theme): ?string
+    {
+        $disk = Storage::disk('public');
+        if (! $theme['logo'] || ! $disk->exists($theme['logo'])) {
+            return null;
+        }
+        $mime = str_ends_with($theme['logo'], '.svg') ? 'image/svg+xml' : $disk->mimeType($theme['logo']);
+
+        return "data:{$mime};base64,".base64_encode($disk->get($theme['logo']));
+    }
+
     public static function contrast(array $a, array $b): float
     {
         [$la, $lb] = [self::luminance($a), self::luminance($b)];

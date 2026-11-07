@@ -9,6 +9,7 @@ use App\Models\Race;
 use App\Models\RaceClass;
 use App\Models\Registration;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
 
 function pdfEvent(): array
@@ -90,4 +91,19 @@ it('edits the result list details of an event', function () {
         ->race_director->toBe('Annan Person')
         ->weather->toBe('13 grader och sol')
         ->contact_email->toBe('resultat@example.com');
+});
+
+it('carries the club logo inside the PDF, an upplaga\'s own before the club\'s', function () {
+    Storage::fake('public');
+    [$event] = pdfEvent();
+    Storage::disk('public')->put('logos/klubb.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>');
+    Storage::disk('public')->put('logos/upplaga.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>');
+
+    expect(ResultsPdf::html($event))->not->toContain('class="logo"');
+
+    $event->organizer->update(['theme' => ['logo' => 'logos/klubb.svg']]);
+    expect(ResultsPdf::html($event->fresh()))->toContain('data:image/svg+xml;base64,'.base64_encode('<svg xmlns="http://www.w3.org/2000/svg"/>'));
+
+    $event->update(['theme' => ['logo' => 'logos/upplaga.svg']]);
+    expect(ResultsPdf::html($event->fresh()))->toContain(base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>'));
 });

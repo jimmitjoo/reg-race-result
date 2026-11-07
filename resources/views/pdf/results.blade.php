@@ -7,6 +7,7 @@
         @page { margin: 18mm 14mm; }
         body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #111; }
         h1 { font-size: 15pt; margin: 0 0 10pt; }
+        .logo { float: right; max-height: 42pt; max-width: 140pt; margin: 0 0 6pt 12pt; }
         .meta td { padding: 1pt 18pt 1pt 0; vertical-align: top; }
         .note { margin: 8pt 0; }
         h2 { font-size: 11pt; margin: 14pt 0 3pt; border-bottom: 0.6pt solid #999; padding-bottom: 2pt; }
@@ -20,6 +21,9 @@
     </style>
 </head>
 <body>
+    @if ($logo = \App\Support\Theme::logoDataUri(\App\Support\Theme::for($event->organizer, $event)))
+        <img class="logo" src="{{ $logo }}" alt="{{ $event->organizer->name }}">
+    @endif
     <h1>{{ __('pdf.title', ['event' => $event->name]) }}</h1>
 
     <table class="meta">

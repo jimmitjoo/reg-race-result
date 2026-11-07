@@ -22,7 +22,7 @@
             </div>
         </header>
 
-        <main id="innehall" tabindex="-1" class="mx-auto max-w-[1100px] px-4 pt-8 pb-16 outline-none sm:px-6 sm:pt-12">
+        <main id="innehall" tabindex="-1" class="mx-auto max-w-[1100px] px-4 pt-8 pb-16 outline-none sm:px-6 sm:pt-12 print:p-0">
             {{ $slot }}
         </main>
 

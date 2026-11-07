@@ -265,3 +265,16 @@ select:focus[data-flux-control] {
 .lp-public :is(h1, h2, h3) {
     font-family: var(--font-display, var(--font-sans));
 }
+
+/* Printed or saved as PDF: no margin on the page leaves no room for the browser's date, address and page numbers; the body keeps the margin instead, on every page. */
+@media print {
+    @page {
+        margin: 0;
+    }
+
+    body {
+        padding: 14mm;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+    }
+}
