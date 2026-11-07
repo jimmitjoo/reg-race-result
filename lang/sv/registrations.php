@@ -32,4 +32,7 @@ return [
     'per_age_group' => 'Betalda per åldersklass',
     'campaign' => 'Kampanjkod',
     'invoiced' => 'Fakturerad',
+    'paid_count' => ':count betald|:count betalda',
+    'unpaid_count' => ':count ej betald|:count ej betalda',
+    'shown' => ':count anmälning|:count anmälningar',
 ];

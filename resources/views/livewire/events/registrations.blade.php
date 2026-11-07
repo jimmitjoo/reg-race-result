@@ -65,121 +65,129 @@ new class extends Component {
         <flux:button :href="$download" icon="arrow-down-tray">{{ __('registrations.download') }}</flux:button>
     </div>
 
-    <table class="max-w-xl text-left text-sm">
-        <thead class="text-zinc-500">
-            <tr>
-                <th class="py-1 pe-4">{{ __('registrations.counts') }}</th>
-                <th class="py-1 pe-4 text-right">{{ __('registrations.registered') }}</th>
-                <th class="py-1 text-right">{{ __('registrations.filter_paid') }}</th>
-            </tr>
-        </thead>
-        <tbody>
+    {{-- One card per race: what is paid, class by class. A card is also the race filter. --}}
+    <section aria-labelledby="counts" class="flex flex-col gap-3">
+        <h2 id="counts" class="sr-only">{{ __('registrations.counts') }}</h2>
+        <div class="grid gap-3 md:grid-cols-2">
             @foreach ($races as $r)
-                <tr wire:key="count-race-{{ $r->id }}" class="border-t border-zinc-100 font-semibold dark:border-zinc-800">
-                    <td class="py-1 pe-4">{{ $r->name }}</td>
-                    <td class="py-1 pe-4 text-right">{{ $r->raceClasses->sum(fn ($c) => $counts[$c->id]->total ?? 0) }}</td>
-                    <td class="py-1 text-right">{{ $r->raceClasses->sum(fn ($c) => $counts[$c->id]->paid ?? 0) }}</td>
-                </tr>
-                @foreach (\App\Support\Format::classOrder($r->raceClasses) as $class)
-                    <tr wire:key="count-class-{{ $class->id }}">
-                        <td class="py-1 pe-4 ps-4">{{ $class->name }}</td>
-                        <td class="py-1 pe-4 text-right">{{ $counts[$class->id]->total ?? 0 }}</td>
-                        <td class="py-1 text-right">{{ $counts[$class->id]->paid ?? 0 }}</td>
-                    </tr>
-                @endforeach
+                @php($paid = $r->raceClasses->sum(fn ($c) => $counts[$c->id]->paid ?? 0))
+                @php($unpaid = $r->raceClasses->sum(fn ($c) => $counts[$c->id]->total ?? 0) - $paid)
+                <button type="button" wire:key="count-race-{{ $r->id }}" wire:click="$set('race', '{{ $race == $r->id ? '' : $r->id }}')" aria-pressed="{{ $race == $r->id ? 'true' : 'false' }}"
+                    class="rounded-panel flex flex-col gap-3 border p-4 text-left transition hover:border-zinc-400 aria-pressed:border-zinc-800 aria-pressed:ring-1 aria-pressed:ring-zinc-800 dark:hover:border-zinc-500 dark:aria-pressed:border-zinc-200 dark:aria-pressed:ring-zinc-200 border-zinc-200 dark:border-zinc-700">
+                    <span class="flex flex-wrap items-baseline justify-between gap-x-4">
+                        <span class="font-semibold">{{ $r->name }}</span>
+                        <span class="text-sm">
+                            <span class="font-semibold tabular-nums">{{ trans_choice('registrations.paid_count', $paid) }}</span>
+                            @if ($unpaid)<span class="text-zinc-500">· {{ trans_choice('registrations.unpaid_count', $unpaid) }}</span>@endif
+                        </span>
+                    </span>
+                    <span class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-sm sm:grid-cols-[1fr_auto_1fr_auto]">
+                        @foreach (\App\Support\Format::classOrder($r->raceClasses) as $class)
+                            @php($n = (int) ($counts[$class->id]->paid ?? 0))
+                            <span @class(['text-zinc-500' => ! $n])>{{ $class->name }}</span>
+                            <span @class(['text-right tabular-nums', 'text-zinc-500' => ! $n])>{{ $n }}</span>
+                        @endforeach
+                    </span>
+                </button>
             @endforeach
-        </tbody>
-    </table>
-
-    <div class="grid gap-4 sm:grid-cols-3">
-        <flux:input wire:model.live.debounce.250ms="search" icon="magnifying-glass" :placeholder="__('registrations.search')" />
-        <flux:select wire:model.live="status">
-            <option value="paid">{{ __('registrations.filter_paid') }}</option>
-            <option value="unpaid">{{ __('registrations.filter_unpaid') }}</option>
-            <option value="all">{{ __('registrations.filter_all') }}</option>
-        </flux:select>
-        <flux:select wire:model.live="race">
-            <option value="">{{ __('registrations.all_races') }}</option>
-            @foreach ($races as $r)
-                <option value="{{ $r->id }}">{{ $r->name }}</option>
-            @endforeach
-        </flux:select>
-    </div>
-
-    @if ($ageGroupCounts->isNotEmpty())
-        <div class="flex flex-col gap-1">
-            <flux:heading size="sm">{{ __('registrations.per_age_group') }}</flux:heading>
-            <flux:text class="text-sm">{{ $ageGroupCounts->map(fn ($n, $group) => "{$group}: {$n}")->implode(' · ') }}</flux:text>
         </div>
-    @endif
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm whitespace-nowrap">
+        @if ($ageGroupCounts->isNotEmpty())
+            <flux:text class="text-sm">
+                <span class="font-medium">{{ __('registrations.per_age_group') }}:</span>
+                {{ $ageGroupCounts->map(fn ($n, $group) => "{$group}: {$n}")->implode(' · ') }}
+            </flux:text>
+        @endif
+    </section>
+
+    <section aria-labelledby="list" class="flex flex-col gap-3">
+        <h2 id="list" class="sr-only">{{ __('registrations.title') }}</h2>
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="min-w-64 flex-1">
+                <flux:input wire:model.live.debounce.250ms="search" icon="magnifying-glass" :placeholder="__('registrations.search')" :aria-label="__('registrations.search')" />
+            </div>
+            <div class="w-56">
+                <flux:select wire:model.live="status" :aria-label="__('registrations.status')">
+                    <option value="paid">{{ __('registrations.filter_paid') }}</option>
+                    <option value="unpaid">{{ __('registrations.filter_unpaid') }}</option>
+                    <option value="all">{{ __('registrations.filter_all') }}</option>
+                </flux:select>
+            </div>
+            <p class="text-sm text-zinc-500" aria-live="polite">
+                {{ trans_choice('registrations.shown', $registrations->total()) }}@if ($race && ($picked = $races->firstWhere('id', (int) $race))) · {{ $picked->name }}
+                    <button type="button" wire:click="$set('race', '')" class="underline underline-offset-2 hover:text-zinc-800 dark:hover:text-zinc-200">{{ __('registrations.all_races') }}</button>
+                @endif
+            </p>
+        </div>
+
+        <table class="w-full text-left text-sm">
             <thead class="text-zinc-500">
-                <tr>
-                    <th class="py-1 pe-3">{{ __('registration.class') }}</th>
-                    <th class="py-1 pe-3">{{ __('results.bib') }}</th>
-                    <th class="py-1 pe-3">{{ __('results.name') }}</th>
-                    <th class="py-1 pe-3">{{ __('registration.birth_date') }}</th>
-                    <th class="py-1 pe-3">{{ __('registration.gender') }}</th>
-                    @if ($ageGroups)<th class="py-1 pe-3">{{ __('results.age_group') }}</th>@endif
-                    <th class="py-1 pe-3">{{ __('registration.club') }}</th>
-                    <th class="py-1 pe-3">{{ __('registration.email') }}</th>
-                    <th class="py-1 pe-3">{{ __('registration.phone') }}</th>
-                    <th class="py-1 pe-3">{{ __('registrations.price') }}</th>
-                    <th class="py-1 pe-3">{{ __('registrations.payment_method') }}</th>
-                    <th class="py-1 pe-3">{{ __('registrations.status') }}</th>
-                    <th class="py-1 pe-3">{{ __('registrations.created_at') }}</th>
-                    <th class="py-1"></th>
+                <tr class="border-b border-zinc-200 dark:border-zinc-700">
+                    <th class="py-2 pe-3 font-medium">{{ __('results.bib') }}</th>
+                    <th class="py-2 pe-3 font-medium">{{ __('results.name') }}</th>
+                    <th class="py-2 pe-3 font-medium max-sm:hidden">{{ __('registration.class') }}</th>
+                    <th class="py-2 pe-3 font-medium">{{ __('registrations.status') }}</th>
+                    <th class="py-2 font-medium max-md:hidden">{{ __('registrations.created_at') }}</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach ($registrations as $registration)
-                    <tr wire:key="registration-{{ $registration->id }}" class="border-t border-zinc-100 dark:border-zinc-800">
-                        <td class="py-1 pe-3">{{ $registration->raceClass->name }}</td>
-                        <td class="py-1 pe-3 font-mono">{{ $registration->bib }}</td>
-                        <td class="py-1 pe-3">
-                            @if ($registration->team_name)
-                                <span class="font-semibold">{{ $registration->team_name }}</span>
-                                <span class="text-zinc-500">· {{ $registration->first_name }} {{ $registration->last_name }}</span>
-                            @else
-                                {{ $registration->first_name }} {{ $registration->last_name }}
-                            @endif
+            @foreach ($registrations as $registration)
+                @php($name = $registration->first_name.' '.$registration->last_name)
+                <tbody wire:key="registration-{{ $registration->id }}" x-data="{ open: false }" class="border-b border-zinc-100 dark:border-zinc-800">
+                    <tr class="cursor-pointer align-top hover:bg-zinc-50 dark:hover:bg-zinc-800/50" x-on:click="open = ! open">
+                        <td class="py-2 pe-3 font-mono tabular-nums">{{ $registration->bib }}</td>
+                        <td class="py-2 pe-3">
+                            <button type="button" class="text-left font-medium" x-on:click.stop="open = ! open" x-bind:aria-expanded="open" aria-controls="details-{{ $registration->id }}">
+                                {{ $registration->team_name ?: $name }}
+                            </button>
                             @if ($registration->hidden_at)<flux:badge size="sm" color="zinc">{{ __('registrations.hidden') }}</flux:badge>@endif
+                            <span class="block text-zinc-500">
+                                @if ($registration->team_name){{ $name }} · @endif<span class="sm:hidden">{{ $registration->raceClass->name }}{{ $registration->club ? ' · ' : '' }}</span>{{ $registration->club }}
+                            </span>
                         </td>
-                        <td class="py-1 pe-3">{{ $registration->birth_date?->toDateString() }}</td>
-                        <td class="py-1 pe-3">{{ $registration->gender }}</td>
-                        @if ($ageGroups)<td class="py-1 pe-3">{{ $registration->raceClass->ageGroupOf($registration) }}</td>@endif
-                        <td class="py-1 pe-3">{{ $registration->club }}</td>
-                        <td class="py-1 pe-3">{{ $registration->email }}</td>
-                        <td class="py-1 pe-3">{{ $registration->phone }}</td>
-                        <td class="py-1 pe-3">
-                            {{ $registration->price === null ? '' : Money::format($registration->price, $currency) }}
-                            @if ($registration->campaign_code)<flux:badge size="sm">{{ $registration->campaign_code }}</flux:badge>@endif
-                        </td>
-                        <td class="py-1 pe-3">{{ $registration->payment_method ? __("registrations.method.{$registration->payment_method}") : '' }}</td>
-                        <td class="py-1 pe-3">
+                        <td class="py-2 pe-3 max-sm:hidden">{{ $registration->raceClass->name }}</td>
+                        <td class="py-2 pe-3">
                             @if ($registration->refunded_at)
                                 <flux:badge size="sm" color="zinc">{{ __('registrations.refunded') }}</flux:badge>
                             @elseif ($registration->paid_at)
-                                {{ \App\Support\Format::dateTime($registration->paid_at->setTimezone($event->timezone)) }}
+                                <span class="tabular-nums">{{ $registration->price === null ? __('registrations.paid') : Money::format($registration->price, $currency) }}</span>
                             @elseif ($registration->payment_method === 'invoice')
                                 <flux:badge size="sm" color="sky">{{ __('registrations.invoiced') }}</flux:badge>
                             @else
                                 <flux:badge size="sm" color="amber">{{ __('registrations.unpaid') }}</flux:badge>
                             @endif
                         </td>
-                        <td class="py-1 pe-3">{{ \App\Support\Format::dateTime($registration->created_at->setTimezone($event->timezone)) }}</td>
-                        <td class="py-1 text-right">
-                            <flux:button size="xs" wire:click="toggleHidden({{ $registration->id }})">
-                                {{ $registration->hidden_at ? __('registrations.show_name') : __('registrations.hide_name') }}
-                            </flux:button>
+                        <td class="py-2 tabular-nums text-zinc-500 max-md:hidden">{{ \App\Support\Format::dateTime($registration->created_at->setTimezone($event->timezone)) }}</td>
+                    </tr>
+                    <tr id="details-{{ $registration->id }}" hidden x-bind:hidden="! open">
+                        <td colspan="5" class="pb-4">
+                            <div class="rounded-panel flex flex-wrap items-start justify-between gap-4 bg-zinc-50 p-4 dark:bg-zinc-800/50">
+                                <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 sm:grid-cols-[auto_1fr_auto_1fr]">
+                                    <dt class="text-zinc-500">{{ __('registration.email') }}</dt><dd class="break-all">{{ $registration->email }}</dd>
+                                    <dt class="text-zinc-500">{{ __('registration.phone') }}</dt><dd>{{ $registration->phone }}</dd>
+                                    <dt class="text-zinc-500">{{ __('registration.birth_date') }}</dt><dd class="tabular-nums">{{ $registration->birth_date?->toDateString() }}</dd>
+                                    <dt class="text-zinc-500">{{ __('registration.gender') }}</dt><dd>{{ $registration->gender }}</dd>
+                                    @if ($ageGroups)
+                                        <dt class="text-zinc-500">{{ __('results.age_group') }}</dt><dd>{{ $registration->raceClass->ageGroupOf($registration) }}</dd>
+                                    @endif
+                                    <dt class="text-zinc-500">{{ __('registrations.price') }}</dt>
+                                    <dd>
+                                        {{ $registration->price === null ? '' : Money::format($registration->price, $currency) }}
+                                        @if ($registration->campaign_code)<flux:badge size="sm">{{ $registration->campaign_code }}</flux:badge>@endif
+                                    </dd>
+                                    <dt class="text-zinc-500">{{ __('registrations.payment_method') }}</dt><dd>{{ $registration->payment_method ? __("registrations.method.{$registration->payment_method}") : '' }}</dd>
+                                    <dt class="text-zinc-500">{{ __('registrations.paid_at') }}</dt><dd class="tabular-nums">{{ $registration->paid_at ? \App\Support\Format::dateTime($registration->paid_at->setTimezone($event->timezone)) : '' }}</dd>
+                                    <dt class="text-zinc-500 md:hidden">{{ __('registrations.created_at') }}</dt><dd class="tabular-nums md:hidden">{{ \App\Support\Format::dateTime($registration->created_at->setTimezone($event->timezone)) }}</dd>
+                                </dl>
+                                <flux:button size="sm" wire:click="toggleHidden({{ $registration->id }})">
+                                    {{ $registration->hidden_at ? __('registrations.show_name') : __('registrations.hide_name') }}
+                                </flux:button>
+                            </div>
                         </td>
                     </tr>
-                @endforeach
-            </tbody>
+                </tbody>
+            @endforeach
         </table>
-    </div>
 
-    {{ $registrations->links('livewire::simple-tailwind') }}
+        {{ $registrations->links('livewire::simple-tailwind') }}
+    </section>
 </div>
