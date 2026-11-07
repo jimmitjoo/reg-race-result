@@ -22,6 +22,7 @@ Route::middleware(['auth'])->group(function () {
 
     Volt::route('club', 'club.create')->name('club.create');
     Volt::route('payments', 'payments.index')->name('payments.index');
+    Volt::route('theme', 'theme.edit')->name('theme.edit');
     Route::get('payments/return', [StripeConnectController::class, 'back'])->name('payments.return');
     Route::get('payments/refresh', [StripeConnectController::class, 'refresh'])->name('payments.refresh');
     Volt::route('sites', 'sites.index')->name('sites.index');
@@ -37,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
         Volt::route('onsite', 'events.onsite')->name('onsite');
         Volt::route('registrations', 'events.registrations')->name('registrations');
         Volt::route('campaigns', 'events.campaigns')->name('campaigns');
+        Volt::route('theme', 'theme.edit')->name('theme');
         Route::get('campaigns/{campaign}/codes', [ExportController::class, 'campaignCodes'])->name('campaigns.codes');
         Route::get('campaigns/{campaign}/invoice', [ExportController::class, 'invoiceBasis'])->name('campaigns.invoice');
         Route::get('exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');

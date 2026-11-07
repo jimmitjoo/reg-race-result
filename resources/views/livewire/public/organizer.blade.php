@@ -38,6 +38,9 @@ new #[Layout('components.layouts.public')] class extends Component {
 
 <div class="flex flex-col gap-12">
     <header class="flex flex-col gap-3">
+        @if ($logo = \App\Support\Theme::logoUrl(\App\Support\Theme::for($organizer)))
+            <img src="{{ $logo }}" alt="" class="h-16 w-auto max-w-[240px] self-start object-contain">
+        @endif
         <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ $organizer->name }}</h1>
     </header>
 
@@ -74,7 +77,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                 @foreach ($years as $event)
                                                                         {{-- Results once published, otherwise who ran. --}}
                                     @php($page = $event->results_public_at ? ['public.results', 'live.title'] : ['public.start-list', 'onsite.start_list'])
-                                    <li><a href="{{ route($page[0], ['organizer' => $organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-9 items-center rounded-full border-[1.5px] border-contour px-4 text-[15px] tabular-nums hover:border-ink" aria-label="{{ __($page[1]) }} {{ $event->name }}">{{ $event->date->year }}</a></li>
+                                    <li><a href="{{ route($page[0], ['organizer' => $organizer->slug, 'event' => $event->slug]) }}" class="inline-flex h-9 items-center rounded-pill border-[1.5px] border-contour px-4 text-[15px] tabular-nums hover:border-ink" aria-label="{{ __($page[1]) }} {{ $event->name }}">{{ $event->date->year }}</a></li>
                                 @endforeach
                             </ul>
                         </li>

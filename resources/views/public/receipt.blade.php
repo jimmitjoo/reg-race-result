@@ -1,5 +1,5 @@
 {{-- The receipt (#132): to print or save as PDF, for the books and for friskvårdsbidrag. --}}
-<x-layouts.public :organizer="$event->organizer" :title="__('public.title', ['page' => ($receipt['number'] ? __('receipt.title_number', ['number' => $receipt['number']]) : __('receipt.title')), 'event' => $event->name, 'organizer' => $event->organizer->name])">
+<x-layouts.public :organizer="$event->organizer" :event="$event" :title="__('public.title', ['page' => ($receipt['number'] ? __('receipt.title_number', ['number' => $receipt['number']]) : __('receipt.title')), 'event' => $event->name, 'organizer' => $event->organizer->name])">
     <article class="mx-auto flex max-w-[720px] flex-col gap-6 rounded-card bg-white p-5 shadow-rest sm:p-8 print:max-w-none print:p-0 print:shadow-none">
         <header class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
             <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em]">{{ ($receipt['number'] ? __('receipt.title_number', ['number' => $receipt['number']]) : __('receipt.title')) }}</h1>
@@ -53,7 +53,7 @@
         <p class="border-t border-contour pt-4 text-[13px] text-ink-soft">{{ $receipt['via'] }}</p>
 
         <div class="print:hidden">
-            <button type="button" onclick="window.print()" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('receipt.print') }}</button>
+            <button type="button" onclick="window.print()" class="inline-flex h-11 items-center rounded-pill bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('receipt.print') }}</button>
         </div>
     </article>
 </x-layouts.public>

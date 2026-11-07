@@ -2,7 +2,7 @@
 @use('App\Support\Money')
 @php($class = $registration->raceClass)
 @php($eventUrl = route('public.event', ['organizer' => $event->organizer->slug, 'event' => $event->series?->slug ?? $event->slug]))
-<x-layouts.public :organizer="$event->organizer" :title="__('public.title', ['page' => __('registration.confirmation_heading'), 'event' => $event->name, 'organizer' => $event->organizer->name])">
+<x-layouts.public :organizer="$event->organizer" :event="$event" :title="__('public.title', ['page' => __('registration.confirmation_heading'), 'event' => $event->name, 'organizer' => $event->organizer->name])">
     <div class="mx-auto flex max-w-[720px] flex-col gap-8">
         <header class="flex flex-col gap-3">
             <p class="text-[15px] text-ink-soft">{{ $event->organizer->name }}</p>
@@ -48,13 +48,13 @@
 
         <div class="flex flex-wrap gap-2">
             @if ($registration->paid_at || $registration->payment_method === 'invoice')
-                <a href="{{ URL::signedRoute('public.registration.calendar', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $registration]) }}" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.add_to_calendar') }}</a>
-                <a href="{{ URL::signedRoute('public.receipt', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $order->first()]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('receipt.receipt_link') }}</a>
-                <a href="{{ route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}#anmalan-{{ $registration->id }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('registration.see_start_list') }}</a>
+                <a href="{{ URL::signedRoute('public.registration.calendar', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $registration]) }}" class="inline-flex h-11 items-center rounded-pill bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.add_to_calendar') }}</a>
+                <a href="{{ URL::signedRoute('public.receipt', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $order->first()]) }}" class="inline-flex h-11 items-center rounded-pill bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('receipt.receipt_link') }}</a>
+                <a href="{{ route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}#anmalan-{{ $registration->id }}" class="inline-flex h-11 items-center rounded-pill bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('registration.see_start_list') }}</a>
             @else
-                <a href="{{ $eventUrl }}#steg-3" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.try_again') }}</a>
+                <a href="{{ $eventUrl }}#steg-3" class="inline-flex h-11 items-center rounded-pill bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.try_again') }}</a>
             @endif
-            <a href="{{ $eventUrl }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('registration.back_to_race') }}</a>
+            <a href="{{ $eventUrl }}" class="inline-flex h-11 items-center rounded-pill bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('registration.back_to_race') }}</a>
         </div>
     </div>
 </x-layouts.public>

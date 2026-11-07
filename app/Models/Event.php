@@ -17,7 +17,7 @@ class Event extends Model
 
     protected function casts(): array
     {
-        return ['date' => 'immutable_date', 'results_public_at' => 'immutable_datetime'];
+        return ['date' => 'immutable_date', 'results_public_at' => 'immutable_datetime', 'theme' => 'array', 'theme_draft' => 'array'];
     }
 
     protected static function booted(): void
