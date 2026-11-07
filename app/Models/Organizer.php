@@ -16,7 +16,7 @@ class Organizer extends Model
 
     protected function casts(): array
     {
-        return ['stripe_details_submitted' => 'boolean', 'stripe_charges_enabled' => 'boolean', 'theme' => 'array', 'theme_draft' => 'array'];
+        return ['stripe_details_submitted' => 'boolean', 'stripe_charges_enabled' => 'boolean', 'theme' => 'array', 'theme_draft' => 'array', 'page' => 'array', 'page_draft' => 'array'];
     }
 
     /** Online payments go to the organizer's own connected Stripe account, or not at all (#47). */

@@ -23,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('club', 'club.create')->name('club.create');
     Volt::route('payments', 'payments.index')->name('payments.index');
     Volt::route('theme', 'theme.edit')->name('theme.edit');
+    Volt::route('page', 'page.edit')->name('page.edit');
     Route::get('payments/return', [StripeConnectController::class, 'back'])->name('payments.return');
     Route::get('payments/refresh', [StripeConnectController::class, 'refresh'])->name('payments.refresh');
     Volt::route('sites', 'sites.index')->name('sites.index');
