@@ -104,7 +104,7 @@ new class extends Component {
                     <a href="{{ route('events.show', $event) }}" wire:navigate
                        class="flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
                         <span class="font-semibold">{{ $event->name }}</span>
-                        <span class="text-sm text-zinc-500">{{ $event->date->toDateString() }}</span>
+                        <span class="text-sm text-zinc-500">{{ \App\Support\Format::shortDate($event->date) }}</span>
                     </a>
                 @endforeach
                 <div class="flex flex-wrap items-end gap-2">

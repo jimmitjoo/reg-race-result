@@ -159,12 +159,12 @@ new class extends Component {
                             @if ($registration->refunded_at)
                                 <flux:badge size="sm" color="zinc">{{ __('registrations.refunded') }}</flux:badge>
                             @elseif ($registration->paid_at)
-                                {{ $registration->paid_at->setTimezone($event->timezone)->format('Y-m-d H:i') }}
+                                {{ \App\Support\Format::dateTime($registration->paid_at->setTimezone($event->timezone)) }}
                             @else
                                 <flux:badge size="sm" color="amber">{{ __('registrations.unpaid') }}</flux:badge>
                             @endif
                         </td>
-                        <td class="py-1 pe-3">{{ $registration->created_at->setTimezone($event->timezone)->format('Y-m-d H:i') }}</td>
+                        <td class="py-1 pe-3">{{ \App\Support\Format::dateTime($registration->created_at->setTimezone($event->timezone)) }}</td>
                         <td class="py-1 text-right">
                             <flux:button size="xs" wire:click="toggleHidden({{ $registration->id }})">
                                 {{ $registration->hidden_at ? __('registrations.show_name') : __('registrations.hide_name') }}

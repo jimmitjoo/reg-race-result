@@ -1,0 +1,345 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T00:33:09+00:00",
+  "title": "Design System: Löpning.se Anmälan",
+  "extensions": {
+    "colorMeta": {
+      "moss": {
+        "role": "primary",
+        "displayName": "Moss",
+        "canonical": "#1f5c46",
+        "tonalRamp": [
+          "#08190f",
+          "#0f2f24",
+          "#133b2d",
+          "#184a38",
+          "#1f5c46",
+          "#2f7a5d",
+          "#4f9174",
+          "#82b59b",
+          "#b0d1c0",
+          "#d7e8df",
+          "#eef5f1"
+        ]
+      },
+      "moss-dark": {
+        "role": "primary",
+        "displayName": "Deep Moss",
+        "canonical": "#174a38"
+      },
+      "moss-light": {
+        "role": "primary",
+        "displayName": "Light Moss",
+        "canonical": "#2f7a5d"
+      },
+      "moss-dark-mode": {
+        "role": "primary",
+        "displayName": "Night Moss (dark-mode accent, moss 300)",
+        "canonical": "#82b59b"
+      },
+      "peach": {
+        "role": "secondary",
+        "displayName": "Peach",
+        "canonical": "#ffc6a3",
+        "tonalRamp": [
+          "#24160d",
+          "#3a2416",
+          "#4a3226",
+          "#8f4a26",
+          "#c0612f",
+          "#e0834f",
+          "#f5a578",
+          "#ffc6a3",
+          "#ffd6b8",
+          "#ffe6cf",
+          "#fff6ee"
+        ]
+      },
+      "peach-light": {
+        "role": "secondary",
+        "displayName": "Peach Light",
+        "canonical": "#ffe6cf"
+      },
+      "peach-ink": {
+        "role": "secondary",
+        "displayName": "Peach Ink",
+        "canonical": "#4a3226"
+      },
+      "peach-deep": {
+        "role": "secondary",
+        "displayName": "Peach Deep",
+        "canonical": "#3a2416"
+      },
+      "clay": {
+        "role": "secondary",
+        "displayName": "Clay",
+        "canonical": "#c0612f"
+      },
+      "brand": {
+        "role": "tertiary",
+        "displayName": "Organizer Brand",
+        "canonical": "var(--brand, var(--color-moss))"
+      },
+      "brand-contrast": {
+        "role": "tertiary",
+        "displayName": "Organizer Brand Contrast",
+        "canonical": "var(--brand-contrast, var(--color-white))"
+      },
+      "brand-surface": {
+        "role": "tertiary",
+        "displayName": "Organizer Brand Surface",
+        "canonical": "var(--brand-surface, var(--color-moss-50))"
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "canonical": "#eef0ec",
+        "tonalRamp": [
+          "#0e1310",
+          "#18201c",
+          "#2b342f",
+          "#3a443e",
+          "#4f5a53",
+          "#67716a",
+          "#9aa39c",
+          "#cdd3ca",
+          "#e2e6df",
+          "#eef0ec",
+          "#f6f7f4"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "White",
+        "canonical": "#ffffff"
+      },
+      "contour": {
+        "role": "neutral",
+        "displayName": "Contour",
+        "canonical": "#d9ded6"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#18201c"
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "#4f5a53"
+      },
+      "danger": {
+        "role": "neutral",
+        "displayName": "Danger",
+        "canonical": "#b42318"
+      },
+      "danger-surface": {
+        "role": "neutral",
+        "displayName": "Danger Surface",
+        "canonical": "#fdecea"
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page headings (Flux heading xl)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings (Flux heading lg)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text, labels, tables; descriptions in ink-soft."
+      },
+      "label-mono": {
+        "displayName": "Label Mono",
+        "purpose": "Bibs, chip IDs and finish times."
+      }
+    },
+    "shadows": [
+      {
+        "name": "rest",
+        "value": "0 6px 20px rgb(31 92 70 / 0.08)",
+        "purpose": "Cards and panels at rest."
+      },
+      {
+        "name": "hover",
+        "value": "0 12px 28px rgb(31 92 70 / 0.14)",
+        "purpose": "Link cards on hover."
+      },
+      {
+        "name": "raised",
+        "value": "0 18px 40px rgb(31 92 70 / 0.16)",
+        "purpose": "Menus and dialogs."
+      }
+    ],
+    "focus": [
+      {
+        "name": "focus-ring",
+        "value": "outline: 3px solid var(--color-accent); outline-offset: 3px",
+        "purpose": "Every :focus-visible element (WCAG 2.4.7, 2.4.13)."
+      },
+      {
+        "name": "field-focus",
+        "value": "border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 25%, transparent)",
+        "purpose": "Flux inputs, textareas and selects."
+      }
+    ],
+    "selection": {
+      "background": "var(--color-peach-light)",
+      "color": "var(--color-peach-deep)"
+    },
+    "motion": [
+      {
+        "name": "reduced-motion",
+        "value": "animation and transition durations 0.01ms under prefers-reduced-motion: reduce",
+        "purpose": "Respect the user's motion setting everywhere."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Moss action button (Flux primary).",
+      "html": "<button class=\"ds-btn-primary\">Anmäl dig</button>",
+      "css": ".ds-btn-primary{font-family:var(--font-sans);background:var(--color-moss);color:#fff;border:0;border-radius:8px;height:40px;padding:0 16px;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s}.ds-btn-primary:hover{background:var(--color-moss-dark)}.ds-btn-primary:focus-visible{outline:3px solid var(--color-moss);outline-offset:3px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action in lists (Flux ghost).",
+      "html": "<button class=\"ds-btn-ghost\">Visa</button>",
+      "css": ".ds-btn-ghost{font-family:var(--font-sans);background:transparent;color:var(--color-ink);border:0;border-radius:8px;height:40px;padding:0 16px;font-size:14px;font-weight:500;cursor:pointer}.ds-btn-ghost:hover{background:rgb(43 52 47 / .05)}.ds-btn-ghost:focus-visible{outline:3px solid var(--color-moss);outline-offset:3px}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Deleting only; always asks first.",
+      "html": "<button class=\"ds-btn-danger\">Radera konto</button>",
+      "css": ".ds-btn-danger{font-family:var(--font-sans);background:var(--color-danger);color:#fff;border:0;border-radius:8px;height:40px;padding:0 16px;font-size:14px;font-weight:500;cursor:pointer}.ds-btn-danger:focus-visible{outline:3px solid var(--color-moss);outline-offset:3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Flux input with label above and accent focus ring.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Förnamn</span><input class=\"ds-input\" autocomplete=\"given-name\"></label>",
+      "css": ".ds-field{font-family:var(--font-sans);display:grid;gap:8px}.ds-field-label{font-size:14px;font-weight:500;line-height:1.25;color:var(--color-ink)}.ds-input{font-family:var(--font-sans);height:40px;padding:0 12px;border:1px solid var(--color-contour);border-radius:8px;background:#fff;color:var(--color-ink);font-size:14px}.ds-input:focus{outline:none;border-color:var(--color-moss);box-shadow:0 0 0 3px rgb(31 92 70 / .25)}"
+    },
+    {
+      "name": "Status Badges",
+      "kind": "chip",
+      "refersTo": "badge-waiting",
+      "description": "Moss for done, peach for waits for a person, zinc neutral.",
+      "html": "<span class=\"ds-badge ds-badge-done\">Betald</span> <span class=\"ds-badge ds-badge-wait\">Obetald</span> <span class=\"ds-badge ds-badge-neutral\">Utkast</span>",
+      "css": ".ds-badge{font-family:var(--font-sans);display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:500}.ds-badge-done{background:var(--color-moss-100);color:var(--color-moss-800)}.ds-badge-wait{background:var(--color-peach-light);color:var(--color-peach-ink)}.ds-badge-neutral{background:var(--color-zinc-100);color:var(--color-zinc-700)}"
+    },
+    {
+      "name": "Auth Card",
+      "kind": "card",
+      "refersTo": "auth-card",
+      "description": "White panel on ground with rest shadow; the one shipped named radius.",
+      "html": "<div class=\"ds-ground\"><div class=\"ds-card\"><h2 class=\"ds-card-title\">Logga in</h2><p class=\"ds-card-text\">Välkommen tillbaka.</p></div></div>",
+      "css": ".ds-ground{background:var(--color-ground);padding:40px}.ds-card{font-family:var(--font-sans);max-width:28rem;background:#fff;color:var(--color-ink);border:1px solid var(--color-contour);border-radius:var(--radius-panel,18px);box-shadow:0 6px 20px rgb(31 92 70 / .08);padding:32px 40px}.ds-card-title{margin:0 0 8px;font-size:24px;font-weight:500}.ds-card-text{margin:0;font-size:14px;color:var(--color-ink-soft)}"
+    },
+    {
+      "name": "Sidebar Nav",
+      "kind": "nav",
+      "refersTo": "nav-sidebar",
+      "description": "Flux navlist in the admin sidebar; current item marked.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-heading\">Administration</div><a class=\"ds-nav-item\" aria-current=\"page\" href=\"#\">Arrangemang</a><a class=\"ds-nav-item\" href=\"#\">Betalningar</a></nav>",
+      "css": ".ds-nav{font-family:var(--font-sans);display:grid;gap:2px;width:220px;padding:12px;background:var(--color-zinc-50);border-right:1px solid var(--color-zinc-200)}.ds-nav-heading{padding:8px 12px;font-size:12px;color:var(--color-ink-soft)}.ds-nav-item{display:flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid transparent;color:var(--color-ink-soft);font-size:14px;font-weight:500;text-decoration:none}.ds-nav-item:hover{background:rgb(43 52 47 / .05);color:var(--color-ink)}.ds-nav-item[aria-current=page]{background:#fff;border-color:var(--color-zinc-200);color:var(--color-ink)}.ds-nav-item:focus-visible{outline:3px solid var(--color-moss);outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Löparens verktyg",
+    "overview": "This app does not have a visual world of its own. It inherits Löpning.se's established design system, \"Löparens verktyg\" (`DESIGN-SYSTEM.md` in AudienceGrowth/Lopning), and extends it for registration, timing and results. A calm green-gray ground carries white surfaces and ink text. Moss green does things (buttons, chosen states, links, focus). Peach warms and points things out. Everything is set in one typeface, Hanken Grotesk, and the forms are rounded and soft, with green-tinted shadows. When Löpning.se's document and this file disagree on a platform token, Löpning.se wins and this file should be updated to match.\n\nThe system has two layers, both in `resources/css/app.css`. The **platform layer** is Löpning.se's tokens, copied over and mapped onto Flux and Tailwind. Flux's zinc and Tailwind's gray and neutral all resolve to the green-gray neutrals, green resolves to moss, amber to a peach scale, and Flux's accent is moss. The **organizer theme layer** (`--color-brand`, `--color-brand-contrast`, `--color-brand-surface`) reads per-organizer `--brand*` variables. Until an organizer sets them, they fall back to moss. Views take color only from these names. `tests/Feature/DesignTokensTest.php` fails on hex values or other Tailwind palettes in views (PDFs and mails are exempt because they cannot read CSS variables).\n\nUsability comes first. A runner on a phone, a volunteer who hasn't logged in for a year and an official outdoors in the cold all have to manage without help. That is why the system is dense but legible, keeps text contrast at WCAG 2.2 AA everywhere, and has large targets and a visible focus ring on everything.\n\nThe parts that are planned but not yet built are recorded only as decisions, and their visuals are left open: the organizer theme UI that fills `--brand*` (#112), page blocks for organizer and race pages (#115, #116), the public Löpning.se frame around organizer pages (#118), and the admin redesign that brings Flux's components onto Löpning.se's shapes (#123).",
+    "keyCharacteristics": [
+      "Inherited, not invented: the Löpning.se tokens are the platform, and organizers theme on top.",
+      "Light green-gray ground, white surfaces, ink text. There is no glass, blur or decorative gradient.",
+      "Moss for action, peach for \"something waits for a person\", red only for errors and deleting.",
+      "One typeface (Hanken Grotesk, self-hosted, variable 100–900), with tabular numerals wherever times, places and money line up.",
+      "Organizer pages put the organizer first, inside a quiet Löpning.se frame. The admin keeps Löpning.se's identity and adds the organizer's logo and accent.",
+      "Dark mode is the admin's only. Löpning.se's own pages are light."
+    ],
+    "rules": [
+      {
+        "name": "The Moss Does Things Rule",
+        "body": "Moss marks what can be acted on or what is chosen. It is not used as decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Waiting Peach Rule",
+        "body": "In the admin, peach (Flux's amber) means that something waits for a person, such as an unpaid registration or an upplaga that needs Stripe before it can open. Don't use peach for anything else there. On public pages peach is for tips and calls to action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Means Stop Rule",
+        "body": "Red is for errors and deleting, nothing else. A status that is not an error gets a neutral or moss badge.",
+        "section": "colors"
+      },
+      {
+        "name": "The Contrast Floor Rule",
+        "body": "Secondary text is ink-soft. Nothing lighter than ink-soft sits on white or ground. Every organizer theme is checked against WCAG 2.2 AA (4.5:1 for text), and the system enforces this, not the organizer.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tokens Only Rule",
+        "body": "Views use token names only. Hex values and other Tailwind palettes in a view are a test failure.",
+        "section": "colors"
+      },
+      {
+        "name": "The Columns Line Up Rule",
+        "body": "Every table uses tabular numerals, so times, places and money line up.",
+        "section": "typography"
+      },
+      {
+        "name": "The Swedish Formats Rule",
+        "body": "Dates, times and money are written only through `App\\Support\\Format` and `App\\Support\\Money`: \"torsdag 31 december 2026\", \"31 dec 2026\", \"kl 10.00\", \"kl 10.03.30\" (seconds only when they matter, as in wave starts), and \"300 kr\" (öre only when present). Classes sort naturally (P5, P7, P9, P11).",
+        "section": "typography"
+      },
+      {
+        "name": "The Green Shadow Rule",
+        "body": "Shadows are tinted with moss. Don't use hard offset shadows, glass or blur.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do take every color from a token (ground, contour, ink, ink-soft, moss, peach, danger, brand), and never from a hex value or another palette in a view.",
+      "Do use ink-soft for secondary text on white and ground.",
+      "Do keep the global focus ring (3px accent, 3px offset) visible on everything that can take focus.",
+      "Do put the organizer first on organizer pages, with their logo, colors and pictures, inside a quiet Löpning.se frame built from blocks and a theme, not free layout.",
+      "Do keep Löpning.se's own identity in the admin, adding the organizer's logo and accent.",
+      "Do write dates, times and money through Format and Money: \"torsdag 31 december 2026\", \"kl 10.00\", \"300 kr\".",
+      "Do write warm, plain Swedish: say du, use short sentences, and leave out technical words, hype and exclamation marks.",
+      "Do keep targets at least 44px high on race-day views, and keep every page working at 320px width and 200% zoom."
+    ],
+    "donts": [
+      "Don't put text lighter than ink-soft on white or ground. Zinc 400 and 500 text on white is below the system's floor.",
+      "Don't use peach in the admin for anything except what waits for a person.",
+      "Don't use red for anything except errors and deleting.",
+      "Don't give Löpning.se's own pages or organizer pages a dark mode. Dark mode belongs to the admin.",
+      "Don't let an organizer theme ship a brand and contrast pair below WCAG 2.2 AA.",
+      "Don't use glass, blur or gradients as decoration, or the old style's rose, blue, Figtree and Trirong."
+    ]
+  }
+}

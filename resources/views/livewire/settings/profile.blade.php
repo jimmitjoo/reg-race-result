@@ -86,14 +86,14 @@ new class extends Component {
 
                             <button
                                 wire:click.prevent="resendVerificationNotification"
-                                class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-moss focus:ring-offset-2"
                             >
                                 {{ __('account.resend_verification_click') }}
                             </button>
                         </p>
 
                         @if (session('status') === 'verification-link-sent')
-                            <p class="mt-2 text-sm font-medium text-green-600">
+                            <p class="mt-2 text-sm font-medium text-moss">
                                 {{ __('account.verification_link_sent') }}
                             </p>
                         @endif

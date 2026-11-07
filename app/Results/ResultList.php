@@ -5,6 +5,7 @@ namespace App\Results;
 use App\Models\Event;
 use App\Models\RaceClass;
 use App\Models\Registration;
+use App\Support\Format;
 use App\Timing\EventResults;
 use App\Timing\Result;
 use App\Timing\ResultStatus;
@@ -21,11 +22,7 @@ final class ResultList
     {
         $timing = EventResults::for($event)->results;
 
-        return $event->raceClasses()
-            ->with(['race', 'registrations.clubRecord'])
-            ->orderBy('start_at')
-            ->orderBy('name')
-            ->get()
+        return Format::classOrder($event->raceClasses()->with(['race', 'registrations.clubRecord'])->get())
             ->mapWithKeys(fn (RaceClass $class) => [$class->id => new ClassResults(
                 $class,
                 $class->timed,

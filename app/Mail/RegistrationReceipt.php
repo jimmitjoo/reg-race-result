@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\Registration;
 use App\Models\User;
+use App\Support\Format;
 use App\Support\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -46,8 +47,8 @@ class RegistrationReceipt extends Mailable implements ShouldQueue
             'event' => $event,
             'race' => $class->race?->name,
             'class' => $class->name,
-            'date' => $event->date->toDateString(),
-            'start' => $class->start_at->setTimezone($event->timezone)->format('H:i'),
+            'date' => Format::date($event->date),
+            'start' => Format::time($class->start_at->setTimezone($event->timezone)),
             'price' => Money::format((int) $registration->price, $event->organizer->currency),
             'method' => $registration->payment_method ? __("registrations.method.{$registration->payment_method}") : null,
             'url' => $registration->confirmationUrl(),

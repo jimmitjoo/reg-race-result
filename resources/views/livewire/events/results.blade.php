@@ -71,7 +71,7 @@ new class extends Component {
             <div wire:key="publish-{{ $site->id }}" class="flex flex-wrap items-center gap-3">
                 <flux:button size="sm" icon="arrow-up-tray" wire:click="publish({{ $site->id }})">{{ __('sites.publish', ['site' => $site->name]) }}</flux:button>
                 @if ($publication = $publications->get($site->id))
-                    <span class="text-sm text-zinc-500">{{ __('sites.published', ['date' => $publication->updated_at->setTimezone($event->timezone)->format('Y-m-d H:i')]) }}</span>
+                    <span class="text-sm text-zinc-500">{{ __('sites.published', ['date' => \App\Support\Format::dateTime($publication->updated_at->setTimezone($event->timezone))]) }}</span>
                     <flux:link :href="$publication->media_url" target="_blank" class="text-sm">{{ __('sites.pdf') }}</flux:link>
                     @if ($publication->page_url)<flux:link :href="$publication->page_url" target="_blank" class="text-sm">{{ __('sites.page') }}</flux:link>@endif
                 @endif
@@ -85,7 +85,7 @@ new class extends Component {
         <section wire:key="results-{{ $results->raceClass->id }}" class="flex flex-col gap-2">
             <div class="flex items-baseline justify-between">
                 <flux:heading size="lg">{{ $results->raceClass->name }}</flux:heading>
-                <span class="font-mono text-sm text-zinc-500">{{ $results->raceClass->start_at->setTimezone($event->timezone)->format('H:i:s') }}</span>
+                <span class="text-sm text-zinc-500 tabular-nums">{{ \App\Support\Format::time($results->raceClass->start_at->setTimezone($event->timezone)) }}</span>
             </div>
 
             @php($race = $results->timed ? $results->raceClass->race : null)

@@ -95,7 +95,7 @@ new class extends Component {
             @foreach ($untimed as $registration)
                 <div wire:key="untimed-{{ $registration->id }}" class="flex items-center gap-4 rounded-lg border border-zinc-200 px-4 py-2 dark:border-zinc-700">
                     <span class="font-mono">{{ $registration->bib }}</span>
-                    <span class="flex-1 {{ $registration->status === 'dns' ? 'text-zinc-400 line-through' : '' }}">{{ $registration->displayName() }} · {{ $registration->raceClass->name }}</span>
+                    <span class="flex-1 {{ $registration->status === 'dns' ? 'text-zinc-500 line-through' : '' }}">{{ $registration->displayName() }} · {{ $registration->raceClass->name }}</span>
                     @if ($registration->status === 'dns')
                         <flux:button size="sm" wire:click="setStatus({{ $registration->id }}, 'registered')">{{ __('results.undo') }}</flux:button>
                     @else

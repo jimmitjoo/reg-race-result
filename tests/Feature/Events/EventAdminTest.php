@@ -124,7 +124,7 @@ it('shows classes with local start times and links to timing', function () {
     $this->actingAs($user)
         ->get(route('events.show', $event))
         ->assertSee('Män 10 km')
-        ->assertSee('10:03:30')
+        ->assertSee('kl 10.03.30')
         ->assertSee(route('events.timing', $event));
 });
 
@@ -302,8 +302,8 @@ it('shows the public link and whether registration is open or ended per race', f
     $this->actingAs($user)
         ->get(route('events.show', $event))
         ->assertSee(route('public.event', ['organizer' => $event->organizer->slug, 'event' => $event->series->slug]))
-        ->assertSee(__('events.registration_open', ['date' => '2026-12-30', 'price' => Money::format(25000, 'SEK')]))
-        ->assertSee(__('events.registration_ended', ['date' => '2026-11-01']));
+        ->assertSee(__('events.registration_open', ['date' => '30 dec 2026', 'price' => Money::format(25000, 'SEK')]))
+        ->assertSee(__('events.registration_ended', ['date' => '1 nov 2026']));
 });
 
 it('walks a new event through race, classes and price before showing the race day tools', function () {

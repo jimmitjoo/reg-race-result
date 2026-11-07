@@ -40,7 +40,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     </div>
 
     @if (session('status') == 'verification-link-sent')
-        <div class="font-medium text-center text-sm text-green-600">
+        <div class="font-medium text-center text-sm text-moss">
             {{ __('account.verification_sent_registration') }}
         </div>
     @endif
@@ -53,7 +53,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         <button
             wire:click="logout"
             type="submit"
-            class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-moss focus:ring-offset-2"
         >
             {{ __('account.log_out') }}
         </button>
