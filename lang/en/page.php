@@ -193,4 +193,7 @@ return [
     'registration_sketch' => 'Runners choose race and class, fill in who runs and pay here.',
     'registration_no_races' => 'The upplaga has no races yet.',
     'history_none' => 'No earlier years with results yet. The block shows once there are.',
+    'theme_draft' => 'The colours and fonts are not published',
+    'theme_draft_help' => 'You see them here, but runners do not until you publish them under Appearance.',
+    'theme_draft_link' => 'Publish the appearance',
 ];

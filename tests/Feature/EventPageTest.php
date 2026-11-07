@@ -71,3 +71,12 @@ it('opens no other organizer\'s upplaga in the editor', function () {
 
     $this->get(route('events.page', $event))->assertNotFound();
 });
+
+it('tells the editor when the colours it shows are not published yet, and where to publish them', function () {
+    $event = pageEvent();
+    $event->update(['theme_draft' => ['brand' => '#0011ff']]);
+
+    Volt::test('page.edit', ['event' => $event])->assertSee(__('page.theme_draft'))->assertSee(route('events.theme', $event));
+    $event->update(['theme' => ['brand' => '#0011ff'], 'theme_draft' => null]);
+    Volt::test('page.edit', ['event' => $event])->assertDontSee(__('page.theme_draft'));
+});

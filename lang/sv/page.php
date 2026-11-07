@@ -193,4 +193,7 @@ return [
     'registration_sketch' => 'Löparna väljer lopp och klass, fyller i vem som springer och betalar här.',
     'registration_no_races' => 'Upplagan har inga lopp än.',
     'history_none' => 'Inga tidigare år med resultat än. Blocket visas när det finns.',
+    'theme_draft' => 'Färgerna och typsnitten är inte publicerade',
+    'theme_draft_help' => 'Du ser dem här, men löparna ser dem inte förrän du publicerar dem under Utseende.',
+    'theme_draft_link' => 'Publicera utseendet',
 ];

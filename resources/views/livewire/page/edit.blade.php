@@ -240,6 +240,9 @@ new class extends Component {
             'problems' => collect(Page::problems($this->blocks, $forms->keys()->all()))->groupBy('id'),
             'forms' => $forms,
             'unpublished' => $this->owner()->page_draft !== null,
+            // The editor shows the theme's draft; the page itself not until the theme too is published.
+            'themeDraft' => $organizer->theme_draft !== null || $event?->theme_draft !== null,
+            'themeUrl' => $event && $event->theme_draft !== null ? route('events.theme', $event) : route('theme.edit'),
             'css' => Theme::css($theme, '.theme-preview'),
             'logo' => Theme::logoUrl($theme),
             'pageUrl' => $event ? $event->publicUrl() : route('public.organizer', $organizer->slug),
@@ -295,6 +298,13 @@ new class extends Component {
                     @endforeach
                 </ul>
             </flux:callout.text>
+        </flux:callout>
+    @endif
+
+    @if ($themeDraft)
+        <flux:callout color="amber" icon="paint-brush">
+            <flux:callout.heading>{{ __('page.theme_draft') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('page.theme_draft_help') }} <flux:link :href="$themeUrl" wire:navigate>{{ __('page.theme_draft_link') }}</flux:link></flux:callout.text>
         </flux:callout>
     @endif
 
