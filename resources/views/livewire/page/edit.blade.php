@@ -222,13 +222,14 @@ new class extends Component {
     @endif
 
     {{-- The page as it will look, in the organizer's theme. --}}
-    <div class="theme-preview lp-public lp-light rounded-panel bg-ground p-3 text-ink sm:p-6" style="font-family: var(--font-sans)">
+    {{-- The toolbars and forms are admin, light or dark; only the page itself is always light, as runners see it. --}}
+    <div class="theme-preview rounded-panel bg-ground p-3 sm:p-6">
         @include('livewire.page.adder', ['at' => 0])
         <div wire:sort="sortBlock" class="flex flex-col">
             @foreach ($blocks as $i => $block)
                 <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="flex flex-col">
                     <div @class(['flex flex-col gap-2 rounded-[calc(var(--radius-card)+10px)] p-2 ring-1 transition', 'ring-2 ring-brand' => $editing === $block['id'], 'ring-peach' => $editing !== $block['id'] && $problems->has($block['id']), 'ring-transparent hover:ring-zinc-300' => $editing !== $block['id'] && ! $problems->has($block['id'])])>
-                        <div class="flex flex-wrap items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 font-[ui-sans-serif,system-ui,sans-serif] text-sm shadow-rest">
+                        <div class="flex flex-wrap items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 text-sm text-zinc-800 shadow-rest ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700">
                             @include('livewire.events.drag-handle')
                             <span class="px-1 font-medium">{{ __("page.type.{$block['type']}") }}</span>
                             <flux:button size="xs" variant="ghost" icon="arrow-up" wire:click="move('{{ $block['id'] }}', -1)" :disabled="$loop->first" :aria-label="__('page.move_up')" />
@@ -238,7 +239,7 @@ new class extends Component {
                         </div>
 
                         {{-- inert: the links and buttons in the page are not followed while editing. --}}
-                        <div inert>
+                        <div inert class="lp-public text-ink" style="font-family: var(--font-sans)">
                             @include('blocks.'.$block['type'])
                             @if ($block['type'] === 'image' && ! $block['image'])
                                 <p class="rounded-card border-2 border-dashed border-contour p-10 text-center text-ink-soft">{{ __('page.no_image_yet') }}</p>

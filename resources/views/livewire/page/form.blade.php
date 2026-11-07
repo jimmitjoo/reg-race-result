@@ -1,6 +1,6 @@
 {{-- The fields of the block being edited, saved as a draft while typing. --}}
 @php($field = fn ($name) => "blocks.{$i}.{$name}")
-<div class="flex flex-col gap-4 rounded-panel bg-white p-5 shadow-rest font-[ui-sans-serif,system-ui,sans-serif]">
+<div class="flex flex-col gap-4 rounded-panel bg-white p-5 text-zinc-800 shadow-rest ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700">
     @switch ($block['type'])
         @case ('hero')
             <flux:textarea wire:model.live.debounce.400ms="{{ $field('intro') }}" rows="3" :label="__('page.intro')" :description="__('page.intro_help')" />
