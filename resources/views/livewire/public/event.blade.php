@@ -128,11 +128,14 @@ new #[Layout('components.layouts.public')] class extends Component {
             ->map(function ($race) use ($now, $canPay) {
                 $today = $now->copy()->setTimezone($this->raceEvent->timezone)->toDateString();
                 $steps = $race->priceSteps->filter(fn ($step) => $step->until->toDateString() >= $today)->values();
+                // Steps after race day never come: registration closes when the race has been run.
+                $last = $steps->search(fn ($step) => $step->until->greaterThanOrEqualTo($this->raceEvent->date));
+                $steps = $last === false ? $steps : $steps->take($last + 1);
                 // A cancelled upplaga takes no registrations (#117).
                 $price = $this->raceEvent->cancelled_at ? null : $race->priceAt($now);
 
                 // A paid race waits until the organizer's Stripe account can take payments.
-                return ['race' => $race, 'price' => $price, 'until' => $steps->first()?->until, 'next' => $steps->get(1), 'soon' => $price > 0 && ! $canPay];
+                return ['race' => $race, 'price' => $price, 'until' => $steps->first() ? min($steps->first()->until, $this->raceEvent->date) : null, 'next' => $steps->get(1), 'soon' => $price > 0 && ! $canPay];
             });
 
         // Per participant: the chosen class, its price now (a campaign's, with a code, #85) and the age group it gives (#92).

@@ -58,7 +58,19 @@ class Race extends Model
     public function priceAt(CarbonInterface $at): ?int
     {
         $date = $at->copy()->setTimezone($this->event->timezone)->toDateString();
+        // Once race day has passed registration is closed, whatever the price steps say.
+        if ($date > $this->event->date->toDateString()) {
+            return null;
+        }
 
         return $this->priceSteps()->where('until', '>=', $date)->value('amount');
+    }
+
+    /** The last day to register: the last price step, but never after race day. */
+    public function closesOn(): ?CarbonInterface
+    {
+        $last = $this->priceSteps->max('until');
+
+        return $last ? min($last, $this->event->date) : null;
     }
 }

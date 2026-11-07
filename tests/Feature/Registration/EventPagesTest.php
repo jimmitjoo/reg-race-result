@@ -72,3 +72,22 @@ it('moves an upplaga with its start times and says so on the page and to schema.
         ->assertSee('"startDate":"2027-01-15T12:00:00+01:00"', false)
         ->assertSee('"price":"300.00"', false);
 });
+
+it('closes registration once race day has passed, whatever the price steps say', function () {
+    $class = pagesEvent();
+    $race = $class->race;
+    $race->priceSteps()->create(['until' => '2027-01-31', 'amount' => 40000]);
+
+    // Before: open, and never said to be open after race day.
+    expect($race->priceAt(now()))->toBe(30000)
+        ->and($race->fresh()->closesOn()->toDateString())->toBe('2026-12-31')
+        ->and($race->priceAt(now()->setDate(2026, 12, 31)))->toBe(40000);
+
+    $this->travelTo(now()->setDate(2027, 1, 1));
+    expect($race->fresh()->priceAt(now()))->toBeNull();
+    $this->get('/hogby-if/sylvesterloppet-2026')->assertOk()->assertDontSee('400 kr');
+    Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
+        ->set('participants.0.raceClassId', (string) $class->id)->set('participants.0.firstName', 'Test')->set('participants.0.lastName', 'Testsson')
+        ->set('participants.0.birthDate', '1990-01-01')->set('participants.0.gender', 'K')->set('email', 'test@example.com')->set('phone', '0701234567')->set('acceptTerms', true)
+        ->call('register')->assertHasErrors('participants.0.raceClassId');
+});

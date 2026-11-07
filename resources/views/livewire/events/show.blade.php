@@ -123,7 +123,7 @@ new class extends Component {
             'runners' => $counts->sum('runners'),
             'money' => $counts->sum('money'),
             'days' => (int) $today->diffInDays($this->event->date->copy()->startOfDay(), false),
-            'openUntil' => $open->map(fn ($race) => $race->priceSteps->last()->until)->max(),
+            'openUntil' => $open->map(fn ($race) => $race->closesOn())->max(),
             // What waits for the organizer, each with where to fix it.
             'todo' => collect([
                 ...($prices->contains(fn ($price) => $price > 0) && ! $this->event->organizer->canTakePayments()
@@ -525,9 +525,9 @@ new class extends Component {
                     @if ($price > 0 && ! $event->organizer->canTakePayments())
                         <flux:badge color="amber" size="sm">{{ __('events.registration_needs_stripe') }}</flux:badge>
                     @elseif ($price !== null)
-                        <flux:badge color="green" size="sm">{{ __('events.registration_open', ['date' => Format::shortDate($race->priceSteps->last()->until), 'price' => Money::format($price, $currency)]) }}</flux:badge>
+                        <flux:badge color="green" size="sm">{{ __('events.registration_open', ['date' => Format::shortDate($race->closesOn()), 'price' => Money::format($price, $currency)]) }}</flux:badge>
                     @elseif ($race->priceSteps->isNotEmpty())
-                        <flux:badge color="zinc" size="sm">{{ __('events.registration_ended', ['date' => Format::shortDate($race->priceSteps->last()->until)]) }}</flux:badge>
+                        <flux:badge color="zinc" size="sm">{{ __('events.registration_ended', ['date' => Format::shortDate($race->closesOn())]) }}</flux:badge>
                     @else
                         <flux:badge color="amber" size="sm">{{ __('events.registration_closed') }}</flux:badge>
                     @endif
