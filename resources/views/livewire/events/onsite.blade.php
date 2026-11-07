@@ -24,7 +24,7 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'classes' => $this->event->raceClasses()->with('race')->orderBy('start_at')->orderBy('name')->get(),
+            'classes' => \App\Support\Format::classOrder($this->event->raceClasses()->with('race')->get()),
             'today' => $this->event->registrations()->with('raceClass')->where('payment_method', 'swish_onsite')->latest('registrations.created_at')->get(),
             'clubs' => Club::orderBy('name')->pluck('name'),
             'currency' => $this->event->organizer->currency,

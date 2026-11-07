@@ -36,7 +36,7 @@ it('renders the header like today\'s result lists', function () {
 
     expect($html)
         ->toContain('Resultat Sylvesterloppet 2026')
-        ->toContain('2026-12-31')
+        ->toContain('torsdag 31 december 2026')
         ->toContain('Kalmar')
         ->toContain('Högby IF')
         ->toContain('Carl-Gustaf Nilsson')
@@ -57,7 +57,7 @@ it('lists each class with its start time and the result columns', function () {
     $html = ResultsPdf::html($event);
 
     expect($html)
-        ->toContain('Kvinnor 10 km')->toContain('11:00:00')
+        ->toContain('Kvinnor 10 km')->toContain('kl 11.00')
         ->toContain('Ida')->toContain('Nilsson')->toContain('>91<')->toContain('36:14')->toContain('729')->toContain('SUI')
         ->toContain('F11 1.3 km')->toContain(__('results.untimed'))->toContain('Liten');
 });

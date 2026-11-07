@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Club;
+use App\Support\Format;
 use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\RaceClass;
@@ -163,7 +164,7 @@ new #[Layout('components.layouts.public')] class extends Component {
 <div class="flex flex-col gap-8">
     <div>
         <flux:heading size="xl">{{ $event->name }}</flux:heading>
-        <flux:subheading>{{ $event->date->toDateString() }} · {{ $event->organizer->name }}</flux:subheading>
+        <flux:subheading>{{ Format::date($event->date) }} · {{ $event->organizer->name }}</flux:subheading>
         <div class="flex gap-4">
             <flux:link :href="route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug])" class="text-sm">{{ __('onsite.start_list') }}</flux:link>
             @if ($event->results_public_at)
@@ -181,8 +182,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                     <span>{{ match (true) { $price === null => __('registration.closed'), $soon => __('registration.opens_soon'), default => Money::format($price, $currency) } }}</span>
                 </div>
                 <ul class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                    @foreach ($race->raceClasses as $class)
-                        <li>{{ $class->name }} · {{ $class->start_at->setTimezone($event->timezone)->format('H:i') }}</li>
+                    @foreach (Format::classOrder($race->raceClasses) as $class)
+                        <li>{{ $class->name }} · {{ Format::time($class->start_at->setTimezone($event->timezone)) }}</li>
                     @endforeach
                 </ul>
             </div>

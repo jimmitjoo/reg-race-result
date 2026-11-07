@@ -22,9 +22,9 @@ new #[Layout('components.layouts.public')] class extends Component {
 
         return [
             'event' => $this->raceEvent,
-            'classes' => $this->raceEvent->raceClasses()->orderBy('start_at')->orderBy('name')
+            'classes' => \App\Support\Format::classOrder($this->raceEvent->raceClasses()
                 ->with(['race', 'event', 'registrations' => fn ($q) => $q->orderBy('bib')->orderBy('last_name')])
-                ->get()
+                ->get())
                 ->map(fn ($class) => [
                     'class' => $class,
                     'runners' => $class->registrations->filter(fn ($r) => $search === ''

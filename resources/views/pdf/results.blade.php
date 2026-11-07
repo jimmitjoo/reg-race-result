@@ -24,7 +24,7 @@
 
     <table class="meta">
         <tr>
-            <td>{{ __('pdf.date') }}: {{ $event->date->toDateString() }}</td>
+            <td>{{ __('pdf.date') }}: {{ \App\Support\Format::date($event->date) }}</td>
             <td>@if ($event->city){{ __('pdf.place') }}: {{ $event->city }}@endif</td>
         </tr>
         <tr>
@@ -61,7 +61,7 @@
         @php($race = $results->timed ? $results->raceClass->race : null)
         @php($extraWidth = ($race?->age_groups ? 9 : 0) + ($race?->championship ? 8 : 0) + ($race?->championship_veterans ? 9 : 0))
         @php($w = $extraWidth ? ['plac' => 5, 'first' => 12, 'last' => 14, 'born' => 5, 'time' => 9, 'bib' => 7, 'country' => 6] : ['plac' => 6, 'first' => 15, 'last' => 18, 'born' => 6, 'time' => 10, 'bib' => 8, 'country' => 8])
-        <h2>{{ $results->raceClass->name }} <span class="start">{{ $results->raceClass->start_at->setTimezone($event->timezone)->format('H:i:s') }}</span></h2>
+        <h2>{{ $results->raceClass->name }} <span class="start">{{ \App\Support\Format::time($results->raceClass->start_at->setTimezone($event->timezone)) }}</span></h2>
         <table class="results">
             <thead>
                 <tr>

@@ -12,8 +12,9 @@ final class Money
         return (int) round((float) str_replace([',', ' '], ['.', ''], $major) * 100);
     }
 
+    /** "300 kr", and "99,50 kr" only when there are öre. */
     public static function format(int $minor, string $currency): string
     {
-        return Number::currency($minor / 100, in: $currency, locale: app()->getLocale());
+        return Number::currency($minor / 100, in: $currency, locale: app()->getLocale(), precision: $minor % 100 === 0 ? 0 : 2);
     }
 }

@@ -49,7 +49,7 @@
                     <flux:callout.text x-text="t.internet_down.replace(':count', waiting())"></flux:callout.text>
                 </flux:callout>
 
-                <p x-show="online && waiting() === 0 && readerNames().length > 0" class="font-semibold text-green-700 dark:text-green-400">
+                <p x-show="online && waiting() === 0 && readerNames().length > 0" class="font-semibold text-moss dark:text-moss-300">
                     {{ __('timing.all_sent') }}
                 </p>
                 <p x-show="online && waiting() > 0" class="text-sm">{{ __('timing.sending') }}</p>

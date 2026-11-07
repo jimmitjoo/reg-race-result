@@ -248,7 +248,7 @@ new class extends Component {
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
             <flux:heading size="xl">{{ $event->name }}</flux:heading>
-            <flux:subheading>{{ $event->date->toDateString() }}@if ($event->city) · {{ $event->city }}@endif · {{ $event->timezone }}</flux:subheading>
+            <flux:subheading>{{ \App\Support\Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif · {{ $event->timezone }}</flux:subheading>
             @unless ($setup)
                 <flux:button :href="route('events.registrations', $event)" icon="users" variant="primary" class="mt-3" wire:navigate>{{ __('registrations.title') }}</flux:button>
             @endunless
@@ -278,7 +278,7 @@ new class extends Component {
                 @foreach (['race', 'class', 'price'] as $i => $key)
                     <li class="flex gap-3 {{ $i > $current ? 'text-zinc-400' : '' }}">
                         @if ($i < $current)
-                            <flux:icon.check-circle variant="solid" class="shrink-0 text-green-600" />
+                            <flux:icon.check-circle variant="solid" class="shrink-0 text-moss" />
                         @else
                             <span class="flex size-6 shrink-0 items-center justify-center rounded-full border text-sm {{ $i === $current ? 'border-zinc-800 font-semibold dark:border-white' : 'border-zinc-300' }}">{{ $i + 1 }}</span>
                         @endif
@@ -322,16 +322,16 @@ new class extends Component {
                 @if ($price > 0 && ! $event->organizer->canTakePayments())
                     <flux:badge color="amber" class="self-start">{{ __('events.registration_needs_stripe') }}</flux:badge>
                 @elseif ($price !== null)
-                    <flux:badge color="green" class="self-start">{{ __('events.registration_open', ['date' => $race->priceSteps->last()->until->toDateString(), 'price' => Money::format($price, $currency)]) }}</flux:badge>
+                    <flux:badge color="green" class="self-start">{{ __('events.registration_open', ['date' => \App\Support\Format::shortDate($race->priceSteps->last()->until), 'price' => Money::format($price, $currency)]) }}</flux:badge>
                 @elseif ($race->priceSteps->isNotEmpty())
-                    <flux:badge color="zinc" class="self-start">{{ __('events.registration_ended', ['date' => $race->priceSteps->last()->until->toDateString()]) }}</flux:badge>
+                    <flux:badge color="zinc" class="self-start">{{ __('events.registration_ended', ['date' => \App\Support\Format::shortDate($race->priceSteps->last()->until)]) }}</flux:badge>
                 @else
                     <flux:badge color="amber" class="self-start">{{ __('events.registration_closed') }}</flux:badge>
                     <flux:text class="text-sm">{{ __('events.free_help') }}</flux:text>
                 @endif
                 @foreach ($race->priceSteps as $step)
                     <div wire:key="step-{{ $step->id }}" class="flex items-center gap-4 text-sm">
-                        <span class="min-w-48">{{ __('events.price_until', ['date' => $step->until->toDateString()]) }}</span>
+                        <span class="min-w-48">{{ __('events.price_until', ['date' => \App\Support\Format::shortDate($step->until)]) }}</span>
                         <span class="font-semibold">{{ Money::format($step->amount, $currency) }}</span>
                         <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removePriceStep({{ $step->id }})" :aria-label="__('events.remove')" />
                     </div>
@@ -355,7 +355,7 @@ new class extends Component {
             </div>
             @endif
 
-            @forelse ($race->raceClasses as $class)
+            @forelse (\App\Support\Format::classOrder($race->raceClasses) as $class)
                 @include('livewire.events.class-row')
             @empty
                 @unless ($setup === 'class')

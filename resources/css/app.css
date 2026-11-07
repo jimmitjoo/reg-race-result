@@ -8,42 +8,189 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Hanken Grotesk Variable, latin subset (covers å, ä, ö), as on Löpning.se. */
+@font-face {
+    font-family: 'Hanken Grotesk';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/fonts/hanken-grotesk/HankenGrotesk-latin.woff2') format('woff2');
+}
+
+/*
+    Löpning.se's design system "Löparens verktyg" (DESIGN-SYSTEM.md in AudienceGrowth/Lopning), in two layers:
+    the platform's tokens below, and an organizer's theme on top (--brand*, set per organizer and upplaga, #112).
+    Views use these names only; no hex values or other palettes (tests/Feature/DesignTokensTest.php).
+*/
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-zinc-50: #fafafa;
-    --color-zinc-100: #f5f5f5;
-    --color-zinc-200: #e5e5e5;
-    --color-zinc-300: #d4d4d4;
-    --color-zinc-400: #a3a3a3;
-    --color-zinc-500: #737373;
-    --color-zinc-600: #525252;
-    --color-zinc-700: #404040;
-    --color-zinc-800: #262626;
-    --color-zinc-900: #171717;
-    --color-zinc-950: #0a0a0a;
+    /* Calm ground, white surfaces, ink text. */
+    --color-ground: #eef0ec;
+    --color-contour: #d9ded6;
+    --color-ink: #18201c;
+    --color-ink-soft: #4f5a53;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
+    /* Moss does things: buttons, chosen states, links (moss 600 is 7.8:1 on white). */
+    --color-moss: #1f5c46;
+    --color-moss-dark: #174a38;
+    --color-moss-light: #2f7a5d;
+    --color-moss-50: #eef5f1;
+    --color-moss-100: #d7e8df;
+    --color-moss-200: #b0d1c0;
+    --color-moss-300: #82b59b;
+    --color-moss-400: #4f9174;
+    --color-moss-500: #2f7a5d;
+    --color-moss-600: #1f5c46;
+    --color-moss-700: #184a38;
+    --color-moss-800: #133b2d;
+    --color-moss-900: #0f2f24;
+    --color-moss-950: #08190f;
+
+    /* Peach warms and points out: tips, calls to action, and what waits for a person. */
+    --color-peach: #ffc6a3;
+    --color-peach-light: #ffe6cf;
+    --color-peach-ink: #4a3226;
+    --color-peach-deep: #3a2416;
+    --color-clay: #c0612f;
+
+    /* Red is only for errors and for deleting. */
+    --color-danger: #b42318;
+    --color-danger-surface: #fdecea;
+
+    /* Green-gray neutrals. Flux draws in zinc, the starter views in gray and neutral: all of them are these. */
+    --color-zinc-50: #f6f7f4;
+    --color-zinc-100: #eef0ec;
+    --color-zinc-200: #e2e6df;
+    --color-zinc-300: #cdd3ca;
+    --color-zinc-400: #9aa39c;
+    --color-zinc-500: #67716a;
+    --color-zinc-600: #4f5a53;
+    --color-zinc-700: #3a443e;
+    --color-zinc-800: #2b342f;
+    --color-zinc-900: #18201c;
+    --color-zinc-950: #0e1310;
+    --color-gray-50: var(--color-zinc-50);
+    --color-gray-100: var(--color-zinc-100);
+    --color-gray-200: var(--color-zinc-200);
+    --color-gray-300: var(--color-zinc-300);
+    --color-gray-400: var(--color-zinc-400);
+    --color-gray-500: var(--color-zinc-500);
+    --color-gray-600: var(--color-zinc-600);
+    --color-gray-700: var(--color-zinc-700);
+    --color-gray-800: var(--color-zinc-800);
+    --color-gray-900: var(--color-zinc-900);
+    --color-gray-950: var(--color-zinc-950);
+    --color-neutral-50: var(--color-zinc-50);
+    --color-neutral-100: var(--color-zinc-100);
+    --color-neutral-200: var(--color-zinc-200);
+    --color-neutral-300: var(--color-zinc-300);
+    --color-neutral-400: var(--color-zinc-400);
+    --color-neutral-500: var(--color-zinc-500);
+    --color-neutral-600: var(--color-zinc-600);
+    --color-neutral-700: var(--color-zinc-700);
+    --color-neutral-800: var(--color-zinc-800);
+    --color-neutral-900: var(--color-zinc-900);
+    --color-neutral-950: var(--color-zinc-950);
+
+    /* Flux's green badges are moss, its amber ones peach: in the admin, peach means something waits for a person. */
+    --color-green-50: var(--color-moss-50);
+    --color-green-100: var(--color-moss-100);
+    --color-green-200: var(--color-moss-200);
+    --color-green-300: var(--color-moss-300);
+    --color-green-400: var(--color-moss-400);
+    --color-green-500: var(--color-moss-500);
+    --color-green-600: var(--color-moss-600);
+    --color-green-700: var(--color-moss-700);
+    --color-green-800: var(--color-moss-800);
+    --color-green-900: var(--color-moss-900);
+    --color-green-950: var(--color-moss-950);
+    --color-amber-50: #fff6ee;
+    --color-amber-100: var(--color-peach-light);
+    --color-amber-200: #ffd6b8;
+    --color-amber-300: var(--color-peach);
+    --color-amber-400: #f5a578;
+    --color-amber-500: #e0834f;
+    --color-amber-600: var(--color-clay);
+    --color-amber-700: #8f4a26;
+    --color-amber-800: var(--color-peach-ink);
+    --color-amber-900: var(--color-peach-deep);
+    --color-amber-950: #24160d;
+
+    /* Flux's accent is moss. */
+    --color-accent: var(--color-moss);
+    --color-accent-content: var(--color-moss);
     --color-accent-foreground: var(--color-white);
+
+    /* An organizer's theme (#112). Without one, it is Löpning.se's moss. */
+    --color-brand: var(--brand, var(--color-moss));
+    --color-brand-contrast: var(--brand-contrast, var(--color-white));
+    --color-brand-surface: var(--brand-surface, var(--color-moss-50));
+
+    /* Rounded and soft. */
+    --radius-card: 28px;
+    --radius-panel: 18px;
+    --radius-field: 12px;
+
+    /* Soft, green-tinted shadows. */
+    --shadow-rest: 0 6px 20px rgb(31 92 70 / 0.08);
+    --shadow-hover: 0 12px 28px rgb(31 92 70 / 0.14);
+    --shadow-raised: 0 18px 40px rgb(31 92 70 / 0.16);
 }
 
 @layer theme {
+    /* Dark mode is the admin's (#123); Löpning.se's own pages are light. Moss lightens to stay readable. */
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-accent: var(--color-moss-300);
+        --color-accent-content: var(--color-moss-300);
+        --color-accent-foreground: var(--color-moss-950);
     }
 }
 
 @layer base {
-
     *,
     ::after,
     ::before,
     ::backdrop,
     ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
+        border-color: var(--color-contour, currentColor);
+    }
+
+    html {
+        accent-color: var(--color-accent);
+        caret-color: var(--color-accent);
+        scrollbar-color: var(--color-zinc-400) transparent;
+    }
+
+    ::selection {
+        background-color: var(--color-peach-light);
+        color: var(--color-peach-deep);
+    }
+
+    /* Visible focus on everything that can have it: 3 px moss, 3 px off (WCAG 2.4.7, 2.4.13). */
+    :focus-visible {
+        outline: 3px solid var(--color-accent);
+        outline-offset: 3px;
+    }
+
+    a {
+        text-underline-offset: 0.2em;
+    }
+
+    /* Times, places and money line up in columns. */
+    table {
+        font-variant-numeric: tabular-nums;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
     }
 }
 
@@ -52,15 +199,11 @@
 }
 
 [data-flux-label] {
-    @apply  !mb-0 !leading-tight;
+    @apply !mb-0 !leading-tight;
 }
 
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+    @apply outline-hidden ring-[3px] ring-accent/25 border-accent;
 }
-
-/* \[:where(&)\]:size-4 {
-    @apply size-4;
-} */

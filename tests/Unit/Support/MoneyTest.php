@@ -14,6 +14,7 @@ it('formats money in the currency and locale', function () {
 
     $nbsp = "\u{00A0}";
 
-    expect(Money::format(25000, 'SEK'))->toBe("250,00{$nbsp}kr")
+    // Whole kronor without öre, as Swedish prices are written.
+    expect(Money::format(25000, 'SEK'))->toBe("250{$nbsp}kr")
         ->and(Money::format(9950, 'EUR'))->toBe("99,50{$nbsp}€");
 });

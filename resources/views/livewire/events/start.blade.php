@@ -14,7 +14,7 @@ new class extends Component {
 
     public function with(): array
     {
-        return ['classes' => $this->event->raceClasses()->orderBy('start_at')->orderBy('name')->get()];
+        return ['classes' => \App\Support\Format::classOrder($this->event->raceClasses()->get())];
     }
 
     public function changeStartTime(): void
@@ -47,7 +47,7 @@ new class extends Component {
             <label wire:key="start-{{ $class->id }}" class="flex items-center gap-4 rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
                 <flux:checkbox wire:model="selected" value="{{ $class->id }}" />
                 <span class="flex-1 font-semibold">{{ $class->name }}</span>
-                <span class="font-mono text-lg">{{ $class->start_at->setTimezone($event->timezone)->format('H:i:s') }}</span>
+                <span class="text-lg tabular-nums">{{ \App\Support\Format::time($class->start_at->setTimezone($event->timezone)) }}</span>
             </label>
         @endforeach
     </div>
