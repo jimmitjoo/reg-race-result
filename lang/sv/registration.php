@@ -4,6 +4,7 @@ return [
     'title' => 'Anmälan',
     'classes' => 'Klasser',
     'class' => 'Klass',
+    'choose_class_above' => 'Välj klass i loppen ovan',
     'starts' => 'Start :time',
     'choose_class' => 'Välj klass',
     'closed' => 'Anmälan stängd',

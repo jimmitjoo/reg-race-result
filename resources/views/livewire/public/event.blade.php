@@ -415,7 +415,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                         <span aria-hidden="true" class="grid size-8 place-items-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">2</span>
                         {{ count($participants) > 1 ? __('registration.step_who_many') : ($lines[0]['class']?->team_size ? __('registration.step_team') : __('registration.step_who')) }}
                     </h2>
-                    @if (! $lines[0]['class'])
+                    {{-- Only before anyone has a class: once there are several, removing the first must not hide the rest. --}}
+                    @if (! $lines[0]['class'] && count($participants) === 1)
                         <p class="rounded-card bg-white/60 px-5 py-4 text-[15px] text-ink-soft sm:px-7">{{ __('registration.who_after_class') }}</p>
                     @else
                     @foreach ($participants as $i => $participant)
@@ -431,7 +432,11 @@ new #[Layout('components.layouts.public')] class extends Component {
 
                             @if ($i === 0)
                                 {{-- The first participant's class is the one pressed on the race cards above. --}}
-                                <p class="-mt-3 text-[15px] text-ink-soft">{{ $line['class']->race?->name }} – {{ $line['class']->name }} · <a href="#steg-1" class="underline decoration-contour hover:text-ink">{{ __('registration.change_class') }}</a></p>
+                                @if ($line['class'])
+                                    <p class="-mt-3 text-[15px] text-ink-soft">{{ $line['class']->race?->name }} – {{ $line['class']->name }} · <a href="#steg-1" class="underline decoration-contour hover:text-ink">{{ __('registration.change_class') }}</a></p>
+                                @else
+                                    <p class="-mt-3 text-[15px] text-ink-soft"><a href="#steg-1" class="underline decoration-contour hover:text-ink">{{ __('registration.choose_class_above') }}</a></p>
+                                @endif
                             @else
                                 {{-- The same pills as on the race cards, one race at a time: never one long list of every class. --}}
                                 @php($raceId = (int) ($participant['raceId'] ?: $line['class']?->race_id))

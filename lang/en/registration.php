@@ -4,6 +4,7 @@ return [
     'title' => 'Registration',
     'classes' => 'Classes',
     'class' => 'Class',
+    'choose_class_above' => 'Choose a class in the races above',
     'starts' => 'Start :time',
     'choose_class' => 'Choose class',
     'closed' => 'Registration closed',

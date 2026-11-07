@@ -207,3 +207,18 @@ it('adds and removes participants, at most twenty', function () {
     }
     $page->assertCount('participants', 20)->assertDontSee(__('registration.add_participant'));
 });
+
+it('keeps the others in view when the first participant is removed before the next has chosen a class', function () {
+    $classes = orderEvent();
+    $page = Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
+        ->set('participants.0.raceClassId', (string) $classes['women']->id)->set('participants.0.firstName', 'Anna')
+        ->call('addParticipant')->set('participants.1.firstName', 'Bo')
+        ->call('addParticipant')->set('participants.2.raceClassId', (string) $classes['girls']->id)->set('participants.2.firstName', 'Cia');
+
+    $page->call('removeParticipant', 0)
+        ->assertSet('participants.0.firstName', 'Bo')
+        ->assertSee(__('registration.participant_n', ['n' => 2]))
+        ->assertSet('participants.1.firstName', 'Cia')
+        ->assertSee(__('registration.choose_class_above'))
+        ->assertDontSee(__('registration.who_after_class'));
+});
