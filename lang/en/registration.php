@@ -4,6 +4,7 @@ return [
     'title' => 'Registration',
     'classes' => 'Classes',
     'class' => 'Class',
+    'starts' => 'Start :time',
     'choose_class' => 'Choose class',
     'closed' => 'Registration closed',
     'first_name' => 'First name',

@@ -4,6 +4,7 @@ return [
     'title' => 'Anmälan',
     'classes' => 'Klasser',
     'class' => 'Klass',
+    'starts' => 'Start :time',
     'choose_class' => 'Välj klass',
     'closed' => 'Anmälan stängd',
     'first_name' => 'Förnamn',

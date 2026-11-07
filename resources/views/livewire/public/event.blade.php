@@ -403,16 +403,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                                 @endif
                             </div>
                         </div>
-                        <div class="mt-5 flex flex-wrap gap-2">
-                            @foreach (Format::classOrder($race->raceClasses) as $class)
-                                <label wire:key="class-{{ $class->id }}" class="group relative">
-                                    <input type="radio" name="participants.0.raceClassId" value="{{ $class->id }}" wire:model.live="participants.0.raceClassId" class="peer sr-only" @disabled(! $available)>
-                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-pill border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
-                                        <span class="text-[15px] font-medium">{{ $class->name }}</span>
-                                        <span class="text-[13px] opacity-80">{{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($class->team_size) · {{ __('events.team_of', ['size' => $class->team_size]) }}@endif</span>
-                                    </span>
-                                </label>
-                            @endforeach
+                        <div class="mt-5">
+                            @include('livewire.public.class-choices', ['classes' => $race->raceClasses, 'name' => 'participants.0.raceClassId', 'key' => 'class', 'disabled' => ! $available])
                         </div>
                     </fieldset>
                 @endforeach
@@ -465,17 +457,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                     @php($raceRow = $races->firstWhere('race.id', $raceId))
                                     <fieldset class="flex flex-col">
                                         <legend class="mb-2 text-sm leading-tight font-medium text-zinc-800">{{ __('registration.class') }}</legend>
-                                        <div class="flex flex-wrap gap-2">
-                                            @foreach (Format::classOrder($raceRow['race']->raceClasses) as $class)
-                                                <label wire:key="klass-{{ $i }}-{{ $class->id }}">
-                                                    <input type="radio" name="participants.{{ $i }}.raceClassId" value="{{ $class->id }}" wire:model.live="participants.{{ $i }}.raceClassId" class="peer sr-only" @disabled($raceRow['price'] === null || $raceRow['soon'])>
-                                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-pill border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
-                                                        <span class="text-[15px] font-medium">{{ $class->name }}</span>
-                                                        <span class="text-[13px] opacity-80">{{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($class->team_size) · {{ __('events.team_of', ['size' => $class->team_size]) }}@endif</span>
-                                                    </span>
-                                                </label>
-                                            @endforeach
-                                        </div>
+                                        @include('livewire.public.class-choices', ['classes' => $raceRow['race']->raceClasses, 'name' => "participants.{$i}.raceClassId", 'key' => "klass-{$i}", 'disabled' => $raceRow['price'] === null || $raceRow['soon']])
                                     </fieldset>
                                 @endif
                             @endif

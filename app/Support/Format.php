@@ -43,11 +43,23 @@ final class Format
      */
     public static function classOrder(iterable $classes): Collection
     {
-        $name = fn (RaceClass $class) => preg_replace('/\s+/u', '', $class->name);
+        $name = fn (RaceClass $class) => preg_replace('/(?<=\p{L})\s+(?=\d)/u', '', $class->name);
 
         return collect($classes)
             ->sort(fn (RaceClass $a, RaceClass $b) => ($a->position ?? PHP_INT_MAX) <=> ($b->position ?? PHP_INT_MAX)
                 ?: $a->start_at->getTimestamp() <=> $b->start_at->getTimestamp() ?: strnatcasecmp($name($a), $name($b)))
             ->values();
+    }
+
+    /**
+     * Classes in groups by start time, earliest first, each in the order of classOrder(): races
+     * mostly start their classes one after the other, so the time is a way to find one's class.
+     *
+     * @param  iterable<RaceClass>  $classes
+     * @return Collection<int, Collection<int, RaceClass>>
+     */
+    public static function byStart(iterable $classes): Collection
+    {
+        return self::classOrder($classes)->groupBy(fn (RaceClass $class) => $class->start_at->getTimestamp())->sortKeys()->values();
     }
 }
