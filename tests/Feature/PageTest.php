@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\Series;
 use App\Models\User;
@@ -37,7 +38,7 @@ it('keeps changes as a draft, seen in the preview, until Publicera', function ()
     $editor = Volt::test('page.edit')->call('add', 'text', 1);
     $id = $editor->get('blocks')[1]['id'];
     $editor->set('blocks.1.heading', 'Om klubben')->set('blocks.1.body', 'Vi springer **varje** tisdag.')
-        ->assertSet('editing', $id)->assertSee(__('page.draft'));
+        ->assertSet('editing', $id)->assertSee(__('page.draft_short'));
 
     $this->get('/hogby-if')->assertDontSee('Om klubben');
     $this->get(URL::signedRoute('public.organizer', ['organizer' => 'hogby-if', 'forhandsvisning' => 1]))
@@ -211,4 +212,35 @@ it('puts the room above a block as chosen, a block beside another lined up with 
     $blocks = [$block('hero'), $block('text', ['space' => 'none']), $block('text', ['space' => 'large']), $block('text', ['beside' => true]), $block('facts', ['space' => 'small'])];
 
     expect(array_values(Page::spaces($blocks)))->toBe(['', '', 'mt-20 lg:mt-28', 'mt-6 lg:mt-28', 'mt-6 lg:mt-8']);
+});
+
+it('lays coming races and earlier years across the window as a band, their cards kept in the page\'s column', function () {
+    $organizer = pageOrganizer();
+    $organizer->update(['page' => [['background' => 'brand', 'size' => 'full'] + Page::block('upcoming'), ['size' => 'full'] + Page::block('earlier')]]);
+
+    $this->get('/hogby-if')->assertOk()
+        ->assertSee('on-brand bg-brand', false)
+        ->assertSee('max-w-[calc(1100px+3rem)]', false)
+        ->assertSee('mx-auto w-full max-w-[1100px]', false);
+});
+
+it('puts the way to edit above the organizer\'s own pages for its people only', function () {
+    $organizer = pageOrganizer();
+    $event = Event::factory()->create(['organizer_id' => $organizer->id, 'slug' => 'sylvesterloppet-2026']);
+
+    $this->get('/hogby-if')->assertSee(route('page.edit'))->assertSee(__('public.mode_edit'));
+    $this->get('/hogby-if/sylvesterloppet-2026')->assertSee(route('events.page', $event))->assertSee(route('events.show', $event));
+
+    $this->actingAs(User::factory()->create(['organizer_id' => Organizer::factory()->create()->id]));
+    $this->get('/hogby-if')->assertDontSee(route('page.edit'));
+    auth()->logout();
+    $this->get('/hogby-if')->assertDontSee(route('page.edit'));
+});
+
+it('edits the page in place, at its own width, the bar above switched to Redigera', function () {
+    pageOrganizer();
+
+    $this->get(route('page.edit'))->assertOk()
+        ->assertSee('aria-current="page"', false)->assertSee(__('page.publish'))->assertSee(route('public.organizer', 'hogby-if'))
+        ->assertDontSee('data-flux-sidebar', false);
 });

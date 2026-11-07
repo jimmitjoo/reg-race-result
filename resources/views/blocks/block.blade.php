@@ -8,6 +8,10 @@
     @php($background = 'brand')
 @endif
 @php($size = $span < 12 ? 'cell' : ($block['size'] ?? 'text'))
+{{-- Cards of upplagor read best in the page's column: as wide as the window, only their background is. --}}
+@if ($size === 'full' && in_array($block['type'], ['upcoming', 'earlier'], true))
+    @php($size = 'wide')
+@endif
 @php($measure = ['text' => 'mx-auto w-full max-w-[720px]', 'wide' => 'mx-auto w-full max-w-[1100px]', 'full' => $block['type'] === 'image' ? '' : 'px-4 sm:px-6', 'cell' => ''][$size])
 @if ($block['type'] === 'hero')
     @include('blocks.hero')

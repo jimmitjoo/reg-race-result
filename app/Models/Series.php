@@ -19,6 +19,11 @@ class Series extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return ['theme' => 'array', 'theme_draft' => 'array'];
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Series $series) {

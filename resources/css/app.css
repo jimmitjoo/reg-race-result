@@ -298,10 +298,6 @@ select:focus[data-flux-control] {
     margin-inline: calc(50% - 50vw);
 }
 
-.lp-editor .bleed {
-    margin-inline: 0;
-}
-
 /* A block on the club's colour (#116): its own text in the colour's contrast; the white cards on it read as on the page. */
 .on-brand {
     color: var(--color-brand-contrast);
