@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-07T00:33:09+00:00",
+  "generatedAt": "2026-11-07T00:58:00+00:00",
   "title": "Design System: Löpning.se Anmälan",
   "extensions": {
     "colorMeta": {
@@ -155,6 +155,46 @@
       "label-mono": {
         "displayName": "Label Mono",
         "purpose": "Bibs, chip IDs and finish times."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Public page title (h1), 38px/42px; weight 400, -0.02em."
+      },
+      "display-sm": {
+        "displayName": "Display (sm and up)",
+        "purpose": "The same title from sm: 52px/56px."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Public h2 and step headings, race and class card headings, prices: 21px, 500."
+      },
+      "section-sm": {
+        "displayName": "Section (sm and up)",
+        "purpose": "Step headings from sm and the pay sum: 26px, 500."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Line under the title (ink-soft), reading body, confirmation values: 17px."
+      },
+      "lead-sm": {
+        "displayName": "Lead (sm and up)",
+        "purpose": "The lead from sm, and reading-page h2 at 500: 19px."
+      },
+      "body-public": {
+        "displayName": "Body (public)",
+        "purpose": "Public tables, help text, control labels: 15px."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Pill buttons and step numbers: 15px semibold."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Price-step notes, club under a name, footer, chips: 14px, ink-soft."
+      },
+      "small-xs": {
+        "displayName": "Small XS",
+        "purpose": "Table column heads, start times in class pills, frame label: 13px, ink-soft."
       }
     },
     "shadows": [
@@ -214,6 +254,70 @@
   },
   "components": [
     {
+      "name": "Pill Button (brand)",
+      "kind": "button",
+      "refersTo": "button-pill-primary",
+      "description": "Primary public action in the organizer's brand.",
+      "html": "<a class=\"ds-pill\" href=\"#\">Anmäl dig</a>",
+      "css": ".ds-pill{font-family:var(--font-sans);display:inline-flex;align-items:center;height:44px;padding:0 24px;border-radius:9999px;background:var(--color-brand,#1f5c46);color:var(--color-brand-contrast,#fff);font-size:15px;font-weight:600;text-decoration:none}.ds-pill:hover{opacity:.9}.ds-pill:focus-visible{outline:3px solid var(--color-brand,#1f5c46);outline-offset:3px}"
+    },
+    {
+      "name": "Pill Button (white)",
+      "kind": "button",
+      "refersTo": "button-pill-secondary",
+      "description": "Secondary public action: white with rest shadow on ground.",
+      "html": "<div style=\"background:#eef0ec;padding:16px\"><a class=\"ds-pill-white\" href=\"#\">Startlista</a></div>",
+      "css": ".ds-pill-white{font-family:var(--font-sans);display:inline-flex;align-items:center;height:44px;padding:0 20px;border-radius:9999px;background:#fff;color:var(--color-ink,#18201c);font-size:15px;font-weight:600;text-decoration:none;box-shadow:0 6px 20px rgb(31 92 70 / .08);transition:box-shadow .15s}.ds-pill-white:hover{box-shadow:0 12px 28px rgb(31 92 70 / .14)}.ds-pill-white:focus-visible{outline:3px solid var(--color-accent,#1f5c46);outline-offset:3px}"
+    },
+    {
+      "name": "Race Card with Class Choices",
+      "kind": "card",
+      "refersTo": "card-public",
+      "description": "White card at the card radius; classes as pill radios, checked in brand; peach chip when not open.",
+      "html": "<div class=\"ds-ground\"><fieldset class=\"ds-race\"><legend class=\"ds-sr\">Milen</legend><div class=\"ds-race-head\"><h3 class=\"ds-race-title\">Milen</h3><div><p class=\"ds-race-price\">300 kr</p><p class=\"ds-race-note\">350 kr från 1 dec 2026</p></div></div><div class=\"ds-choices\"><label><input type=\"radio\" name=\"c\" class=\"ds-sr\" checked><span class=\"ds-choice\"><span class=\"ds-choice-name\">10 km Kvinnor</span><span class=\"ds-choice-time\">kl 10.00</span></span></label><label><input type=\"radio\" name=\"c\" class=\"ds-sr\"><span class=\"ds-choice\"><span class=\"ds-choice-name\">10 km Män</span><span class=\"ds-choice-time\">kl 10.00</span></span></label></div></fieldset><fieldset class=\"ds-race\"><div class=\"ds-race-head\"><h3 class=\"ds-race-title\">Lilla loppet</h3><span class=\"ds-chip-peach\">Öppnar snart</span></div></fieldset></div>",
+      "css": ".ds-ground{background:var(--color-ground,#eef0ec);padding:24px;display:grid;gap:16px}.ds-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.ds-race{font-family:var(--font-sans);margin:0;border:0;background:#fff;border-radius:28px;padding:28px;box-shadow:0 6px 20px rgb(31 92 70 / .08);color:var(--color-ink,#18201c)}.ds-race-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px}.ds-race-title,.ds-race-price{margin:0;font-size:21px;font-weight:500;font-variant-numeric:tabular-nums}.ds-race-note{margin:0;font-size:14px;color:var(--color-ink-soft,#4f5a53);text-align:right}.ds-choices{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}.ds-choices label{position:relative}.ds-choice{display:flex;flex-direction:column;justify-content:center;min-height:44px;padding:6px 16px;border:1.5px solid var(--color-contour,#d9ded6);border-radius:9999px;background:#fff;line-height:1.25;cursor:pointer;transition:background .15s,border-color .15s}.ds-choice:hover{border-color:var(--color-ink-soft,#4f5a53)}.ds-choice-name{font-size:15px;font-weight:500}.ds-choice-time{font-size:13px;opacity:.8}input:checked+.ds-choice{background:var(--color-brand,#1f5c46);border-color:var(--color-brand,#1f5c46);color:var(--color-brand-contrast,#fff)}input:focus-visible+.ds-choice{outline:3px solid var(--color-brand,#1f5c46);outline-offset:3px}.ds-chip-peach{border-radius:9999px;background:var(--color-peach-light,#ffe6cf);color:var(--color-peach-deep,#3a2416);padding:4px 12px;font-size:14px;font-weight:500;align-self:flex-start}"
+    },
+    {
+      "name": "Step Heading",
+      "kind": "custom",
+      "refersTo": "step-marker",
+      "description": "Numbered brand circle before a step's h2.",
+      "html": "<h2 class=\"ds-step\"><span class=\"ds-step-n\" aria-hidden=\"true\">1</span>Välj klass</h2>",
+      "css": ".ds-step{font-family:var(--font-sans);display:flex;align-items:center;gap:12px;margin:0;font-size:26px;font-weight:500;color:var(--color-ink,#18201c)}.ds-step-n{display:grid;place-items:center;width:32px;height:32px;border-radius:9999px;background:var(--color-brand,#1f5c46);color:var(--color-brand-contrast,#fff);font-size:15px;font-weight:600}"
+    },
+    {
+      "name": "Page Header",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "Organizer byline, display title, lead line.",
+      "html": "<header class=\"ds-head\"><p class=\"ds-head-by\">Högby IF</p><h1 class=\"ds-head-title\">Sylvesterloppet 2026</h1><p class=\"ds-head-lead\">torsdag 31 december 2026 · Högby</p></header>",
+      "css": ".ds-head{font-family:var(--font-sans);display:flex;flex-direction:column;gap:16px;color:var(--color-ink,#18201c)}.ds-head p,.ds-head h1{margin:0}.ds-head-by{font-size:15px;color:var(--color-ink-soft,#4f5a53)}.ds-head-title{font-size:38px;line-height:42px;font-weight:400;letter-spacing:-.02em;text-wrap:balance}.ds-head-lead{font-size:17px;color:var(--color-ink-soft,#4f5a53)}@media (min-width:640px){.ds-head-title{font-size:52px;line-height:56px}.ds-head-lead{font-size:19px}}"
+    },
+    {
+      "name": "Results Table in Card",
+      "kind": "card",
+      "refersTo": "card-public",
+      "description": "Captioned table with scoped heads, contour rows, tabular numbers.",
+      "html": "<section class=\"ds-tcard\"><h2 class=\"ds-tcard-title\">10 km Kvinnor</h2><table class=\"ds-table\"><caption class=\"ds-sr\">Resultat, 10 km Kvinnor</caption><thead><tr><th scope=\"col\" class=\"ds-num\">Plac</th><th scope=\"col\">Namn</th><th scope=\"col\" class=\"ds-num\">Tid</th></tr></thead><tbody><tr><td class=\"ds-num\">1</td><td><b>Anna Andersson</b><span class=\"ds-sub\">Högby IF</span></td><td class=\"ds-num\">38.12</td></tr></tbody></table></section>",
+      "css": ".ds-tcard{font-family:var(--font-sans);background:#fff;border-radius:28px;padding:28px;box-shadow:0 6px 20px rgb(31 92 70 / .08);color:var(--color-ink,#18201c)}.ds-tcard-title{margin:0;font-size:21px;font-weight:500}.ds-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.ds-table{margin-top:16px;width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}.ds-table th{padding-bottom:8px;text-align:left;font-size:13px;font-weight:500;color:var(--color-ink-soft,#4f5a53)}.ds-table td{padding:10px 12px 10px 0;border-top:1px solid var(--color-contour,#d9ded6);vertical-align:top}.ds-table b{font-weight:500}.ds-num{text-align:right}.ds-sub{display:block;font-size:14px;color:var(--color-ink-soft,#4f5a53)}"
+    },
+    {
+      "name": "Error Summary",
+      "kind": "custom",
+      "refersTo": "error-summary",
+      "description": "Focused alert listing what to fix after a failed submit.",
+      "html": "<div class=\"ds-err\" role=\"alert\" tabindex=\"-1\"><h2>Det här behöver rättas</h2><ul><li>Välj en klass.</li></ul></div>",
+      "css": ".ds-err{font-family:var(--font-sans);background:var(--color-danger-surface,#fdecea);color:var(--color-danger,#b42318);border-radius:28px;padding:20px 24px;outline:none}.ds-err h2{margin:0;font-size:15px;font-weight:600}.ds-err ul{margin:8px 0 0;padding-left:20px;font-size:15px}"
+    },
+    {
+      "name": "Public Frame Bar",
+      "kind": "nav",
+      "refersTo": "frame",
+      "description": "Thin Löpning.se bar above organizer pages.",
+      "html": "<header class=\"ds-frame\"><a href=\"#\" class=\"ds-frame-logo\">Löpning.se</a><span class=\"ds-frame-label\">Anmälan</span></header>",
+      "css": ".ds-frame{font-family:var(--font-sans);display:flex;align-items:center;gap:12px;height:48px;padding:0 24px;background:var(--color-ground,#eef0ec);border-bottom:1px solid rgb(217 222 214 / .7)}.ds-frame-logo{font-weight:700;color:var(--color-ink,#18201c);text-decoration:none;border-radius:9999px}.ds-frame-logo:focus-visible{outline:3px solid var(--color-accent,#1f5c46);outline-offset:3px}.ds-frame-label{font-size:13px;color:var(--color-ink-soft,#4f5a53)}"
+    },
+    {
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
@@ -272,7 +376,7 @@
   ],
   "narrative": {
     "northStar": "Löparens verktyg",
-    "overview": "This app does not have a visual world of its own. It inherits Löpning.se's established design system, \"Löparens verktyg\" (`DESIGN-SYSTEM.md` in AudienceGrowth/Lopning), and extends it for registration, timing and results. A calm green-gray ground carries white surfaces and ink text. Moss green does things (buttons, chosen states, links, focus). Peach warms and points things out. Everything is set in one typeface, Hanken Grotesk, and the forms are rounded and soft, with green-tinted shadows. When Löpning.se's document and this file disagree on a platform token, Löpning.se wins and this file should be updated to match.\n\nThe system has two layers, both in `resources/css/app.css`. The **platform layer** is Löpning.se's tokens, copied over and mapped onto Flux and Tailwind. Flux's zinc and Tailwind's gray and neutral all resolve to the green-gray neutrals, green resolves to moss, amber to a peach scale, and Flux's accent is moss. The **organizer theme layer** (`--color-brand`, `--color-brand-contrast`, `--color-brand-surface`) reads per-organizer `--brand*` variables. Until an organizer sets them, they fall back to moss. Views take color only from these names. `tests/Feature/DesignTokensTest.php` fails on hex values or other Tailwind palettes in views (PDFs and mails are exempt because they cannot read CSS variables).\n\nUsability comes first. A runner on a phone, a volunteer who hasn't logged in for a year and an official outdoors in the cold all have to manage without help. That is why the system is dense but legible, keeps text contrast at WCAG 2.2 AA everywhere, and has large targets and a visible focus ring on everything.\n\nThe parts that are planned but not yet built are recorded only as decisions, and their visuals are left open: the organizer theme UI that fills `--brand*` (#112), page blocks for organizer and race pages (#115, #116), the public Löpning.se frame around organizer pages (#118), and the admin redesign that brings Flux's components onto Löpning.se's shapes (#123).",
+    "overview": "This app does not have a visual world of its own. It inherits Löpning.se's established design system, \"Löparens verktyg\" (`DESIGN-SYSTEM.md` in AudienceGrowth/Lopning), and extends it for registration, timing and results. A calm green-gray ground carries white surfaces and ink text. Moss green does things (buttons, chosen states, links, focus). Peach warms and points things out. Everything is set in one typeface, Hanken Grotesk, and the forms are rounded and soft, with green-tinted shadows. When Löpning.se's document and this file disagree on a platform token, Löpning.se wins and this file should be updated to match.\n\nThe system has two layers, both in `resources/css/app.css`. The **platform layer** is Löpning.se's tokens, copied over and mapped onto Flux and Tailwind. Flux's zinc and Tailwind's gray and neutral all resolve to the green-gray neutrals, green resolves to moss, amber to a peach scale, and Flux's accent is moss. The **organizer theme layer** (`--color-brand`, `--color-brand-contrast`, `--color-brand-surface`) reads per-organizer `--brand*` variables. Until an organizer sets them, they fall back to moss. Views take color only from these names. `tests/Feature/DesignTokensTest.php` fails on hex values or other Tailwind palettes in views (PDFs and mails are exempt because they cannot read CSS variables).\n\nUsability comes first. A runner on a phone, a volunteer who hasn't logged in for a year and an official outdoors in the cold all have to manage without help. That is why the system is dense but legible, keeps text contrast at WCAG 2.2 AA everywhere, and has large targets and a visible focus ring on everything.\n\nThe public Löpning.se frame (#118) has shipped: the race page with registration, the confirmation page, the start list, results and the terms page now carry Löpning.se's page type ramp, white cards at the card radius, pill buttons and pill choices, and they act in the organizer's brand color. The parts that are planned but not yet built are recorded only as decisions, and their visuals are left open: the organizer theme UI that fills `--brand*` (#112), page blocks for organizer and race pages (#115, #116), and the admin redesign that brings Flux's components onto Löpning.se's shapes (#123).",
     "keyCharacteristics": [
       "Inherited, not invented: the Löpning.se tokens are the platform, and organizers theme on top.",
       "Light green-gray ground, white surfaces, ink text. There is no glass, blur or decorative gradient.",
@@ -289,7 +393,7 @@
       },
       {
         "name": "The Waiting Peach Rule",
-        "body": "In the admin, peach (Flux's amber) means that something waits for a person, such as an unpaid registration or an upplaga that needs Stripe before it can open. Don't use peach for anything else there. On public pages peach is for tips and calls to action.",
+        "body": "In the admin, peach (Flux's amber) means that something waits for a person, such as an unpaid registration or an upplaga that needs Stripe before it can open. Don't use peach for anything else there. On public pages peach is for tips, calls to action and pointing something out, such as a race that is not open yet.",
         "section": "colors"
       },
       {
@@ -306,6 +410,11 @@
         "name": "The Tokens Only Rule",
         "body": "Views use token names only. Hex values and other Tailwind palettes in a view are a test failure.",
         "section": "colors"
+      },
+      {
+        "name": "The Light Headline Rule",
+        "body": "On public pages, headings are large and light (weight 400 for the page title, 500 for sections). Weight comes from size, never from bold display type.",
+        "section": "typography"
       },
       {
         "name": "The Columns Line Up Rule",
@@ -331,6 +440,8 @@
       "Do keep Löpning.se's own identity in the admin, adding the organizer's logo and accent.",
       "Do write dates, times and money through Format and Money: \"torsdag 31 december 2026\", \"kl 10.00\", \"300 kr\".",
       "Do write warm, plain Swedish: say du, use short sentences, and leave out technical words, hype and exclamation marks.",
+      "Do draw everything that acts on a public page in the organizer's brand (brand / brand-contrast), and everything else in ink on white or ground.",
+      "Do set public page titles in the display role (38px / 52px, weight 400, -0.02em) and step headings in the section role (21px / 26px, weight 500).",
       "Do keep targets at least 44px high on race-day views, and keep every page working at 320px width and 200% zoom."
     ],
     "donts": [

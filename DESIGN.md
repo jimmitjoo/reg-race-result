@@ -22,6 +22,50 @@ colors:
   brand-contrast: "#ffffff"
   brand-surface: "#eef5f1"
 typography:
+  display:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "38px"
+    fontWeight: 400
+    lineHeight: "42px"
+    letterSpacing: "-0.02em"
+  display-sm:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "52px"
+    fontWeight: 400
+    lineHeight: "56px"
+    letterSpacing: "-0.02em"
+  section:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "21px"
+    fontWeight: 500
+  section-sm:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "26px"
+    fontWeight: 500
+  lead:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+  lead-sm:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "19px"
+    fontWeight: 400
+  body-public:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+  button:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 600
+  small:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+  small-xs:
+    fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
   headline:
     fontFamily: "Hanken Grotesk, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.5rem"
@@ -63,6 +107,58 @@ components:
   organizer-accent:
     backgroundColor: "{colors.brand}"
     textColor: "{colors.brand-contrast}"
+  button-pill-primary:
+    backgroundColor: "{colors.brand}"
+    textColor: "{colors.brand-contrast}"
+    typography: "{typography.button}"
+    rounded: "9999px"
+    height: "44px"
+    padding: "0 24px"
+  button-pill-secondary:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.button}"
+    rounded: "9999px"
+    height: "44px"
+    padding: "0 20px"
+  button-pill-pay:
+    backgroundColor: "{colors.brand}"
+    textColor: "{colors.brand-contrast}"
+    typography: "{typography.button}"
+    rounded: "9999px"
+    height: "48px"
+    width: "100%"
+  card-public:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.card}"
+    padding: "20px"
+  class-choice:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "9999px"
+    height: "44px"
+    padding: "6px 16px"
+  class-choice-checked:
+    backgroundColor: "{colors.brand}"
+    textColor: "{colors.brand-contrast}"
+  step-marker:
+    backgroundColor: "{colors.brand}"
+    textColor: "{colors.brand-contrast}"
+    typography: "{typography.button}"
+    rounded: "9999px"
+    size: "32px"
+  chip-not-open:
+    backgroundColor: "{colors.peach-light}"
+    textColor: "{colors.peach-deep}"
+    typography: "{typography.small}"
+    rounded: "9999px"
+    padding: "4px 12px"
+  error-summary:
+    backgroundColor: "{colors.danger-surface}"
+    textColor: "{colors.danger}"
+    rounded: "{rounded.card}"
+    padding: "20px 24px"
 ---
 
 # Design System: Löpning.se Anmälan
@@ -77,7 +173,7 @@ The system has two layers, both in `resources/css/app.css`. The **platform layer
 
 Usability comes first. A runner on a phone, a volunteer who hasn't logged in for a year and an official outdoors in the cold all have to manage without help. That is why the system is dense but legible, keeps text contrast at WCAG 2.2 AA everywhere, and has large targets and a visible focus ring on everything.
 
-The parts that are planned but not yet built are recorded only as decisions, and their visuals are left open: the organizer theme UI that fills `--brand*` (#112), page blocks for organizer and race pages (#115, #116), the public Löpning.se frame around organizer pages (#118), and the admin redesign that brings Flux's components onto Löpning.se's shapes (#123).
+The public Löpning.se frame (#118) has shipped: the race page with registration, the confirmation page, the start list, results and the terms page now carry Löpning.se's page type ramp, white cards at the card radius, pill buttons and pill choices, and they act in the organizer's brand color. The parts that are planned but not yet built are recorded only as decisions, and their visuals are left open: the organizer theme UI that fills `--brand*` (#112), page blocks for organizer and race pages (#115, #116), and the admin redesign that brings Flux's components onto Löpning.se's shapes (#123).
 
 **Key Characteristics:**
 - Inherited, not invented: the Löpning.se tokens are the platform, and organizers theme on top.
@@ -118,7 +214,7 @@ A restrained green-gray world with one acting color (moss) and one warm pointing
 ### Named Rules
 **The Moss Does Things Rule.** Moss marks what can be acted on or what is chosen. It is not used as decoration.
 
-**The Waiting Peach Rule.** In the admin, peach (Flux's amber) means that something waits for a person, such as an unpaid registration or an upplaga that needs Stripe before it can open. Don't use peach for anything else there. On public pages peach is for tips and calls to action.
+**The Waiting Peach Rule.** In the admin, peach (Flux's amber) means that something waits for a person, such as an unpaid registration or an upplaga that needs Stripe before it can open. Don't use peach for anything else there. On public pages peach is for tips, calls to action and pointing something out, such as a race that is not open yet.
 
 **The Red Means Stop Rule.** Red is for errors and deleting, nothing else. A status that is not an error gets a neutral or moss badge.
 
@@ -134,43 +230,73 @@ A restrained green-gray world with one acting color (moss) and one warm pointing
 **Character:** a single friendly grotesk does everything. Weight comes from size, not from bold.
 
 ### Hierarchy
-- **Headline** (500, 1.5rem): page headings in the admin and on public pages (Flux heading `xl`).
+Two ramps share one typeface. Public pages (Löpning.se's own ramp, #118) set sizes in exact pixels. The admin uses Flux's sizes.
+
+**Public pages**
+- **Display** (400, 38px / 42px, 52px / 56px from sm, -0.02em, balanced): the one page title (h1): the race name, Startlista, Resultat, the confirmation heading, the terms title. It is large but light, so the weight comes from size.
+- **Section** (500, 21px, 26px from sm): step headings and other h2s. At 21px fixed it is also the race card and class card heading and the price on a race card. The sum in the pay step is 26px.
+- **Reading heading** (500, 19px): h2 on long reading pages (terms).
+- **Lead** (400, 17px, 19px from sm, ink-soft): the line under the page title (date · place, or what happens next). At 17px it is also reading body text (terms, `leading-relaxed`), confirmation values, the chosen class, and empty-state boxes.
+- **Body and controls** (400, 15px): table text, help text, labels in definition lists, the organizer's name above the title, class names (500) in choices. Buttons are 15px semibold (600).
+- **Small** (400, 14px or 13px, ink-soft): price-step notes, the club under a name, footer links (14px); table column heads, start times inside a class pill, "Uppdateras automatiskt" and the frame bar label (13px).
+
+**Admin (Flux)**
+- **Headline** (500, 1.5rem): page headings (Flux heading `xl`).
 - **Title** (500, 1rem): section headings (Flux heading `lg`).
 - **Body** (400, 0.875rem): Flux's default text, form labels and table text. Descriptions use ink-soft.
-- **Label Mono** (monospace, tabular): bibs, chips and times in tables and race-day views.
-
-Löpning.se's own page ramp (38/52px light h1 with -0.02em tracking) belongs to its public pages. The public frame (#118) will bring it here, and until then this app does not ship it.
+- **Label Mono** (monospace, tabular): bibs, chips and times in tables and race-day views. The public tables use tabular numerals in the body face instead.
 
 ### Named Rules
+**The Light Headline Rule.** On public pages, headings are large and light (weight 400 for the page title, 500 for sections). Weight comes from size, never from bold display type.
+
 **The Columns Line Up Rule.** Every table uses tabular numerals, so times, places and money line up.
 
 **The Swedish Formats Rule.** Dates, times and money are written only through `App\Support\Format` and `App\Support\Money`: "torsdag 31 december 2026", "31 dec 2026", "kl 10.00", "kl 10.03.30" (seconds only when they matter, as in wave starts), and "300 kr" (öre only when present). Classes sort naturally (P5, P7, P9, P11).
 
 ## Layout
 
-The admin is a Flux sidebar layout: a sticky sidebar, collapsible on small screens, next to the content. The auth layouts center one column (`max-w-sm` or `max-w-md`) on the ground with 24–40px padding. Public pages are currently one reading column (`max-w-2xl`, 16px side padding, 40px vertical padding), and forms switch to two columns from `sm`. Spacing comes from `gap-*` between elements: 8px within groups, 16px between fields, 24–32px between sections. Targets on race-day views are at least 44px high (`h-11`). Layouts must work at 320px width and 200% zoom.
+**Public frame (#118).** Every public page sits on the ground, always light, inside a quiet Löpning.se frame. At the top is a thin bar 48px high: the wordmark at 16px high in ink, plus a 13px ink-soft label, over a contour/70 rule. At the bottom is a footer over the same rule, with "powered by", the organizer's terms and platform contact in 14px ink-soft underlined links. A skip link ("Till innehållet") appears as a white pill with the raised shadow on focus. Content is `max-w-[1100px]` with 16px / 24px side padding (from sm), 32px / 48px top padding and 64px bottom padding. Reading pages (confirmation, terms) narrow to `max-w-[720px]`.
 
-The Löpning.se page widths (1440 / 1100 / 720–760px) arrive with the public frame (#118) and are not recorded as this app's layout yet.
+**Page header.** The organizer's name or the parent race (15px ink-soft, a link back when there is one) sits above the display title, followed by the lead line (date · city) and a row of pill buttons. This is real data, not an invented kicker.
+
+**Registration page.** One form in three numbered steps (choose, who runs, pay). From `lg` it is a two-column grid, `minmax(0,1fr) 340px`, with the pay step sticky in the right column. On phones, once a class is chosen, a fixed bottom bar (white/95 over a contour rule) holds the pay button until the pay step is in view. The gaps are 48px between page blocks, 40px between steps, 16px inside a step, and 8px between pills.
+
+**Admin.** The admin is a Flux sidebar layout: a sticky sidebar, collapsible on small screens, next to the content. The auth layouts center one column (`max-w-sm` or `max-w-md`) on the ground with 24–40px padding. Spacing comes from `gap-*`: 8px within groups, 16px between fields, 24–32px between sections.
+
+Targets are at least 44px high (`h-11`), and the main pay action is 48px (`h-12`). Layouts must work at 320px width and 200% zoom.
 
 ## Elevation & Depth
 
-Depth is soft and green-tinted, never gray or black. Surfaces sit on the ground with a faint moss-tinted shadow, links lift a step on hover, and menus and dialogs are raised. Most admin surfaces today are flat, with contour borders. The exact values are in the sidecar.
+Depth is soft and green-tinted, never gray or black. Surfaces sit on the ground with a faint moss-tinted shadow, links lift a step on hover, and menus and dialogs are raised. Public pages lift white cards off the ground. Most admin surfaces today are flat, with contour borders. The exact values are in the sidecar.
 
 ### Shadow Vocabulary
-- **Rest** (`box-shadow: 0 6px 20px rgb(31 92 70 / 0.08)`): cards and panels at rest. The auth card uses it.
-- **Hover** (`box-shadow: 0 12px 28px rgb(31 92 70 / 0.14)`): link cards on hover.
-- **Raised** (`box-shadow: 0 18px 40px rgb(31 92 70 / 0.16)`): menus and dialogs.
+- **Rest** (`box-shadow: 0 6px 20px rgb(31 92 70 / 0.08)`): cards and panels at rest, and white pill buttons on the ground. Every public card and the auth card use it.
+- **Hover** (`box-shadow: 0 12px 28px rgb(31 92 70 / 0.14)`): white pill buttons and link cards on hover.
+- **Raised** (`box-shadow: 0 18px 40px rgb(31 92 70 / 0.16)`): menus, dialogs, and the skip link when it shows.
 
 ### Named Rules
 **The Green Shadow Rule.** Shadows are tinted with moss. Don't use hard offset shadows, glass or blur.
 
 ## Shapes
 
-The form language is rounded and soft, with three named radii: **card** (28px) for Löpning.se cards and peach or moss panels, **panel** (18px) for admin surfaces and the auth card, and **field** (12px) for inputs in the admin. Löpning.se also makes buttons, chips and search fields fully rounded. All borders default to contour. Today Flux's components still render their own radii, and only the auth card uses a named radius. Bringing buttons and fields onto these shapes is the admin redesign's job (#123).
+The form language is rounded and soft, with three named radii and the full pill: **card** (28px) for every public card (race cards, the who-runs and pay steps, start list and result classes, the confirmation, terms, peach boxes and the error summary); **panel** (18px) for admin surfaces and the auth card; **field** (12px) for admin inputs; and **pill** (fully rounded) for buttons, class and gender choices, step markers and the "not open" chip on public pages. Choices are outlined with a 1.5px contour border. All borders default to contour. On public pages (`.lp-public`) Flux's text inputs and selects take the pill too: 48px high, a 1.5px contour border, 20px side padding, 16px text (no zoom on focus in iOS), a leading icon inset into the curve in ink-soft, and a single ink-soft chevron on selects. Flux's admin components still render their own radii (8px), and bringing them onto field and pill is the admin redesign's job (#123).
 
 ## Components
 
 Flux provides the components. The design system reaches them through tokens: accent, zinc, green and amber are all remapped, so Flux's default variants already speak Löpning.se colors.
+
+### Public pages (#118)
+Everything that acts on a public page is drawn in the organizer's brand (`bg-brand` / `text-brand-contrast`, moss by default). Everything else is ink on white or ground. Public pages are always light.
+
+- **Pill button, primary:** brand fill, brand-contrast text, 44px high, 24px side padding, 15px semibold. Hover is 90% opacity. The pay button is the same at 48px high and full width, and says the price ("Betala 300 kr").
+- **Pill button, secondary:** white with ink text and the rest shadow, 44px high, 20px side padding. On hover it lifts to the hover shadow. Used for Startlista, Resultat, earlier upplagor and "back to the race".
+- **Card:** white at the card radius with the rest shadow on the ground, 20px padding (28px from sm, 32px on terms). An empty or not-yet state is a quieter white/60 box at the same radius, with no shadow.
+- **Class choice:** a native radio hidden behind a pill label at least 44px high, white with a 1.5px contour border. It shows the class name (15px, 500) over the start time (13px, 80% opacity). Hover darkens the border to ink-soft. When checked it takes the brand fill and brand-contrast text. The focus ring is a 3px brand outline at a 3px offset. Disabled is 60% opacity. Gender uses the same pill, split evenly in two.
+- **Step marker:** a 32px brand circle holding the step number (15px semibold, `aria-hidden`), placed before the step's h2.
+- **Table in a card:** a visually hidden caption, `th scope="col"` heads at 13px ink-soft weight 500, rows divided by contour, 15px text, tabular numbers. Secondary columns collapse under the name on phones. A linked start-list row (`:target`) is highlighted in peach-light.
+- **"Not open" chip:** a peach-light pill with peach-deep 14px medium text ("Öppnar snart", "Stängd"), in place of the price on a race card. Peach on public pages points things out. The same pairing at the card radius makes the "results not public yet" box.
+- **Error summary:** a danger-surface box at the card radius with danger text: a semibold heading and a bulleted list of messages at 15px. It is `role="alert"`, and it takes focus and scrolls into view after a failed submit. The field errors below it are 15px medium danger text.
+- **Frame:** see Layout. The wordmark links to löpning.se.
 
 ### Buttons
 - **Primary:** moss with white text, and deep moss on hover. In dark mode it is moss 300 with moss 950 text.
@@ -182,14 +308,14 @@ Flux provides the components. The design system reaches them through tokens: acc
 - **Style:** Flux badges. Green (moss) for done or good, amber (peach) for "waits for a person", zinc for neutral states, and red only for errors.
 
 ### Cards / Containers
-- **Corner Style:** panel radius (18px) for the auth card.
+- **Corner Style:** panel radius (18px) for the auth card, card radius (28px) on public pages.
 - **Background:** white on ground. In dark mode it is zinc 950 with a zinc 800 border.
 - **Shadow Strategy:** rest shadow (see Elevation & Depth).
 - **Border:** contour.
 - **Internal Padding:** 40px horizontal by 32px vertical on the auth card.
 
 ### Inputs / Fields
-- **Style:** Flux inputs with a contour border on white, the label tight above the control, and an 8px gap.
+- **Style:** Flux inputs with a contour border on white, the label tight above the control, and an 8px gap; help text goes below the control and optional fields say "(valfritt)" in the label. On public pages the inputs are 48px pills (see Shapes).
 - **Focus:** the border turns accent, with a 3px accent ring at 25% opacity instead of the outline.
 - **Error:** danger text from Flux's error slot.
 
@@ -209,6 +335,8 @@ Löpning.se's wordmark is an inline SVG drawn in `currentColor`, with `role="img
 - **Do** keep Löpning.se's own identity in the admin, adding the organizer's logo and accent.
 - **Do** write dates, times and money through Format and Money: "torsdag 31 december 2026", "kl 10.00", "300 kr".
 - **Do** write warm, plain Swedish: say du, use short sentences, and leave out technical words, hype and exclamation marks.
+- **Do** draw everything that acts on a public page in the organizer's brand (brand / brand-contrast), and everything else in ink on white or ground.
+- **Do** set public page titles in the display role (38px / 52px, weight 400, -0.02em) and step headings in the section role (21px / 26px, weight 500).
 - **Do** keep targets at least 44px high on race-day views, and keep every page working at 320px width and 200% zoom.
 
 ### Don't:
