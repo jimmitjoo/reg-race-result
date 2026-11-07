@@ -39,6 +39,11 @@ new class extends Component {
     public string $startTime = '';
     public int $minTimeMinutes = 0;
 
+    // What is open for editing; the page shows the forms only when asked.
+    public ?int $pricesOpen = null;
+    public bool $addingRace = false;
+    public ?int $addingClassTo = null;
+
     public function mount(): void
     {
         $this->city = $this->event->city ?? '';
@@ -48,31 +53,45 @@ new class extends Component {
         $this->raceId = $this->event->races()->ordered()->value('id');
     }
 
-    /** One step up (-1) or down (1) among the event's races. */
+    /** A race dragged to a place (0 first) among the event's races. */
+    public function sortRace(int $id, int $position): void
+    {
+        $this->place($this->event->races()->ordered()->get(), $id, fn () => $position);
+    }
+
+    /** A class dragged to a place (0 first) among its race's classes. */
+    public function sortClass(int $id, int $position): void
+    {
+        $this->place($this->siblings($id), $id, fn () => $position);
+    }
+
+    /** One step up (-1) or down (1), for the arrows: the way without dragging. */
     public function moveRace(int $id, int $step): void
     {
-        $this->renumber($this->event->races()->ordered()->get(), $id, $step);
-        $this->renumberClasses();
+        $this->place($this->event->races()->ordered()->get(), $id, fn ($at) => $at + $step);
     }
 
-    /** One step up (-1) or down (1) among its race's classes. */
     public function moveClass(int $id, int $step): void
     {
-        $class = $this->event->raceClasses()->findOrFail($id);
-        $this->renumber(\App\Support\Format::classOrder($this->event->raceClasses()->where('race_id', $class->race_id)->get()), $id, $step);
-        $this->renumberClasses();
+        $this->place($this->siblings($id), $id, fn ($at) => $at + $step);
     }
 
-    private function renumber($items, int $id, int $step): void
+    private function siblings(int $classId)
     {
-        $items = $items->values()->all();
-        $at = collect($items)->search(fn ($item) => $item->id === $id);
+        $class = $this->event->raceClasses()->findOrFail($classId);
+
+        return \App\Support\Format::classOrder($this->event->raceClasses()->where('race_id', $class->race_id)->get());
+    }
+
+    private function place($items, int $id, Closure $to): void
+    {
+        $items = $items->values();
+        $at = $items->search(fn ($item) => $item->id === $id);
         abort_if($at === false, 404);
-        $to = max(0, min(count($items) - 1, $at + $step));
-        [$items[$at], $items[$to]] = [$items[$to], $items[$at]];
-        foreach ($items as $i => $item) {
-            $item->update(['position' => $i + 1]);
-        }
+        $moved = $items->pull($at);
+        $items->splice(max(0, min($items->count(), $to($at))), 0, [$moved]);
+        $items->values()->each(fn ($item, $i) => $item->update(['position' => $i + 1]));
+        $this->renumberClasses();
     }
 
     /** Classes numbered through the event race by race, so lists of every class keep the races' order. */
@@ -103,12 +122,34 @@ new class extends Component {
             $this->raceId = $races->first(fn ($race) => $race->raceClasses->isEmpty())->id;
         }
 
+        // How many run and what has come in, per class.
+        $counts = $this->event->registrations()->toBase()
+            ->selectRaw('registrations.race_class_id, count(*) as runners, sum(coalesce(registrations.price, 0)) as money')
+            ->groupBy('registrations.race_class_id')->get()->keyBy('race_class_id');
+        $today = now()->setTimezone($this->event->timezone)->startOfDay();
+        $prices = $races->mapWithKeys(fn ($race) => [$race->id => $race->priceAt(now())]);
+        $open = $races->filter(fn ($race) => $prices[$race->id] !== null);
+        $currency = $this->event->organizer->currency;
+
         return [
+            'counts' => $counts,
+            'prices' => $prices,
+            'runners' => $counts->sum('runners'),
+            'money' => $counts->sum('money'),
+            'days' => (int) $today->diffInDays($this->event->date->copy()->startOfDay(), false),
+            'openUntil' => $open->map(fn ($race) => $race->closesOn())->max(),
+            // What waits for the organizer, each with where to fix it.
+            'todo' => collect([
+                ...($prices->contains(fn ($price) => $price > 0) && ! $this->event->organizer->canTakePayments()
+                    ? [['text' => __('events.todo_stripe'), 'href' => route('payments.index')]] : []),
+                ...($prices->contains(fn ($price) => $price > 0) && ! $this->event->organizer->org_number
+                    ? [['text' => __('events.todo_receipt'), 'href' => route('payments.index')]] : []),
+            ]),
             'races' => $races,
             'setup' => $setup,
             'unpriced' => $unpriced,
             'unassigned' => $this->event->raceClasses()->whereNull('race_id')->orderBy('start_at')->get(),
-            'currency' => $this->event->organizer->currency,
+            'currency' => $currency,
             'districts' => App\Results\Districts::names(),
         ];
     }
@@ -128,6 +169,7 @@ new class extends Component {
             'weather' => $this->weather ?: null,
             'contact_email' => $this->contactEmail ?: null,
         ]);
+        $this->dispatch('details-saved');
     }
 
     // A cancelled or moved upplaga (#117).
@@ -153,6 +195,8 @@ new class extends Component {
     public function editRace(int $id): void
     {
         $race = $this->event->races()->findOrFail($id);
+        $this->cancel();
+        $this->cancelRace();
 
         $this->editingRaceId = $race->id;
         $this->raceName = $race->name;
@@ -165,9 +209,29 @@ new class extends Component {
         $this->championshipVeterans = $race->championship_veterans;
     }
 
+    public function addRace(): void
+    {
+        $this->cancel();
+        $this->cancelRace();
+        $this->addingRace = true;
+    }
+
+    public function addClass(int $raceId): void
+    {
+        $this->cancel();
+        $this->cancelRace();
+        $this->raceId = $this->event->races()->findOrFail($raceId)->id;
+        $this->addingClassTo = $raceId;
+    }
+
+    public function togglePrices(int $raceId): void
+    {
+        $this->pricesOpen = $this->pricesOpen === $raceId ? null : $raceId;
+    }
+
     public function cancelRace(): void
     {
-        $this->reset('editingRaceId', 'raceName', 'raceType', 'courseMeasurer', 'measuredOn', 'ageGroups', 'championship', 'championshipDistricts', 'championshipVeterans');
+        $this->reset('addingRace', 'editingRaceId', 'raceName', 'raceType', 'courseMeasurer', 'measuredOn', 'ageGroups', 'championship', 'championshipDistricts', 'championshipVeterans');
         $this->resetValidation();
     }
 
@@ -252,6 +316,8 @@ new class extends Component {
     public function editClass(int $id): void
     {
         $class = $this->event->raceClasses()->findOrFail($id);
+        $this->cancel();
+        $this->cancelRace();
 
         $this->editingId = $class->id;
         $this->raceId = $class->race_id;
@@ -266,7 +332,7 @@ new class extends Component {
 
     public function cancel(): void
     {
-        $this->reset('editingId', 'className', 'distanceMeters', 'teamSize', 'gender', 'timed', 'startTime', 'minTimeMinutes');
+        $this->reset('editingId', 'addingClassTo', 'className', 'distanceMeters', 'teamSize', 'gender', 'timed', 'startTime', 'minTimeMinutes');
         $this->resetValidation();
     }
 
@@ -302,36 +368,54 @@ new class extends Component {
     }
 }; ?>
 
-<div class="flex max-w-4xl flex-col gap-8">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-        <div>
-            <flux:heading size="xl">{{ $event->name }}</flux:heading>
-            <flux:subheading>{{ \App\Support\Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif · {{ $event->timezone }}</flux:subheading>
-            @unless ($setup)
-                <flux:button :href="route('events.registrations', $event)" icon="users" variant="primary" class="mt-3" wire:navigate>{{ __('registrations.title') }}</flux:button>
-            @endunless
+@php
+    use App\Support\Format;
+
+    $panel = 'rounded-panel border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900';
+    $raceRunners = fn ($race) => $race->raceClasses->sum(fn ($class) => $counts[$class->id]->runners ?? 0);
+    $tools = [
+        'before' => [
+            ['events.campaigns', 'ticket', __('campaigns.title')],
+            ['events.theme', 'paint-brush', __('theme.title')],
+            ['events.chips', 'tag', __('chips.title')],
+        ],
+        'raceday' => [
+            ['events.onsite', 'user-plus', __('onsite.title')],
+            ['events.start', 'flag', __('results.start')],
+            ['events.timing', 'clock', __('timing.title')],
+            ['events.missing', 'question-mark-circle', __('results.missing')],
+            ['events.results', 'trophy', __('results.title')],
+            ['events.uncollected', 'squares-2x2', __('results.uncollected')],
+            ['events.prizes', 'gift', __('prizes.title')],
+        ],
+    ];
+@endphp
+
+<div class="flex max-w-5xl flex-col gap-8">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="min-w-0">
+            <flux:heading size="xl" level="1">{{ $event->name }}</flux:heading>
+            <flux:text class="mt-1">{{ Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</flux:text>
         </div>
         @unless ($setup)
-        <div class="flex flex-wrap gap-2">
-            <flux:button :href="route('events.campaigns', $event)" icon="ticket" wire:navigate>{{ __('campaigns.title') }}</flux:button>
-            <flux:button :href="route('events.theme', $event)" icon="paint-brush" wire:navigate>{{ __('theme.title') }}</flux:button>
-            <flux:button :href="route('events.chips', $event)" icon="tag" wire:navigate>{{ __('chips.title') }}</flux:button>
-            <flux:button :href="route('events.onsite', $event)" icon="user-plus" wire:navigate>{{ __('onsite.title') }}</flux:button>
-            <flux:button :href="route('events.timing', $event)" icon="clock">{{ __('timing.title') }}</flux:button>
-            <flux:button :href="route('events.start', $event)" icon="flag" wire:navigate>{{ __('results.start') }}</flux:button>
-            <flux:button :href="route('events.results', $event)" icon="trophy" wire:navigate>{{ __('results.title') }}</flux:button>
-            <flux:button :href="route('events.missing', $event)" icon="question-mark-circle" wire:navigate>{{ __('results.missing') }}</flux:button>
-            <flux:button :href="route('events.uncollected', $event)" icon="squares-2x2" wire:navigate>{{ __('results.uncollected') }}</flux:button>
-            <flux:button :href="route('events.prizes', $event)" icon="gift" wire:navigate>{{ __('prizes.title') }}</flux:button>
-        </div>
+            <div class="flex flex-wrap gap-2">
+                <flux:button :href="$event->publicUrl()" target="_blank" icon-trailing="arrow-top-right-on-square">{{ __('events.view_page') }}</flux:button>
+                <flux:button :href="route('events.registrations', $event)" icon="users" variant="primary" wire:navigate>{{ __('registrations.title') }}</flux:button>
+            </div>
         @endunless
-    </div>
+    </header>
+
+    @if ($event->cancelled_at)
+        <flux:callout variant="danger" icon="x-circle" :heading="__('events.cancelled')" :text="__('events.cancelled_help')" />
+    @elseif ($event->status() === 'moved')
+        <flux:callout icon="calendar" :heading="__('events.moved', ['from' => Format::date($event->moved_from), 'to' => Format::date($event->date)])" />
+    @endif
 
     @if ($setup)
         @php($current = array_search($setup, ['race', 'class', 'price']))
-        <section class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+        <section class="{{ $panel }} flex flex-col gap-4 p-6">
             <div>
-                <flux:heading size="lg">{{ __('events.setup_title') }}</flux:heading>
+                <flux:heading size="lg" level="2">{{ __('events.setup_title') }}</flux:heading>
                 <flux:subheading>{{ __('events.setup_progress', ['step' => $current + 1]) }}</flux:subheading>
             </div>
             <ol class="flex flex-col gap-3">
@@ -353,188 +437,228 @@ new class extends Component {
             </ol>
         </section>
     @else
-    <flux:input :value="$event->publicUrl()" readonly copyable :label="__('events.public_link')" />
-
-    <form wire:submit="saveDetails" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-        <flux:heading>{{ __('events.details') }}</flux:heading>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <flux:input wire:model="city" :label="__('events.city')" />
-            <flux:input wire:model="raceDirector" :label="__('events.race_director')" />
-            <flux:input wire:model="weather" :label="__('events.weather')" :placeholder="__('events.weather_example')" />
-            <flux:input wire:model="contactEmail" type="email" :label="__('events.contact_email')" />
-        </div>
-        <div><flux:button type="submit">{{ __('events.save') }}</flux:button></div>
-    </form>
-
-    <section class="flex flex-col gap-3 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-        <flux:heading>{{ __('events.status') }}</flux:heading>
-        @if ($event->cancelled_at)
-            <flux:callout variant="danger" icon="x-circle" :heading="__('events.cancelled')" :text="__('events.cancelled_help')" />
-            <div><flux:button wire:click="reinstate">{{ __('events.reinstate') }}</flux:button></div>
-        @else
-            @if ($event->status() === 'moved')
-                <flux:callout icon="calendar" :heading="__('events.moved', ['from' => \App\Support\Format::date($event->moved_from), 'to' => \App\Support\Format::date($event->date)])" />
-            @endif
-            <div class="flex flex-wrap items-end gap-3">
-                <flux:input wire:model="newDate" type="date" :label="__('events.new_date')" class="w-48" />
-                <flux:button wire:click="move">{{ __('events.move') }}</flux:button>
-                <flux:button variant="danger" wire:click="cancelEvent" wire:confirm="{{ __('events.cancel_confirm') }}" class="ms-auto">{{ __('events.cancel_event') }}</flux:button>
+        {{-- The state of the upplaga at a glance: is it open, who has come, what has come in, how long is left. --}}
+        <section aria-labelledby="overview" class="{{ $panel }}">
+            <h2 id="overview" class="sr-only">{{ __('events.overview') }}</h2>
+            <dl class="grid grid-cols-2 lg:grid-cols-4">
+                <div class="flex flex-col gap-1 p-5">
+                    <dt class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('events.overview_registration') }}</dt>
+                    @if ($event->cancelled_at)
+                        <dd class="text-xl font-medium">{{ __('events.state_closed') }}</dd>
+                        <dd class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('events.cancelled') }}</dd>
+                    @elseif ($openUntil)
+                        <dd class="flex items-center gap-2 text-xl font-medium"><span class="size-2 rounded-full bg-moss" aria-hidden="true"></span>{{ __('events.state_open') }}</dd>
+                        <dd class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('events.open_until', ['date' => Format::shortDate($openUntil)]) }}</dd>
+                    @else
+                        <dd class="text-xl font-medium">{{ __('events.state_closed') }}</dd>
+                    @endif
+                </div>
+                <div class="flex flex-col gap-1 border-zinc-200 p-5 max-lg:border-s lg:border-s dark:border-zinc-700">
+                    <dt class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('events.overview_runners') }}</dt>
+                    <dd class="text-xl font-medium tabular-nums">{{ $runners }}</dd>
+                    <dd class="text-sm text-zinc-600 dark:text-zinc-300"><flux:link :href="route('events.registrations', $event)" wire:navigate>{{ __('events.see_registrations') }}</flux:link></dd>
+                </div>
+                <div class="flex flex-col gap-1 border-zinc-200 p-5 max-lg:border-t lg:border-s dark:border-zinc-700">
+                    <dt class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('events.overview_money') }}</dt>
+                    <dd class="text-xl font-medium tabular-nums">{{ Money::format($money, $currency) }}</dd>
+                    <dd class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('events.money_help') }}</dd>
+                </div>
+                <div class="flex flex-col gap-1 border-zinc-200 p-5 max-lg:border-s max-lg:border-t lg:border-s dark:border-zinc-700">
+                    <dt class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('events.overview_day') }}</dt>
+                    <dd class="text-xl font-medium">{{ $days === 0 ? __('events.today') : ($days > 0 ? trans_choice('events.days_left', $days) : trans_choice('events.days_ago', -$days)) }}</dd>
+                    <dd class="text-sm text-zinc-600 dark:text-zinc-300">{{ Format::shortDate($event->date) }}</dd>
+                </div>
+            </dl>
+            <div class="border-t border-zinc-200 p-5 dark:border-zinc-700">
+                <flux:input :value="$event->publicUrl()" readonly copyable :label="__('events.public_link')" />
             </div>
-            <flux:text class="text-sm">{{ __('events.status_help') }}</flux:text>
+        </section>
+
+        @if ($todo->isNotEmpty())
+            <flux:callout color="amber" icon="clipboard-document-list">
+                <flux:callout.heading>{{ __('events.todo') }}</flux:callout.heading>
+                <flux:callout.text>
+                    <ul class="flex flex-col gap-1">
+                        @foreach ($todo as $item)
+                            <li><flux:link :href="$item['href']" wire:navigate>{{ $item['text'] }}</flux:link></li>
+                        @endforeach
+                    </ul>
+                </flux:callout.text>
+            </flux:callout>
+        @endif
+
+        <nav aria-label="{{ __('events.tools') }}" class="{{ $panel }} grid gap-6 p-5 md:grid-cols-[1fr_2fr]">
+            @foreach ($tools as $group => $links)
+                <div>
+                    <h2 class="px-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ __("events.tools_{$group}") }}</h2>
+                    <ul class="mt-1 grid {{ $group === 'raceday' ? 'sm:grid-cols-2' : '' }}">
+                        @foreach ($links as [$route, $icon, $label])
+                            <li>
+                                <a href="{{ route($route, $event) }}" @if ($route !== 'events.timing') wire:navigate @endif
+                                    class="flex h-11 items-center gap-3 rounded-field px-2 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                    <flux:icon :name="$icon" variant="outline" class="size-5 text-zinc-500 dark:text-zinc-400" />{{ $label }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endforeach
+        </nav>
+    @endif
+
+    <section aria-labelledby="races" class="flex flex-col gap-4">
+        <div class="flex items-center justify-between gap-4">
+            <flux:heading size="xl" level="2" id="races" class="!text-xl">{{ __('events.races_and_classes') }}</flux:heading>
+            @unless ($setup || $addingRace)
+                <flux:button icon="plus" size="sm" wire:click="addRace">{{ __('events.new_race') }}</flux:button>
+            @endunless
+        </div>
+
+        <div wire:sort="sortRace" class="flex flex-col gap-4">
+        @foreach ($races as $race)
+            @php($priceOpen = $pricesOpen === $race->id || ($setup === 'price' && $unpriced($race)))
+            @php($classFormHere = ($editingId && $race->raceClasses->contains('id', $editingId)) || $addingClassTo === $race->id || ($setup === 'class' && ! $editingId && $raceId === $race->id))
+            <article wire:key="race-{{ $race->id }}" wire:sort:item="{{ $race->id }}" id="race-{{ $race->id }}" class="{{ $panel }}">
+                @if ($editingRaceId === $race->id)
+                    @include('livewire.events.race-form')
+                @else
+                    <header class="flex flex-wrap items-center gap-x-3 gap-y-1 ps-2 pe-5 pt-4">
+                        @include('livewire.events.drag-handle')
+                        <h3 class="text-base font-semibold">{{ $race->name }}</h3>
+                        <span class="text-sm text-zinc-600 dark:text-zinc-300">{{ $race->type }}@if ($race->championship) · {{ $race->championship }}{{ $race->championship_veterans ? ' / V'.$race->championship : '' }}@endif @if ($race->course_measurer) · {{ __('events.measured_by', ['name' => $race->course_measurer, 'date' => $race->measured_on?->toDateString()]) }}@endif</span>
+                        <div class="ms-auto flex items-center gap-1">
+                            <span class="me-2 text-sm tabular-nums text-zinc-600 dark:text-zinc-300">{{ trans_choice('events.runners', $raceRunners($race)) }}</span>
+                            <flux:button size="sm" variant="ghost" icon="chevron-up" wire:click="moveRace({{ $race->id }}, -1)" :disabled="$loop->first" :aria-label="__('events.move_up', ['name' => $race->name])" />
+                            <flux:button size="sm" variant="ghost" icon="chevron-down" wire:click="moveRace({{ $race->id }}, 1)" :disabled="$loop->last" :aria-label="__('events.move_down', ['name' => $race->name])" />
+                            <flux:button size="sm" variant="ghost" wire:click="editRace({{ $race->id }})">{{ __('events.edit') }}</flux:button>
+                        </div>
+                    </header>
+                @endif
+
+                {{-- The prices in one line; the forms only when asked for. --}}
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
+                    @php($price = $prices[$race->id])
+                    @if ($price > 0 && ! $event->organizer->canTakePayments())
+                        <flux:badge color="amber" size="sm">{{ __('events.registration_needs_stripe') }}</flux:badge>
+                    @elseif ($price !== null)
+                        <flux:badge color="green" size="sm">{{ __('events.registration_open', ['date' => Format::shortDate($race->closesOn()), 'price' => Money::format($price, $currency)]) }}</flux:badge>
+                    @elseif ($race->priceSteps->isNotEmpty())
+                        <flux:badge color="zinc" size="sm">{{ __('events.registration_ended', ['date' => Format::shortDate($race->closesOn())]) }}</flux:badge>
+                    @else
+                        <flux:badge color="amber" size="sm">{{ __('events.registration_closed') }}</flux:badge>
+                    @endif
+                    <span class="text-sm tabular-nums text-zinc-600 dark:text-zinc-300">
+                        {{ $race->priceSteps->map(fn ($step) => Money::format($step->amount, $currency).' '.mb_strtolower(__('events.price_until', ['date' => Format::shortDate($step->until)])))
+                            ->when($race->onsite_price !== null, fn ($line) => $line->push(__('events.onsite_short', ['price' => Money::format($race->onsite_price, $currency)])))->implode(' · ') }}
+                    </span>
+                    @unless ($setup === 'price' && $unpriced($race))
+                        <flux:button size="sm" variant="ghost" class="ms-auto" icon-trailing="{{ $priceOpen ? 'chevron-up' : 'chevron-down' }}" wire:click="togglePrices({{ $race->id }})" aria-expanded="{{ $priceOpen ? 'true' : 'false' }}">{{ __('events.edit_prices') }}</flux:button>
+                    @endunless
+                </div>
+
+                @if ($priceOpen)
+                    <div class="mx-5 mb-4 flex flex-col gap-3 rounded-field bg-zinc-50 p-4 dark:bg-zinc-800">
+                        @if ($price === null && $race->priceSteps->isEmpty())
+                            <flux:text class="text-sm">{{ __('events.free_help') }}</flux:text>
+                        @endif
+                        @foreach ($race->priceSteps as $step)
+                            <div wire:key="step-{{ $step->id }}" class="flex items-center gap-4 text-sm">
+                                <span class="min-w-40">{{ __('events.price_until', ['date' => Format::shortDate($step->until)]) }}</span>
+                                <span class="font-semibold tabular-nums">{{ Money::format($step->amount, $currency) }}</span>
+                                <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removePriceStep({{ $step->id }})" :aria-label="__('events.remove')" />
+                            </div>
+                        @endforeach
+                        @if ($race->onsite_price !== null)
+                            <div class="flex items-center gap-4 text-sm">
+                                <span class="min-w-40">{{ __('events.onsite_price') }}</span>
+                                <span class="font-semibold tabular-nums">{{ Money::format($race->onsite_price, $currency) }}</span>
+                                <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeOnsitePrice({{ $race->id }})" :aria-label="__('events.remove')" />
+                            </div>
+                        @endif
+                        <div class="flex flex-wrap items-end gap-2">
+                            <flux:input wire:model="priceUntil.{{ $race->id }}" type="date" size="sm" :label="__('events.price_until_label')" />
+                            <flux:input wire:model="priceAmount.{{ $race->id }}" size="sm" :label="__('events.amount', ['currency' => $currency])" />
+                            <flux:button size="sm" wire:click="addPriceStep({{ $race->id }})">{{ __('events.add_price_step') }}</flux:button>
+                        </div>
+                        <div class="flex flex-wrap items-end gap-2">
+                            <flux:input wire:model="onsiteAmount.{{ $race->id }}" size="sm" :label="__('events.onsite_price_label', ['currency' => $currency])" :description="__('events.onsite_help')" />
+                            <flux:button size="sm" wire:click="saveOnsitePrice({{ $race->id }})">{{ __('events.save') }}</flux:button>
+                        </div>
+                    </div>
+                @endif
+
+                @if ($race->raceClasses->isNotEmpty())
+                    @include('livewire.events.class-table', ['classes' => Format::classOrder($race->raceClasses), 'caption' => __('events.classes_in', ['race' => $race->name])])
+                @elseif ($setup !== 'class')
+                    <flux:text class="border-t border-zinc-200 px-5 py-4 dark:border-zinc-700">{{ __('events.no_classes') }}</flux:text>
+                @endif
+
+                @if ($classFormHere)
+                    @include('livewire.events.class-form')
+                @elseif (! $setup)
+                    <div class="border-t border-zinc-200 px-3 py-2 dark:border-zinc-700">
+                        <flux:button size="sm" variant="ghost" icon="plus" wire:click="addClass({{ $race->id }})">{{ __('events.new_class') }}</flux:button>
+                    </div>
+                @endif
+            </article>
+        @endforeach
+        </div>
+
+        @if ($unassigned->isNotEmpty())
+            <article class="{{ $panel }}">
+                @include('livewire.events.class-table', ['classes' => $unassigned, 'caption' => __('events.classes')])
+                @if ($editingId && $unassigned->contains('id', $editingId))
+                    @include('livewire.events.class-form')
+                @endif
+            </article>
+        @endif
+
+        @if ($setup === 'race' || $addingRace)
+            <div class="{{ $panel }}">@include('livewire.events.race-form')</div>
         @endif
     </section>
-    @endif
 
-    @foreach ($races as $race)
-        <section wire:key="race-{{ $race->id }}" class="flex flex-col gap-3">
-            <div class="flex items-center gap-3">
-                <flux:heading size="lg">{{ $race->name }}</flux:heading>
-                <span class="text-sm text-zinc-500">{{ $race->type }}@if ($race->championship) · {{ $race->championship }}{{ $race->championship_veterans ? ' / V'.$race->championship : '' }}@endif @if ($race->course_measurer) · {{ __('events.measured_by', ['name' => $race->course_measurer, 'date' => $race->measured_on?->toDateString()]) }}@endif</span>
-                <div class="ms-auto flex items-center">
-                    <flux:button size="sm" variant="ghost" icon="chevron-up" wire:click="moveRace({{ $race->id }}, -1)" :disabled="$loop->first" :aria-label="__('events.move_up', ['name' => $race->name])" />
-                    <flux:button size="sm" variant="ghost" icon="chevron-down" wire:click="moveRace({{ $race->id }}, 1)" :disabled="$loop->last" :aria-label="__('events.move_down', ['name' => $race->name])" />
-                    <flux:button size="sm" variant="ghost" wire:click="editRace({{ $race->id }})">{{ __('events.edit') }}</flux:button>
-                </div>
-            </div>
-
-            @if (! $setup || $setup === 'price' && $unpriced($race))
-            <div class="flex flex-col gap-2 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-                <flux:heading size="sm">{{ __('events.prices') }}</flux:heading>
-                @php($price = $race->priceAt(now()))
-                @if ($price > 0 && ! $event->organizer->canTakePayments())
-                    <flux:badge color="amber" class="self-start">{{ __('events.registration_needs_stripe') }}</flux:badge>
-                @elseif ($price !== null)
-                    <flux:badge color="green" class="self-start">{{ __('events.registration_open', ['date' => \App\Support\Format::shortDate($race->priceSteps->last()->until), 'price' => Money::format($price, $currency)]) }}</flux:badge>
-                @elseif ($race->priceSteps->isNotEmpty())
-                    <flux:badge color="zinc" class="self-start">{{ __('events.registration_ended', ['date' => \App\Support\Format::shortDate($race->priceSteps->last()->until)]) }}</flux:badge>
-                @else
-                    <flux:badge color="amber" class="self-start">{{ __('events.registration_closed') }}</flux:badge>
-                    <flux:text class="text-sm">{{ __('events.free_help') }}</flux:text>
-                @endif
-                @foreach ($race->priceSteps as $step)
-                    <div wire:key="step-{{ $step->id }}" class="flex items-center gap-4 text-sm">
-                        <span class="min-w-48">{{ __('events.price_until', ['date' => \App\Support\Format::shortDate($step->until)]) }}</span>
-                        <span class="font-semibold">{{ Money::format($step->amount, $currency) }}</span>
-                        <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removePriceStep({{ $step->id }})" :aria-label="__('events.remove')" />
+    @unless ($setup)
+        {{-- Rarely needed: kept closed. wire:ignore.self keeps a details open across Livewire updates. --}}
+        <section class="flex flex-col gap-3">
+            <details wire:ignore.self class="{{ $panel }} group">
+                <summary class="flex min-h-14 cursor-pointer list-none items-center gap-3 px-5 py-3">
+                    <span class="font-medium">{{ __('events.details') }}</span>
+                    <span class="truncate text-sm text-zinc-600 dark:text-zinc-300">{{ collect([$event->city, $event->race_director])->filter()->implode(' · ') ?: __('events.details_empty') }}</span>
+                    <flux:icon.chevron-down class="ms-auto size-5 shrink-0 text-zinc-500 transition group-open:rotate-180" />
+                </summary>
+                <form wire:submit="saveDetails" class="flex flex-col gap-4 border-t border-zinc-200 p-5 dark:border-zinc-700">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <flux:input wire:model="city" :label="__('events.city')" />
+                        <flux:input wire:model="raceDirector" :label="__('events.race_director')" />
+                        <flux:input wire:model="weather" :label="__('events.weather')" :placeholder="__('events.weather_example')" />
+                        <flux:input wire:model="contactEmail" type="email" :label="__('events.contact_email')" />
                     </div>
-                @endforeach
-                @if ($race->onsite_price !== null)
-                    <div class="flex items-center gap-4 text-sm">
-                        <span class="min-w-48">{{ __('events.onsite_price') }}</span>
-                        <span class="font-semibold">{{ Money::format($race->onsite_price, $currency) }}</span>
-                        <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeOnsitePrice({{ $race->id }})" :aria-label="__('events.remove')" />
+                    <div class="flex items-center gap-3">
+                        <flux:button type="submit">{{ __('events.save') }}</flux:button>
+                        <x-action-message on="details-saved">{{ __('events.saved') }}</x-action-message>
                     </div>
-                @endif
-                <div class="flex flex-wrap items-end gap-2">
-                    <flux:input wire:model="priceUntil.{{ $race->id }}" type="date" size="sm" :label="__('events.price_until_label')" />
-                    <flux:input wire:model="priceAmount.{{ $race->id }}" size="sm" :label="__('events.amount', ['currency' => $currency])" />
-                    <flux:button size="sm" wire:click="addPriceStep({{ $race->id }})">{{ __('events.add_price_step') }}</flux:button>
-                </div>
-                <div class="flex flex-wrap items-end gap-2">
-                    <flux:input wire:model="onsiteAmount.{{ $race->id }}" size="sm" :label="__('events.onsite_price_label', ['currency' => $currency])" :description="__('events.onsite_help')" />
-                    <flux:button size="sm" wire:click="saveOnsitePrice({{ $race->id }})">{{ __('events.save') }}</flux:button>
-                </div>
-            </div>
-            @endif
+                </form>
+            </details>
 
-            @forelse (\App\Support\Format::classOrder($race->raceClasses) as $class)
-                @include('livewire.events.class-row')
-            @empty
-                @unless ($setup === 'class')
-                    <flux:text>{{ __('events.no_classes') }}</flux:text>
-                @endunless
-            @endforelse
+            <details wire:ignore.self class="{{ $panel }} group">
+                <summary class="flex min-h-14 cursor-pointer list-none items-center gap-3 px-5 py-3">
+                    <span class="font-medium">{{ __('events.status') }}</span>
+                    <flux:icon.chevron-down class="ms-auto size-5 shrink-0 text-zinc-500 transition group-open:rotate-180" />
+                </summary>
+                <div class="flex flex-col gap-3 border-t border-zinc-200 p-5 dark:border-zinc-700">
+                    @if ($event->cancelled_at)
+                        <div><flux:button wire:click="reinstate">{{ __('events.reinstate') }}</flux:button></div>
+                    @else
+                        <div class="flex flex-wrap items-end gap-3">
+                            <flux:input wire:model="newDate" type="date" :label="__('events.new_date')" class="w-48" />
+                            <flux:button wire:click="move">{{ __('events.move') }}</flux:button>
+                            <flux:button variant="danger" wire:click="cancelEvent" wire:confirm="{{ __('events.cancel_confirm') }}" class="ms-auto">{{ __('events.cancel_event') }}</flux:button>
+                        </div>
+                        <flux:text class="text-sm">{{ __('events.status_help') }}</flux:text>
+                    @endif
+                </div>
+            </details>
         </section>
-    @endforeach
-
-    @foreach ($unassigned as $class)
-        @include('livewire.events.class-row')
-    @endforeach
-
-    @if (! $setup || $setup === 'race' || $editingRaceId)
-    <form wire:submit="saveRace" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-        <flux:heading>{{ $editingRaceId ? __('events.edit_race') : __('events.new_race') }}</flux:heading>
-        <flux:input wire:model="raceName" :label="__('events.race_name')" :placeholder="__('events.race_name_example')" />
-        <div class="grid gap-4 sm:grid-cols-3">
-            <flux:select wire:model="raceType" :label="__('events.race_type')">
-                @foreach (App\Models\Race::TYPES as $type)
-                    <option value="{{ $type }}">{{ $type }}</option>
-                @endforeach
-            </flux:select>
-            <flux:input wire:model="courseMeasurer" :label="__('events.course_measurer')" />
-            <flux:input wire:model="measuredOn" type="date" :label="__('events.measured_on')" />
-        </div>
-        <flux:text class="text-sm">{{ __('events.measurement_help') }}</flux:text>
-        <flux:checkbox wire:model="ageGroups" :label="__('events.age_groups')" :description="__('events.age_groups_help')" />
-        <flux:select wire:model.live="championship" :label="__('events.championship')">
-            <option value="">{{ __('events.championship_none') }}</option>
-            <option value="DM">{{ __('events.championship_dm') }}</option>
-            <option value="SM">{{ __('events.championship_sm') }}</option>
-        </flux:select>
-        @if ($championship === 'DM')
-            <flux:checkbox.group wire:model="championshipDistricts" :label="__('events.championship_districts')" :description="__('events.championship_districts_help')">
-                <div class="grid grid-cols-2 gap-1 sm:grid-cols-3">
-                    @foreach ($districts as $district)
-                        <flux:checkbox :value="$district" :label="$district" />
-                    @endforeach
-                </div>
-            </flux:checkbox.group>
-        @endif
-        @if ($championship)
-            <flux:checkbox wire:model="championshipVeterans" :label="__('events.championship_veterans', ['name' => 'V'.$championship])" />
-        @endif
-        <div class="flex gap-2">
-            <flux:button type="submit">{{ $editingRaceId ? __('events.save') : __('events.create') }}</flux:button>
-            @if ($editingRaceId)
-                <flux:button wire:click="cancelRace">{{ __('events.cancel') }}</flux:button>
-            @endif
-        </div>
-    </form>
-    @endif
-
-    @if (! $setup || $setup === 'class' || $editingId)
-    <form wire:submit="saveClass" class="flex flex-col gap-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-        @if ($setup === 'class' && ! $editingId)
-            {{-- The race is the one that still lacks classes, see with(). --}}
-            <flux:heading>{{ __('events.new_class_in', ['race' => $races->firstWhere('id', $raceId)->name]) }}</flux:heading>
-        @else
-            <flux:heading>{{ $editingId ? __('events.edit_class') : __('events.new_class') }}</flux:heading>
-        @endif
-
-        <div class="grid gap-4 sm:grid-cols-2">
-            @unless ($setup === 'class' && ! $editingId)
-                <flux:select wire:model="raceId" :label="__('events.race')" :placeholder="__('events.choose_race')">
-                    @foreach ($races as $race)
-                        <option value="{{ $race->id }}">{{ $race->name }}</option>
-                    @endforeach
-                </flux:select>
-            @endunless
-            <flux:input wire:model="className" :label="__('events.class_name')" :placeholder="__('events.class_name_example')" />
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-3">
-            <flux:input wire:model="startTime" :label="__('events.start_time')" placeholder="10:00:00" />
-            <flux:input wire:model="distanceMeters" type="number" min="1" :label="__('events.distance_meters')" />
-            <flux:input wire:model="teamSize" type="number" min="2" max="20" :label="__('events.team_size')" :description="__('events.team_size_help')" />
-            <flux:select wire:model="gender" :label="__('events.gender')">
-                <option value="">{{ __('events.gender_any') }}</option>
-                <option value="M">{{ __('events.gender_m') }}</option>
-                <option value="K">{{ __('events.gender_k') }}</option>
-            </flux:select>
-        </div>
-
-        <flux:checkbox wire:model.live="timed" :label="__('events.timed')" />
-
-        <div x-show="$wire.timed">
-            <flux:input wire:model="minTimeMinutes" type="number" min="0" :label="__('events.min_time_minutes')" :description="__('events.min_time_help')" />
-        </div>
-
-        <div class="flex gap-2">
-            <flux:button type="submit" variant="primary">{{ __('events.save') }}</flux:button>
-            @if ($editingId)
-                <flux:button wire:click="cancel">{{ __('events.cancel') }}</flux:button>
-            @endif
-        </div>
-    </form>
-    @endif
+    @endunless
 </div>

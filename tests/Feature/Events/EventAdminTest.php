@@ -4,6 +4,7 @@ use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\Race;
 use App\Models\RaceClass;
+use App\Models\Registration;
 use App\Models\User;
 use App\Support\Format;
 use App\Support\Money;
@@ -293,7 +294,7 @@ it('rejects a start time like 25:00 instead of failing', function () {
 it('shows the public link and whether registration is open or ended per race', function () {
     $this->travelTo('2026-11-15 12:00:00');
     $user = organizerUser();
-    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id, 'date' => '2026-12-31']);
     $open = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet']);
     $open->priceSteps()->createMany([['until' => '2026-11-30', 'amount' => 25000], ['until' => '2026-12-30', 'amount' => 30000]]);
     $ended = Race::factory()->for($event)->create(['name' => 'Gamla loppet']);
@@ -365,6 +366,32 @@ it('lets the organizer put races and classes in their own order, which every lis
         ->and($event->races()->ordered()->pluck('name')->all())->toBe(['Sylvesterloppet', 'Lilla Sylvesterloppet']);
     $this->get('/'.$event->organizer->slug.'/sylvesterloppet-2026/start-list')->assertSeeInOrder(['10 km Män', '10 km Kvinnor', 'P7 1 km', 'P10 1 km']);
 
+    // Dragged: P10 to the top of its race, and the small race back first.
+    Volt::test('events.show', ['event' => $event])->call('sortClass', $p10->id, 0)->call('sortRace', $kids->id, 0);
+    expect(Format::classOrder($event->raceClasses()->get())->pluck('name')->all())->toBe(['P10 1 km', 'P7 1 km', '10 km Män', '10 km Kvinnor']);
+
     // Another organizer's class cannot be moved.
     Volt::test('events.show', ['event' => $event])->call('moveClass', RaceClass::factory()->create()->id, 1)->assertNotFound();
+});
+
+it('gives an overview: open until when, how many have come, what has come in, the days left and what waits', function () {
+    $this->travelTo('2026-11-15 12:00:00');
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id, 'date' => '2026-12-31']);
+    $race = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet']);
+    $race->priceSteps()->create(['until' => '2026-12-29', 'amount' => 30000]);
+    $class = RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => '10 km Män']);
+    Registration::factory()->count(2)->create(['race_class_id' => $class->id, 'price' => 30000, 'paid_at' => now()]);
+    Registration::factory()->create(['race_class_id' => $class->id, 'price' => 30000, 'paid_at' => null]);
+
+    $this->actingAs($user)->get(route('events.show', $event))
+        ->assertSee(__('events.open_until', ['date' => '29 dec 2026']))
+        ->assertSee(trans_choice('events.runners', 2))
+        ->assertSee(Money::format(60000, 'SEK'))
+        ->assertSee(trans_choice('events.days_left', 46))
+        ->assertDontSee(__('events.todo_stripe'))
+        ->assertSee(__('events.todo_receipt'));
+
+    $event->organizer->update(['stripe_charges_enabled' => false, 'org_number' => '802000-1239']);
+    $this->get(route('events.show', $event))->assertSee(__('events.todo_stripe'))->assertDontSee(__('events.todo_receipt'));
 });
