@@ -68,7 +68,7 @@ new class extends Component {
                     @if ($bib === null)
                         <div class="h-11 w-16"></div>
                     @elseif (in_array($bib, $locked, true))
-                        <div class="flex h-11 w-16 items-center justify-center rounded-md bg-zinc-100 font-mono text-zinc-400 dark:bg-zinc-800">{{ $bib }}</div>
+                        <div class="flex h-11 w-16 items-center justify-center rounded-md bg-zinc-100 font-mono text-zinc-600 dark:bg-zinc-800">{{ $bib }}</div>
                     @else
                         <button type="button" wire:click="toggle({{ $bib }})" wire:key="bib-{{ $bib }}"
                                 class="h-11 w-16 rounded-md border font-mono text-lg {{ in_array($bib, $marked, true) ? 'border-danger bg-danger text-white' : 'border-zinc-300 bg-white hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900' }}">

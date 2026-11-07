@@ -276,7 +276,7 @@ new class extends Component {
             </div>
             <ol class="flex flex-col gap-3">
                 @foreach (['race', 'class', 'price'] as $i => $key)
-                    <li class="flex gap-3 {{ $i > $current ? 'text-zinc-400' : '' }}">
+                    <li class="flex gap-3 {{ $i > $current ? 'text-zinc-500' : '' }}">
                         @if ($i < $current)
                             <flux:icon.check-circle variant="solid" class="shrink-0 text-moss" />
                         @else
