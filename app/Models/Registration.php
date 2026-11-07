@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Casts\UtcDateTime;
 use App\Mail\RegistrationReceipt;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,16 +38,30 @@ class Registration extends Model
         return $this->team_name ?? ($this->hidden_at ? __('privacy.anonymous') : $this->displayName());
     }
 
-    /** Webhook, reconciliation and the confirmation page can race; only the one that marks it paid sends the receipt. */
+    /**
+     * Marks the whole order paid (#109), with the payment intent on every registration so that a refund finds them all.
+     * Webhook, reconciliation and the confirmation page can race; only the one that marks it paid sends the one receipt.
+     */
     public function markPaid(string $method, ?string $paymentIntent = null): void
     {
-        $marked = static::whereKey($this->id)->whereNull('paid_at')
+        $marked = $this->orderQuery()->whereNull('paid_at')
             ->update(['paid_at' => now(), 'payment_method' => $method, 'stripe_payment_intent_id' => $paymentIntent ?? $this->stripe_payment_intent_id]);
         $this->refresh();
 
         if ($marked && $this->email) {
             Mail::to($this->email)->send(new RegistrationReceipt($this));
         }
+    }
+
+    /** The registrations made and paid together with this one, in the order they were filled in. */
+    public function order(): Collection
+    {
+        return $this->orderQuery()->with('raceClass.race')->orderBy('id')->get();
+    }
+
+    private function orderQuery(): Builder
+    {
+        return $this->order_ref ? static::where('order_ref', $this->order_ref) : static::whereKey($this->id);
     }
 
     public function confirmationUrl(): string

@@ -57,6 +57,6 @@ it('tells the runner the age group in the registration form', function () {
 
     Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'olands-marathon-2026'])
         ->assertDontSee(__('registration.your_age_group', ['group' => 'M45']))
-        ->set('raceClassId', (string) $class->id)->set('gender', 'M')->set('birthDate', '1980-05-01')
+        ->set('participants.0.raceClassId', (string) $class->id)->set('participants.0.gender', 'M')->set('participants.0.birthDate', '1980-05-01')
         ->assertSee(__('registration.your_age_group', ['group' => 'M45']));
 });
