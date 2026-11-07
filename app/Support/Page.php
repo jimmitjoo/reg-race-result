@@ -16,7 +16,7 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  */
 final class Page
 {
-    public const TYPES = ['hero', 'text', 'image', 'upcoming', 'earlier', 'contact'];
+    public const TYPES = ['hero', 'text', 'image', 'form', 'upcoming', 'earlier', 'contact'];
 
     /** The looks of the hero; the full ones reach the window's edges, their content kept in the page's column. */
     public const HEROES = ['brand', 'brand-full', 'image-full', 'split', 'split-full', 'centered', 'minimal', 'image-card'];
@@ -32,6 +32,7 @@ final class Page
         'image' => ['caption'],
         'upcoming' => ['heading'],
         'earlier' => ['heading'],
+        'form' => ['heading', 'intro'],
         'contact' => ['heading', 'name', 'email', 'phone'],
     ];
 
@@ -48,7 +49,8 @@ final class Page
             'text' => ['heading' => '', 'body' => ''],
             'image' => ['image' => null, 'alt' => '', 'caption' => '', 'size' => 'text', 'width' => null, 'height' => null],
             'upcoming', 'earlier' => ['heading' => ''],
-            'contact' => ['heading' => '', 'name' => '', 'email' => '', 'phone' => ''],
+            'form' => ['heading' => '', 'intro' => '', 'form_id' => null],
+            'contact' => ['heading' => '', 'name' => '', 'email' => '', 'phone' => '', 'form_id' => null],
         };
     }
 
@@ -80,16 +82,17 @@ final class Page
             "{$key}.*.name" => $text(120),
             "{$key}.*.email" => ['nullable', 'email', 'max:255'],
             "{$key}.*.phone" => $text(40),
+            "{$key}.*.form_id" => ['nullable', 'integer'],
         ];
     }
 
     /**
      * What stops publishing (#115): what would make the page inaccessible or leave a block empty,
-     * each with the block it is in.
+     * each with the block it is in. $forms are the ids of the organizer's forms.
      *
      * @return list<array{id: string, problem: string}>
      */
-    public static function problems(array $blocks): array
+    public static function problems(array $blocks, array $forms = []): array
     {
         $problems = [];
         foreach ($blocks as $block) {
@@ -98,7 +101,8 @@ final class Page
                 'hero' => [empty($block['image']) ? (in_array($block['variant'], self::IMAGE_HEROES, true) ? 'no_image' : null) : ($blank('alt') ? 'alt' : null)],
                 'image' => [empty($block['image']) ? 'no_image' : ($blank('alt') ? 'alt' : null)],
                 'text' => [$blank('heading', 'body') ? 'empty' : null, self::vagueLink((string) $block['body']) ? 'link_text' : null],
-                'contact' => [$blank('name', 'email', 'phone') ? 'empty' : null],
+                'form' => [in_array((int) $block['form_id'], $forms, true) ? null : 'no_form'],
+                'contact' => [$blank('name', 'email', 'phone') && ! in_array((int) $block['form_id'], $forms, true) ? 'empty' : null],
                 default => [],
             };
             foreach (array_filter($found) as $problem) {
@@ -133,6 +137,12 @@ final class Page
             ->blockElement('code')->blockElement('pre');
 
         return (new HtmlSanitizer($config))->sanitize(preg_replace('#<(/?)h[1-6]\b#i', '<$1h3', $html));
+    }
+
+    /** The organizer's forms the blocks can show, by id. */
+    public static function forms(Organizer $organizer): Collection
+    {
+        return $organizer->forms()->get()->keyBy('id');
     }
 
     /** The upplagor the blocks show: the coming ones in date order, earlier years per arrangemang. */

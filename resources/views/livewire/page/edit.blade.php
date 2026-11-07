@@ -151,7 +151,7 @@ new class extends Component {
 
     public function publish(): void
     {
-        if (Page::problems($this->blocks)) {
+        if (Page::problems($this->blocks, Page::forms($this->organizer())->keys()->all())) {
             return;
         }
         $this->validate(Page::rules());
@@ -172,12 +172,14 @@ new class extends Component {
     {
         $organizer = $this->organizer();
         $theme = Theme::for($organizer, null, true);
+        $forms = Page::forms($organizer);
 
         return [
             'organizer' => $organizer,
             'editor' => true,
             'selected' => collect($this->blocks)->firstWhere('id', $this->editing),
-            'problems' => collect(Page::problems($this->blocks))->groupBy('id'),
+            'problems' => collect(Page::problems($this->blocks, $forms->keys()->all()))->groupBy('id'),
+            'forms' => $forms,
             'unpublished' => $organizer->page_draft !== null,
             'css' => Theme::css($theme, '.theme-preview'),
             'logo' => Theme::logoUrl($theme),

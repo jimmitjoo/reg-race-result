@@ -16,6 +16,7 @@
                     <flux:navlist.item icon="flag" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>{{ __('events.title') }}</flux:navlist.item>
                     <flux:navlist.item icon="credit-card" :href="route('payments.index')" :current="request()->routeIs('payments.*')" wire:navigate>{{ __('payments.title') }}</flux:navlist.item>
                     <flux:navlist.item icon="document-text" :href="route('page.edit')" :current="request()->routeIs('page.*')" wire:navigate>{{ __('page.title') }}</flux:navlist.item>
+                    <flux:navlist.item icon="inbox" :href="route('forms.index')" :current="request()->routeIs('forms.*')" wire:navigate>{{ __('forms.title') }}</flux:navlist.item>
                     <flux:navlist.item icon="paint-brush" :href="route('theme.edit')" :current="request()->routeIs('theme.*')" wire:navigate>{{ __('theme.title') }}</flux:navlist.item>
                     <flux:navlist.item icon="globe-alt" :href="route('sites.index')" :current="request()->routeIs('sites.*')" wire:navigate>{{ __('sites.title') }}</flux:navlist.item>
                 </flux:navlist.group>

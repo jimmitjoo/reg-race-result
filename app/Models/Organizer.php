@@ -36,6 +36,11 @@ class Organizer extends Model
         return $this->hasMany(Series::class);
     }
 
+    public function forms(): HasMany
+    {
+        return $this->hasMany(Form::class);
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);

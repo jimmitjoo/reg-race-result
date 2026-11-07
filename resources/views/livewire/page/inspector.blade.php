@@ -29,6 +29,21 @@
         @if (in_array($block['type'], ['hero', 'image'], true))
             @include('livewire.page.image-field')
         @endif
+        @if (in_array($block['type'], ['form', 'contact'], true))
+            <div class="flex flex-col gap-2">
+                <flux:select wire:model.live="{{ $field('form_id') }}" :label="__('page.which_form')">
+                    <option value="">{{ $block['type'] === 'contact' ? __('page.no_form') : __('page.choose_form') }}</option>
+                    @foreach ($forms as $form)
+                        <option value="{{ $form->id }}">{{ $form->name }}</option>
+                    @endforeach
+                </flux:select>
+                @if ($chosen = $forms->get((int) $block['form_id']))
+                    <flux:text class="text-sm">{{ __("forms.action_help.{$chosen->action}") }}@if ($chosen->action !== 'store') ({{ $chosen->recipient() }})@endif</flux:text>
+                    <a href="{{ route('forms.edit', $chosen) }}" wire:navigate class="self-start text-sm underline underline-offset-2">{{ __('page.edit_form') }}</a>
+                @endif
+                <a href="{{ route('forms.index') }}" wire:navigate class="self-start text-sm underline underline-offset-2">{{ __('page.new_form') }}</a>
+            </div>
+        @endif
         @if ($block['type'] === 'image')
             <flux:select wire:model.live="{{ $field('size') }}" :label="__('page.size')">
                 <option value="text">{{ __('page.size_text') }}</option>

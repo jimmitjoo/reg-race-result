@@ -28,6 +28,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         return [
             'organizer' => $this->raceOrganizer,
             'editor' => false,
+            'forms' => Page::forms($this->raceOrganizer),
             'blocks' => Page::for($this->raceOrganizer, $this->preview),
             'logo' => Theme::logoUrl(Theme::for($this->raceOrganizer, null, $this->preview)),
             ...Page::events($this->raceOrganizer),
