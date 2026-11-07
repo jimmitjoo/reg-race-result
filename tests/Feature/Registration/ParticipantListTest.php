@@ -66,7 +66,7 @@ it('downloads the filtered rows as CSV for Swedish Excel', function () {
     expect(substr($csv, 0, 3))->toBe("\xEF\xBB\xBF");
     $lines = explode("\r\n", rtrim(substr($csv, 3), "\r\n"));
     expect($lines)->toHaveCount(2)
-        ->and($lines[1])->toBe('Kvinnor 10 km;101;Åsa;Öberg;1990-04-03;K;Högby IF;asa@example.com;070-123;250,00;'.__('registrations.method.stripe').';2026-11-15 12:00;2026-11-15 11:58');
+        ->and($lines[1])->toBe('Kvinnor 10 km;101;Åsa;Öberg;1990-04-03;K;Högby IF;asa@example.com;070-123;250,00;;'.__('registrations.method.stripe').';2026-11-15 12:00;2026-11-15 11:58');
 });
 
 it('does not show or download another organizer\'s registrations', function () {

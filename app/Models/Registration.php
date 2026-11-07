@@ -43,7 +43,7 @@ class Registration extends Model
      * Marks the whole order paid (#109), with the payment intent on every registration so that a refund finds them all.
      * Webhook, reconciliation and the confirmation page can race; only the one that marks it paid sends the one receipt.
      */
-    public function markPaid(string $method, ?string $paymentIntent = null): void
+    public function markPaid(string $method, ?string $paymentIntent = null, bool $notify = true): void
     {
         // The order's receipt number (#132) comes from the organizer's counter in the same transaction, so numbers have no gaps.
         $marked = DB::transaction(function () use ($method, $paymentIntent) {
@@ -54,13 +54,16 @@ class Registration extends Model
                 $organizer = Organizer::whereKey($this->raceClass->event->organizer_id)->lockForUpdate()->firstOrFail();
                 $organizer->increment('receipt_counter');
                 $this->orderQuery()->update(['receipt_number' => $organizer->receipt_counter]);
+                // The order's single-use codes (#85) are used now, whatever the way of paying.
+                CampaignCode::whereIn('registration_id', $this->orderQuery()->select('id'))->whereNull('used_at')->update(['used_at' => now()]);
             }
 
             return $marked;
         });
         $this->refresh();
 
-        if ($marked && $this->email) {
+        // An invoice campaign marked paid by the club (#85) sends nothing: the invoice was the paper.
+        if ($marked && $notify && $this->email) {
             Mail::to($this->email)->send(new RegistrationReceipt($this));
         }
     }
@@ -81,6 +84,26 @@ class Registration extends Model
         $event = $this->raceClass->event;
 
         return URL::signedRoute('public.registration', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $this]);
+    }
+
+    /**
+     * The ones who take part: paid, or registered through an invoice campaign (#85) that the club bills itself,
+     * and not refunded. Other unpaid registrations do not count (#64).
+     *
+     * @template T
+     *
+     * @param  T  $query
+     * @return T
+     */
+    public static function participating($query)
+    {
+        return $query->where(fn ($q) => $q->whereNotNull('registrations.paid_at')->orWhere('registrations.payment_method', 'invoice'))
+            ->whereNull('registrations.refunded_at');
+    }
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(Campaign::class);
     }
 
     public function clubRecord(): BelongsTo

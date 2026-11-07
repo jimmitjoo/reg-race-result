@@ -153,13 +153,18 @@ new class extends Component {
                         <td class="py-1 pe-3">{{ $registration->club }}</td>
                         <td class="py-1 pe-3">{{ $registration->email }}</td>
                         <td class="py-1 pe-3">{{ $registration->phone }}</td>
-                        <td class="py-1 pe-3">{{ $registration->price === null ? '' : Money::format($registration->price, $currency) }}</td>
+                        <td class="py-1 pe-3">
+                            {{ $registration->price === null ? '' : Money::format($registration->price, $currency) }}
+                            @if ($registration->campaign_code)<flux:badge size="sm">{{ $registration->campaign_code }}</flux:badge>@endif
+                        </td>
                         <td class="py-1 pe-3">{{ $registration->payment_method ? __("registrations.method.{$registration->payment_method}") : '' }}</td>
                         <td class="py-1 pe-3">
                             @if ($registration->refunded_at)
                                 <flux:badge size="sm" color="zinc">{{ __('registrations.refunded') }}</flux:badge>
                             @elseif ($registration->paid_at)
                                 {{ \App\Support\Format::dateTime($registration->paid_at->setTimezone($event->timezone)) }}
+                            @elseif ($registration->payment_method === 'invoice')
+                                <flux:badge size="sm" color="sky">{{ __('registrations.invoiced') }}</flux:badge>
                             @else
                                 <flux:badge size="sm" color="amber">{{ __('registrations.unpaid') }}</flux:badge>
                             @endif

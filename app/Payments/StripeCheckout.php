@@ -70,6 +70,8 @@ class StripeCheckout
                     'product_data' => ['name' => "{$registration->displayName()}, {$event->name} – {$registration->raceClass->name}"],
                 ],
             ])->values()->all(),
+            // A campaign's code and place are held 30 minutes (#85); Stripe's shortest session ends just after.
+            'expires_at' => $order->contains(fn (Registration $registration) => $registration->campaign_id) ? now()->addMinutes(31)->timestamp : null,
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'payment_intent_data' => $fee ? ['application_fee_amount' => $fee] : null,

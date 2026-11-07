@@ -14,7 +14,7 @@ final class RegistrationsCsv
     public static function query(Event $event, string $status = 'paid', ?int $raceId = null, string $search = ''): HasManyThrough
     {
         return $event->allRegistrations()->with(['raceClass.race', 'raceClass.event'])
-            ->when($status === 'paid', fn ($q) => $q->whereNotNull('registrations.paid_at')->whereNull('registrations.refunded_at'))
+            ->when($status === 'paid', fn ($q) => Registration::participating($q))
             ->when($status === 'unpaid', fn ($q) => $q->whereNull('registrations.paid_at'))
             ->when($raceId, fn ($q) => $q->where('race_classes.race_id', $raceId))
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
@@ -44,7 +44,7 @@ final class RegistrationsCsv
         return [
             __('registration.class'), __('results.bib'), ...($teams ? [__('registration.team_name'), __('registration.team_members')] : []), __('registration.first_name'), __('registration.last_name'),
             __('registration.birth_date'), __('registration.gender'), ...($ageGroups ? [__('results.age_group')] : []), __('registration.club'), __('registration.email'),
-            __('registration.phone'), __('registrations.price'), __('registrations.payment_method'), __('registrations.paid_at'),
+            __('registration.phone'), __('registrations.price'), __('registrations.campaign'), __('registrations.payment_method'), __('registrations.paid_at'),
             __('registrations.created_at'),
         ];
     }
@@ -55,7 +55,7 @@ final class RegistrationsCsv
         return [
             $r->raceClass->name, $r->bib === null ? null : (string) $r->bib, ...($teams ? [$r->team_name, implode(', ', $r->team_members ?? [])] : []), $r->first_name, $r->last_name,
             $r->birth_date?->toDateString(), $r->gender, ...($ageGroups ? [$r->raceClass->ageGroupOf($r)] : []), $r->club, $r->email,
-            $r->phone, $r->price === null ? null : number_format($r->price / 100, 2, ',', ''), $r->payment_method ? __("registrations.method.{$r->payment_method}") : null,
+            $r->phone, $r->price === null ? null : number_format($r->price / 100, 2, ',', ''), $r->campaign_code, $r->payment_method ? __("registrations.method.{$r->payment_method}") : null,
             $r->refunded_at ? __('registrations.refunded') : $r->paid_at?->setTimezone($timezone)->format('Y-m-d H:i'), $r->created_at->setTimezone($timezone)->format('Y-m-d H:i'),
         ];
     }
