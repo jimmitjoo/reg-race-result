@@ -92,7 +92,7 @@ it('marks the registration paid on the confirmation page when Stripe says it is 
 
     $this->get(URL::signedRoute('public.registration', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026', 'registration' => $registration]))
         ->assertOk()
-        ->assertSee(__('registration.paid'))
+        ->assertSee(__('registration.confirmation_heading'))
         ->assertDontSee(__('registration.unpaid'));
 
     expect($registration->fresh()->paid_at)->not->toBeNull();

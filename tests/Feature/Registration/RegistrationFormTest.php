@@ -7,6 +7,7 @@ use App\Models\Race;
 use App\Models\RaceClass;
 use App\Models\Registration;
 use App\Payments\StripeCheckout;
+use App\Support\Money;
 use Illuminate\Support\Facades\URL;
 use Livewire\Volt\Volt;
 
@@ -97,7 +98,7 @@ it('validates the form', function () {
 
     Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
         ->set('email', 'not-an-email')
-        ->set('birthDate', '19800221')
+        ->set('birthDate', '1980-13-45')
         ->set('gender', 'X')
         ->call('register')
         ->assertHasErrors(['raceClassId', 'firstName', 'lastName', 'birthDate', 'gender', 'email']);
@@ -179,21 +180,23 @@ it('keeps a home town as free text', function () {
 });
 
 it('suggests the federation clubs in the form', function () {
-    openEvent();
+    [, , , $class] = openEvent();
     Club::create(['federation' => 'SFIF', 'external_id' => '506', 'name' => 'Högby IF']);
 
-    $this->get('/hogby-if/sylvesterloppet-2026')->assertSee('<datalist id="clubs">', false)->assertSee('<option value="Högby IF">', false);
+    // The runner's details are asked for once a class is chosen.
+    Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
+        ->assertDontSeeHtml('<datalist id="clubs">')
+        ->set('raceClassId', (string) $class->id)
+        ->assertSeeHtml('<datalist id="clubs">')->assertSeeHtml('<option value="Högby IF">');
 });
 
-it('does not let a man register in a women\'s class, and shows only fitting classes', function () {
+it('does not let a man register in a women\'s class', function () {
     [, $event, $race, $class] = openEvent();
     $class->update(['gender' => 'K']);
     RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => 'Män 10 km', 'gender' => 'M']);
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
         ->set('gender', 'M')
-        ->assertDontSee('Kvinnor 10 km (')
-        ->assertSee('Män 10 km (')
         ->call('register')
         ->assertHasErrors(['raceClassId']);
 
@@ -223,4 +226,55 @@ it('asks no team questions for a class where everyone registers on their own', f
         ->assertDontSee(__('registration.team_name'))
         ->call('register')->assertHasNoErrors();
     expect(Registration::sole()->team_name)->toBeNull();
+});
+
+it('shows the price now and the next step, and the sum to pay for the chosen class (#118)', function () {
+    [, , , $class] = openEvent();
+
+    Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
+        ->assertSee(__('registration.price_then', ['date' => '30 nov 2026', 'price' => Money::format(30000, 'SEK')]))
+        ->assertSee(__('registration.choose_first'))
+        ->set('raceClassId', (string) $class->id)
+        ->assertSee(__('registration.pay', ['price' => Money::format(25000, 'SEK')]));
+});
+
+it('takes a birth date written without dashes', function () {
+    [, , , $class] = openEvent();
+
+    fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
+        ->set('birthDate', '19910403')
+        ->call('register')
+        ->assertHasNoErrors();
+
+    expect(Registration::sole()->birth_date->toDateString())->toBe('1991-04-03');
+});
+
+it('keeps what was filled in when the page is loaded again, until the registration is paid', function () {
+    [, , , $class] = openEvent();
+
+    Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
+        ->set('raceClassId', (string) $class->id)->set('firstName', 'Anna');
+
+    $again = Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
+        ->assertSet('raceClassId', (string) $class->id)->assertSet('firstName', 'Anna');
+
+    fillForm($again, $class)->call('register')->assertHasNoErrors();
+
+    // Still there for a runner who left Stripe; gone once the confirmation shows it paid.
+    expect(session('registration.'.$class->event_id.'.firstName'))->toBe('Anna');
+    Registration::sole()->update(['paid_at' => now()]);
+    $this->get(Registration::sole()->confirmationUrl())->assertOk();
+    expect(session()->has('registration.'.$class->event_id))->toBeFalse();
+});
+
+it('gives a paid runner the race for the calendar, behind a signed link', function () {
+    [, , , $class] = openEvent();
+    $registration = Registration::factory()->for($class)->create(['paid_at' => now()]);
+    $url = URL::signedRoute('public.registration.calendar', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026', 'registration' => $registration]);
+
+    $this->get($url)->assertOk()
+        ->assertHeader('Content-Type', 'text/calendar; charset=utf-8')
+        ->assertSee('DTSTART:'.$class->start_at->utc()->format('Ymd\THis\Z'), false)
+        ->assertSee('SUMMARY:Sylvesterloppet 2026 – Kvinnor 10 km', false);
+    $this->get(str_replace('calendar?', 'calendar?x=1&', $url))->assertForbidden();
 });

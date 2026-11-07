@@ -8,6 +8,8 @@ use App\Models\Registration;
 use App\Models\User;
 use App\Payments\StripeCheckout;
 use App\Payments\StripeConnect;
+use App\Support\Money;
+use Illuminate\Support\Number;
 use Livewire\Volt\Volt;
 
 // #47: payments go to the club's own connected Stripe account.
@@ -63,7 +65,7 @@ it('connects a Stripe account and shows the status Stripe reports, not the retur
     $organizer->update(['fee_basis_points' => 250, 'fee_fixed' => 300]);
     $this->actingAs($user->fresh());
     Volt::test('payments.index')->assertSee(__('payments.ready'))
-        ->assertSee(__('payments.fee', ['fee' => Illuminate\Support\Number::percentage(2.5, maxPrecision: 2, locale: 'sv').' + '.App\Support\Money::format(300, 'SEK')]));
+        ->assertSee(__('payments.fee', ['fee' => Number::percentage(2.5, maxPrecision: 2, locale: 'sv').' + '.Money::format(300, 'SEK')]));
 });
 
 it('keeps the return routes behind sign-in', function () {
@@ -130,8 +132,9 @@ it('does not take online registrations for paid races until the account can take
 
     $page = Volt::test('public.event', ['organizer' => 'kalmar-lk', 'event' => 'kalmarmilen'])
         ->assertSee(__('registration.opens_soon'))
-        ->assertDontSee('Kalmarmilen – Kvinnor 10 km')
-        ->assertSee('Barnloppet – Barn');
+        // The paid race's classes cannot be chosen; the free race's can.
+        ->assertSeeHtml('value="'.$class->id.'" wire:model.live="raceClassId" class="peer sr-only" disabled')
+        ->assertDontSeeHtml('value="'.$free->id.'" wire:model.live="raceClassId" class="peer sr-only" disabled');
 
     $page->set('raceClassId', $class->id)->set('firstName', 'Anna')->set('lastName', 'Karlsson')->set('birthDate', '1991-04-03')
         ->set('gender', 'K')->set('email', 'anna@example.com')->set('acceptTerms', true)
@@ -178,9 +181,9 @@ it('shows what the club gets from a registration after the fees', function () {
     $this->actingAs(User::factory()->create(['organizer_id' => $organizer->id]));
 
     Volt::test('payments.index')->assertSee(__('payments.example', [
-        'price' => App\Support\Money::format(30000, 'SEK'),
-        'stripe' => App\Support\Money::format(630, 'SEK'),
-        'platform' => App\Support\Money::format(500, 'SEK'),
-        'club' => App\Support\Money::format(28870, 'SEK'),
+        'price' => Money::format(30000, 'SEK'),
+        'stripe' => Money::format(630, 'SEK'),
+        'platform' => Money::format(500, 'SEK'),
+        'club' => Money::format(28870, 'SEK'),
     ]));
 });
