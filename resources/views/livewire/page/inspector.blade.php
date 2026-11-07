@@ -80,6 +80,14 @@
                 <flux:button size="sm" icon="plus" wire:click="addItem('{{ $block['id'] }}')" class="self-start">{{ __("page.add_item.{$block['type']}") }}</flux:button>
             </div>
         @endif
+        {{-- On an upplaga's page, a block can wait for its moment; the top, with the page's h1, always shows. --}}
+        @if ($edition && $block['type'] !== 'hero')
+            <flux:select wire:model.live="{{ $field('when') }}" :label="__('page.when')" :description="__('page.when_help')">
+                @foreach (\App\Support\Page::WHENS as $when)
+                    <option value="{{ $when }}">{{ __("page.whens.{$when}") }}</option>
+                @endforeach
+            </flux:select>
+        @endif
         @if ($i > 0)
             <flux:radio.group wire:model.live="{{ $field('space') }}" :label="__('page.space')" variant="segmented" size="sm">
                 @foreach (\App\Support\Page::SPACES as $space)

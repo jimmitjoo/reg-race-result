@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Event;
 use App\Models\Organizer;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -12,11 +13,20 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 /**
  * The organizer's own page as blocks (#115, #116): structured data per block, rendered on the server to
  * semantic HTML, never free HTML. The hero's title (the club's name unless rewritten) is the page's h1, a block's heading its h2, headings inside a
- * text h3, so the outline holds whatever order the blocks are in.
+ * text h3, so the outline holds whatever order the blocks are in. An upplaga's page is built the same way,
+ * around its registration, each block shown always or only while the upplaga is in a state.
  */
 final class Page
 {
-    public const TYPES = ['hero', 'text', 'image', 'facts', 'faq', 'form', 'upcoming', 'earlier', 'contact'];
+    public const TYPES = ['hero', 'text', 'image', 'facts', 'faq', 'form', 'upcoming', 'earlier', 'contact', 'registration', 'history'];
+
+    /** The blocks of an organizer's page; an upplaga's has its registration and earlier years' results instead of the lists of upplagor. */
+    public const ORGANIZER_TYPES = ['hero', 'text', 'image', 'facts', 'faq', 'form', 'upcoming', 'earlier', 'contact'];
+
+    public const EVENT_TYPES = ['hero', 'registration', 'text', 'image', 'facts', 'faq', 'form', 'contact', 'history'];
+
+    /** When a block on an upplaga's page shows: always, or only while registration is open or not, before or after race day, or once the results are out. */
+    public const WHENS = ['always', 'open', 'closed', 'before', 'after', 'results'];
 
     /** The looks of the hero; the full ones reach the window's edges, their content kept in the page's column. */
     public const HEROES = ['brand', 'brand-full', 'image-full', 'split', 'split-full', 'centered', 'minimal', 'image-card'];
@@ -51,12 +61,21 @@ final class Page
         'facts' => ['heading'],
         'faq' => ['heading'],
         'contact' => ['heading', 'name', 'email', 'phone'],
+        'registration' => [],
+        'history' => ['heading'],
     ];
 
-    /** What a page nobody has edited shows: the club, what is coming and earlier years. */
-    public static function default(): array
+    /** What a page nobody has edited shows: the club, what is coming and earlier years; for an upplaga, its name, registration and earlier results. */
+    public static function default(Organizer|Event $owner): array
     {
-        return [self::block('hero'), self::block('upcoming'), self::block('earlier')];
+        return $owner instanceof Event
+            ? [['variant' => 'minimal'] + self::block('hero'), self::block('registration'), self::block('history')]
+            : [self::block('hero'), self::block('upcoming'), self::block('earlier')];
+    }
+
+    public static function types(Organizer|Event $owner): array
+    {
+        return $owner instanceof Event ? self::EVENT_TYPES : self::ORGANIZER_TYPES;
     }
 
     public static function block(string $type): array
@@ -72,8 +91,10 @@ final class Page
             'upcoming' => ['heading' => '', 'layout' => 'cards', 'limit' => 0],
             'earlier' => ['heading' => '', 'layout' => 'cards', 'limit' => 0, 'years' => 5],
             'contact' => ['heading' => '', 'name' => '', 'email' => '', 'phone' => '', 'form_id' => null],
-        } + ['space' => 'normal'] + ($type === 'hero' ? [] : [
-            'size' => in_array($type, ['upcoming', 'earlier', 'facts'], true) ? 'wide' : 'text',
+            'registration' => [],
+            'history' => ['heading' => ''],
+        } + ['space' => 'normal', 'when' => 'always'] + ($type === 'hero' ? [] : [
+            'size' => in_array($type, ['upcoming', 'earlier', 'facts', 'registration', 'history'], true) ? 'wide' : 'text',
             // Beside the block before it, sharing its row.
             'beside' => false,
             'background' => 'none',
@@ -86,12 +107,30 @@ final class Page
         return ['id' => Str::lower(Str::random(8))] + array_fill_keys(self::ITEM_FIELDS[$type], '');
     }
 
-    public static function for(Organizer $organizer, bool $draft = false): array
+    public static function for(Organizer|Event $owner, bool $draft = false): array
     {
-        $blocks = ($draft ? ($organizer->page_draft ?? $organizer->page) : $organizer->page) ?? self::default();
+        $blocks = ($draft ? ($owner->page_draft ?? $owner->page) : $owner->page) ?? self::default($owner);
 
         // Every field a block's view reads, also for blocks saved before a field was added.
-        return array_values(array_map(fn ($block) => array_merge(self::block($block['type']), $block), array_filter($blocks, fn ($block) => in_array($block['type'] ?? null, self::TYPES, true))));
+        return array_values(array_map(fn ($block) => array_merge(self::block($block['type']), $block), array_filter($blocks, fn ($block) => in_array($block['type'] ?? null, self::types($owner), true))));
+    }
+
+    /**
+     * Whether a block shows while the upplaga is in $state: registration open, race day not yet passed,
+     * results out.
+     *
+     * @param  array{open: bool, before: bool, results: bool}  $state
+     */
+    public static function shows(array $block, array $state): bool
+    {
+        return $block['type'] === 'hero' || match ($block['when'] ?? 'always') {
+            'open' => $state['open'],
+            'closed' => ! $state['open'],
+            'before' => $state['before'],
+            'after' => ! $state['before'],
+            'results' => $state['results'],
+            default => true,
+        };
     }
 
     /** Rules for the blocks, under the key the editor binds them to. */
@@ -112,6 +151,7 @@ final class Page
             "{$key}.*.size" => ['nullable', Rule::in(self::SIZES)],
             "{$key}.*.beside" => ['nullable', 'boolean'],
             "{$key}.*.space" => ['nullable', Rule::in(self::SPACES)],
+            "{$key}.*.when" => ['nullable', Rule::in(self::WHENS)],
             "{$key}.*.items" => ['nullable', 'array', 'max:30'],
             "{$key}.*.items.*.id" => ['required', 'string', 'max:20'],
             "{$key}.*.items.*.q" => $text(200),
@@ -243,9 +283,22 @@ final class Page
     }
 
     /** The organizer's forms the blocks can show, by id. */
-    public static function forms(Organizer $organizer): Collection
+    public static function forms(Organizer|Event $owner): Collection
     {
-        return $organizer->forms()->get()->keyBy('id');
+        return ($owner instanceof Event ? $owner->organizer : $owner)->forms()->get()->keyBy('id');
+    }
+
+    /**
+     * What an upplaga's blocks show: its state, and the earlier upplagor of the arrangemang with results,
+     * for the runners who look up last year's time.
+     */
+    public static function edition(Event $event, bool $open): array
+    {
+        return [
+            'state' => ['open' => $open, 'before' => now($event->timezone)->toDateString() <= $event->date->toDateString(), 'results' => $event->results_public_at !== null],
+            'history' => $event->series?->events()->whereKeyNot($event->id)->whereNotNull('results_public_at')
+                ->where('date', '<', $event->date)->orderByDesc('date')->get() ?? collect(),
+        ];
     }
 
     /** The upplagor the blocks show: the coming ones in date order, earlier years per arrangemang. */

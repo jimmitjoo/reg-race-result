@@ -376,6 +376,7 @@ new class extends Component {
     $tools = [
         'before' => [
             ['events.campaigns', 'ticket', __('campaigns.title')],
+            ['events.page', 'document-text', __('page.event_title')],
             ['events.theme', 'paint-brush', __('theme.title')],
             ['events.chips', 'tag', __('chips.title')],
         ],

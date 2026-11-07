@@ -1,6 +1,6 @@
 {{-- The blocks in order, in a grid of twelve. The hero's title is the page's only h1, or for screen readers the name when there is no hero. --}}
 @unless (collect($blocks)->contains('type', 'hero'))
-    <h1 class="sr-only">{{ $organizer->name }}</h1>
+    <h1 class="sr-only">{{ ($edition ?? null)?->name ?? $organizer->name }}</h1>
 @endunless
 @php($spans = \App\Support\Page::spans($blocks))
 @php($spaces = \App\Support\Page::spaces($blocks))

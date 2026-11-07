@@ -42,6 +42,7 @@ Route::middleware(['auth'])->group(function () {
         Volt::route('registrations', 'events.registrations')->name('registrations');
         Volt::route('campaigns', 'events.campaigns')->name('campaigns');
         Volt::route('theme', 'theme.edit')->name('theme');
+        Volt::route('page', 'page.edit')->name('page');
         Route::get('campaigns/{campaign}/codes', [ExportController::class, 'campaignCodes'])->name('campaigns.codes');
         Route::get('campaigns/{campaign}/invoice', [ExportController::class, 'invoiceBasis'])->name('campaigns.invoice');
         Route::get('exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
