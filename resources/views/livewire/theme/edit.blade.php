@@ -39,11 +39,26 @@ new class extends Component {
         return $this->event ?? auth()->user()->organizer;
     }
 
+    /** An SVG can carry script: only its sanitized drawing is kept, without scripts, events or outside references (#122). */
+    private function storeSvg(): string
+    {
+        $sanitizer = new \enshrined\svgSanitize\Sanitizer;
+        $sanitizer->removeRemoteReferences(true);
+        $clean = $sanitizer->sanitize($this->upload->get());
+        if (! $clean) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['upload' => __('theme.svg_invalid')]);
+        }
+        $path = 'logos/'.\Illuminate\Support\Str::random(40).'.svg';
+        \Illuminate\Support\Facades\Storage::disk('public')->put($path, $clean);
+
+        return $path;
+    }
+
     public function updated(string $property): void
     {
         if ($property === 'upload') {
-            $this->validate(['upload' => ['image', 'mimes:png,jpg,jpeg,webp', 'max:1024']], [], ['upload' => __('theme.logo')]);
-            $this->logo = $this->upload->store('logos', 'public');
+            $this->validate(['upload' => ['image:allow_svg', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024']], [], ['upload' => __('theme.logo')]);
+            $this->logo = $this->upload->getMimeType() === 'image/svg+xml' ? $this->storeSvg() : $this->upload->store('logos', 'public');
             $this->upload = null;
         }
         $this->brand = strtolower(trim($this->brand));
@@ -116,7 +131,7 @@ new class extends Component {
                         <img src="{{ $logoUrl }}" alt="{{ __('theme.logo_of', ['name' => $name]) }}" class="h-16 w-auto max-w-[200px] rounded-field bg-white object-contain p-2 ring-1 ring-contour">
                         <flux:button size="sm" wire:click="removeLogo">{{ $event ? __('theme.use_organizers') : __('theme.remove') }}</flux:button>
                     @endif
-                    <input type="file" wire:model="upload" accept="image/png,image/jpeg,image/webp" class="text-sm"
+                    <input type="file" wire:model="upload" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="text-sm"
                         aria-label="{{ __('theme.logo_upload') }}"
                         x-on:change="
                             const file = $event.target.files[0]; if (!file) return;
