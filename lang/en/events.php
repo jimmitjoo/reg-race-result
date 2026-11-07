@@ -130,4 +130,10 @@ return [
     'min_time_short' => 'minimum time :minutes min',
     'actions' => 'Actions',
     'details_empty' => 'City, race director, weather and contact',
+    'index_help' => 'An event is the race that comes back, like Sylvesterloppet. Each time it runs is an edition, with its own races, classes and registrations.',
+    'new_help' => 'If the event already exists, this becomes its next edition.',
+    'upcoming' => 'Upcoming',
+    'all_series' => 'All events',
+    'latest' => 'Latest',
+    'earlier_editions' => ':count earlier edition|:count earlier editions',
 ];
