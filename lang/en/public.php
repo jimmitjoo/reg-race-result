@@ -14,4 +14,11 @@ return [
     'breadcrumbs' => 'You are here',
     'cancelled' => 'The race is cancelled.',
     'moved' => 'The race has been moved to :date.',
+    'admin_bar' => 'Edit',
+    'admin' => 'Admin',
+    'edit_page' => 'Edit the page',
+    'edit_event_page' => 'Edit the race page',
+    'manage_event' => 'Manage the upplaga',
+    'manage_events' => 'Arrangemang',
+    'previewing' => 'Preview',
 ];

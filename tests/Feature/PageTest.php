@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\Series;
 use App\Models\User;
@@ -221,4 +222,17 @@ it('lays coming races and earlier years across the window as a band, their cards
         ->assertSee('on-brand bg-brand', false)
         ->assertSee('max-w-[calc(1100px+3rem)]', false)
         ->assertSee('mx-auto w-full max-w-[1100px]', false);
+});
+
+it('puts the way to edit above the organizer\'s own pages for its people only', function () {
+    $organizer = pageOrganizer();
+    $event = Event::factory()->create(['organizer_id' => $organizer->id, 'slug' => 'sylvesterloppet-2026']);
+
+    $this->get('/hogby-if')->assertSee(route('page.edit'))->assertSee(__('public.edit_page'));
+    $this->get('/hogby-if/sylvesterloppet-2026')->assertSee(route('events.page', $event))->assertSee(route('events.show', $event));
+
+    $this->actingAs(User::factory()->create(['organizer_id' => Organizer::factory()->create()->id]));
+    $this->get('/hogby-if')->assertDontSee(__('public.edit_page'));
+    auth()->logout();
+    $this->get('/hogby-if')->assertDontSee(__('public.edit_page'));
 });

@@ -12,6 +12,7 @@
     </head>
     <body class="lp-public min-h-screen overflow-x-clip bg-ground print:bg-white text-ink antialiased">
         <a href="#innehall" class="sr-only z-50 rounded-pill bg-white px-5 py-3 font-semibold text-ink shadow-raised focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{{ __('public.skip') }}</a>
+        <x-admin-bar :$organizer :$event />
 
         <main id="innehall" tabindex="-1" class="mx-auto max-w-[1100px] px-4 pt-8 pb-16 outline-none sm:px-6 sm:pt-12 print:p-0">
             {{ $slot }}

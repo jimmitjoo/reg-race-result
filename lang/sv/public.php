@@ -14,4 +14,11 @@ return [
     'breadcrumbs' => 'Du är här',
     'cancelled' => 'Loppet är inställt.',
     'moved' => 'Loppet är flyttat till :date.',
+    'admin_bar' => 'Redigera',
+    'admin' => 'Admin',
+    'edit_page' => 'Redigera sidan',
+    'edit_event_page' => 'Redigera loppsidan',
+    'manage_event' => 'Hantera upplagan',
+    'manage_events' => 'Arrangemang',
+    'previewing' => 'Förhandsvisning',
 ];
