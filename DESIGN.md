@@ -222,12 +222,16 @@ A restrained green-gray world with one acting color (moss) and one warm pointing
 
 **The Tokens Only Rule.** Views use token names only. Hex values and other Tailwind palettes in a view are a test failure.
 
+**The Theme Layer Rule (#112).** An organizer's theme, and an upplaga's on top of it, sets `--brand`, `--brand-contrast` and `--brand-surface` (and the matching `--color-brand*`) in the public pages' head, through `App\Support\Theme`. The picked colour is never used as it is: it is darkened, keeping hue and saturation, until white text on it reaches 4.5:1 and it stands out on the ground at 3:1 (tested over the whole colour wheel), and the organizer is told which tone is used. The accent colour only tints `--brand-surface`. A page without a theme writes no CSS at all and looks as Löpning.se made it.
+
 ## Typography
 
 **Body Font:** Hanken Grotesk (with ui-sans-serif, system-ui, sans-serif), self-hosted from `public/fonts/hanken-grotesk` as one variable latin file that covers å, ä and ö, preloaded in the head, `font-display: swap`.
 **Label/Mono Font:** the platform monospace, for bib numbers, chip IDs and finish times.
 
 **Character:** a single friendly grotesk does everything. Weight comes from size, not from bold.
+
+**Theme fonts (#112):** an organizer can choose one of seven curated pairs, self-hosted as latin WOFF2 in `public/fonts/theme` (OFL 1.1): Löpning.se (Hanken Grotesk), Modern (Inter), Sportig (Barlow Condensed with Barlow), Klassisk (Source Serif 4 with Source Sans 3), Varm (Fraunces with Work Sans), Rak (Archivo) and Vänlig (Nunito). The pair sets `--font-sans` for body text and `--font-display` for `h1`–`h3` on public pages; only the chosen pair's faces are loaded.
 
 ### Hierarchy
 Two ramps share one typeface. Public pages (Löpning.se's own ramp, #118) set sizes in exact pixels. The admin uses Flux's sizes.
@@ -279,7 +283,7 @@ Depth is soft and green-tinted, never gray or black. Surfaces sit on the ground 
 
 ## Shapes
 
-The form language is rounded and soft, with three named radii and the full pill: **card** (28px) for every public card (race cards, the who-runs and pay steps, start list and result classes, the confirmation, terms, peach boxes and the error summary); **panel** (18px) for admin surfaces and the auth card; **field** (12px) for admin inputs; and **pill** (fully rounded) for buttons, class and gender choices, step markers and the "not open" chip on public pages. Choices are outlined with a 1.5px contour border. All borders default to contour. On public pages (`.lp-public`) Flux's text inputs and selects take the pill too: 48px high, a 1.5px contour border, 20px side padding, 16px text (no zoom on focus in iOS), a leading icon inset into the curve in ink-soft, and a single ink-soft chevron on selects. Flux's admin components still render their own radii (8px), and bringing them onto field and pill is the admin redesign's job (#123).
+The form language is rounded and soft, with three named radii and the full pill: **card** (28px) for every public card (race cards, the who-runs and pay steps, start list and result classes, the confirmation, terms, peach boxes and the error summary); **panel** (18px) for admin surfaces and the auth card; **field** (12px) for admin inputs; and **pill** (`--radius-pill`, fully rounded) for buttons, class and gender choices, step markers and the "not open" chip on public pages. Choices are outlined with a 1.5px contour border. All borders default to contour. On public pages (`.lp-public`) Flux's text inputs and selects take the pill too: 48px high, a 1.5px contour border, 20px side padding, 16px text (no zoom on focus in iOS), a leading icon inset into the curve in ink-soft, and a single ink-soft chevron on selects. Flux's admin components still render their own radii (8px), and bringing them onto field and pill is the admin redesign's job (#123). An organizer's theme (#112) can choose another shape: **rounded** (card 16px, panel 12px, field 10px, pill 12px) or **straight** (4px throughout). Public views therefore use `rounded-pill`, not `rounded-full`, except for the round step markers.
 
 ## Components
 
