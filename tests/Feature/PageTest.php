@@ -185,3 +185,30 @@ it('places blocks beside the one before them, up to four in a row, never beside 
     $organizer->update(['page' => [array_merge($block('text'), ['heading' => 'Om oss']), array_merge($block('contact', true), ['name' => 'Anna', 'background' => 'brand'])]]);
     $this->get('/hogby-if')->assertSee('col-span-12 lg:col-span-6', false)->assertSee('rounded-card p-6 shadow-rest sm:p-8', false);
 });
+
+it('writes questions and figures in place, folds the answers out on the page and tells search engines', function () {
+    $organizer = pageOrganizer();
+    $editor = Volt::test('page.edit')->call('add', 'faq', 1);
+    $faq = $editor->get('blocks')[1];
+
+    $editor->call('setItem', $faq['id'], $faq['items'][0]['id'], 'q', 'Finns det dusch?')
+        ->assertSee(__('page.problem.empty'))
+        ->call('setItem', $faq['id'], $faq['items'][0]['id'], 'a', "Ja, i sporthallen.\nTa med handduk.");
+    $editor->call('addItem', $faq['id']);
+    expect($editor->get('blocks')[1]['items'])->toHaveCount(2);
+    $editor->call('removeItem', $faq['id'], $editor->get('blocks')[1]['items'][1]['id'])->call('publish');
+
+    $this->get('/hogby-if')
+        ->assertSee('<h3 class="text-[19px] font-medium">Finns det dusch?</h3>', false)
+        ->assertSee('"@type":"FAQPage"', false)->assertSee('"name":"Finns det dusch?"', false);
+
+    // Only the texts of an item, never its id.
+    Volt::test('page.edit')->call('setItem', $faq['id'], $faq['items'][0]['id'], 'id', 'x')->assertNotFound();
+});
+
+it('puts the room above a block as chosen, a block beside another lined up with the first in its row', function () {
+    $block = fn (string $type, array $with = []) => array_merge(Page::block($type), $with);
+    $blocks = [$block('hero'), $block('text', ['space' => 'none']), $block('text', ['space' => 'large']), $block('text', ['beside' => true]), $block('facts', ['space' => 'small'])];
+
+    expect(array_values(Page::spaces($blocks)))->toBe(['', '', 'mt-20 lg:mt-28', 'mt-6 lg:mt-28', 'mt-6 lg:mt-8']);
+});

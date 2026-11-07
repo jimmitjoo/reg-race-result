@@ -16,7 +16,7 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  */
 final class Page
 {
-    public const TYPES = ['hero', 'text', 'image', 'form', 'upcoming', 'earlier', 'contact'];
+    public const TYPES = ['hero', 'text', 'image', 'facts', 'faq', 'form', 'upcoming', 'earlier', 'contact'];
 
     /** The looks of the hero; the full ones reach the window's edges, their content kept in the page's column. */
     public const HEROES = ['brand', 'brand-full', 'image-full', 'split', 'split-full', 'centered', 'minimal', 'image-card'];
@@ -27,6 +27,12 @@ final class Page
 
     /** Behind a block other than the hero: the page's ground, or a band of the club's tint, its colour or a picture. */
     public const BACKGROUNDS = ['none', 'tint', 'brand', 'image'];
+
+    /** The texts of a block's items, written in place: the questions and answers, the figures and what they count. */
+    public const ITEM_FIELDS = ['faq' => ['q', 'a'], 'facts' => ['value', 'label']];
+
+    /** The room above a block; a block beside another follows the first in its row. */
+    public const SPACES = ['none', 'small', 'normal', 'large'];
 
     /** How wide a block's content is: the text's measure, the page's column, or the window. */
     public const SIZES = ['text', 'wide', 'full'];
@@ -42,6 +48,8 @@ final class Page
         'upcoming' => ['heading'],
         'earlier' => ['heading'],
         'form' => ['heading', 'intro'],
+        'facts' => ['heading'],
+        'faq' => ['heading'],
         'contact' => ['heading', 'name', 'email', 'phone'],
     ];
 
@@ -58,17 +66,24 @@ final class Page
             'text' => ['heading' => '', 'body' => ''],
             'image' => ['image' => null, 'alt' => '', 'caption' => '', 'width' => null, 'height' => null],
             'form' => ['heading' => '', 'intro' => '', 'form_id' => null],
+            'facts' => ['heading' => '', 'items' => [self::item('facts'), self::item('facts'), self::item('facts')]],
+            'faq' => ['heading' => '', 'items' => [self::item('faq')]],
             // How many: 0 is all.
             'upcoming' => ['heading' => '', 'layout' => 'cards', 'limit' => 0],
             'earlier' => ['heading' => '', 'layout' => 'cards', 'limit' => 0, 'years' => 5],
             'contact' => ['heading' => '', 'name' => '', 'email' => '', 'phone' => '', 'form_id' => null],
-        } + ($type === 'hero' ? [] : [
-            'size' => in_array($type, ['upcoming', 'earlier'], true) ? 'wide' : 'text',
+        } + ['space' => 'normal'] + ($type === 'hero' ? [] : [
+            'size' => in_array($type, ['upcoming', 'earlier', 'facts'], true) ? 'wide' : 'text',
             // Beside the block before it, sharing its row.
             'beside' => false,
             'background' => 'none',
             'background_image' => null,
         ]);
+    }
+
+    public static function item(string $type): array
+    {
+        return ['id' => Str::lower(Str::random(8))] + array_fill_keys(self::ITEM_FIELDS[$type], '');
     }
 
     public static function for(Organizer $organizer, bool $draft = false): array
@@ -96,6 +111,13 @@ final class Page
             "{$key}.*.caption" => $text(250),
             "{$key}.*.size" => ['nullable', Rule::in(self::SIZES)],
             "{$key}.*.beside" => ['nullable', 'boolean'],
+            "{$key}.*.space" => ['nullable', Rule::in(self::SPACES)],
+            "{$key}.*.items" => ['nullable', 'array', 'max:30'],
+            "{$key}.*.items.*.id" => ['required', 'string', 'max:20'],
+            "{$key}.*.items.*.q" => $text(200),
+            "{$key}.*.items.*.a" => $text(2000),
+            "{$key}.*.items.*.value" => $text(20),
+            "{$key}.*.items.*.label" => $text(80),
             "{$key}.*.variant" => ['nullable', Rule::in(self::HEROES)],
             "{$key}.*.name" => $text(120),
             "{$key}.*.email" => ['nullable', 'email', 'max:255'],
@@ -127,6 +149,8 @@ final class Page
                 'image' => [empty($block['image']) ? 'no_image' : ($blank('alt') ? 'alt' : null)],
                 'text' => [$blank('heading', 'body') ? 'empty' : null, self::vagueLink((string) $block['body']) ? 'link_text' : null],
                 'form' => [in_array((int) $block['form_id'], $forms, true) ? null : 'no_form'],
+                'faq' => [collect($block['items'])->contains(fn ($item) => trim($item['q']) === '' || trim($item['a']) === '') || ! $block['items'] ? 'empty' : null],
+                'facts' => [collect($block['items'])->contains(fn ($item) => trim($item['value']) === '' || trim($item['label']) === '') || ! $block['items'] ? 'empty' : null],
                 'contact' => [$blank('name', 'email', 'phone') && ! in_array((int) $block['form_id'], $forms, true) ? 'empty' : null],
                 default => [],
             };
@@ -182,6 +206,29 @@ final class Page
         }
 
         return collect($rows)->flatMap(fn ($row) => array_fill_keys($row, intdiv(12, count($row))))->all();
+    }
+
+    /**
+     * The room above each block: the first has none, and a block beside another lines up with the first
+     * in its row, stacked under it on a phone.
+     *
+     * @return array<string, string>
+     */
+    public static function spaces(array $blocks): array
+    {
+        $first = ['none' => '', 'small' => 'mt-6 lg:mt-8', 'normal' => 'mt-12 lg:mt-16', 'large' => 'mt-20 lg:mt-28'];
+        $beside = ['none' => 'mt-6 lg:mt-0', 'small' => 'mt-6 lg:mt-8', 'normal' => 'mt-6 lg:mt-16', 'large' => 'mt-6 lg:mt-28'];
+        $spans = self::spans($blocks);
+        $spaces = [];
+        $leader = null;
+        foreach ($blocks as $at => $block) {
+            $joins = $at > 0 && $spans[$block['id']] < 12 && $leader !== null && ! empty($block['beside']);
+            $leader = $joins ? $leader : $block;
+            $space = $leader['space'] ?? 'normal';
+            $spaces[$block['id']] = $at === 0 ? '' : ($joins ? $beside[$space] : ($first[$space] ?? $first['normal']));
+        }
+
+        return $spaces;
     }
 
     /** The grid cell of a block that takes $span columns; on a phone every block has its own row. */

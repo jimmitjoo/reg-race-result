@@ -95,6 +95,32 @@ new class extends Component {
         $this->resetValidation();
     }
 
+    /** A question and answer, or a figure, written straight into a block on the page. */
+    public function setItem(string $id, string $itemId, string $field, string $value): void
+    {
+        $at = $this->index($id);
+        abort_unless(in_array($field, Page::ITEM_FIELDS[$this->blocks[$at]['type']] ?? [], true), 404);
+        $item = collect($this->blocks[$at]['items'])->search(fn ($item) => $item['id'] === $itemId);
+        abort_if($item === false, 404);
+        $this->blocks[$at]['items'][$item][$field] = $value;
+        $this->save();
+    }
+
+    public function addItem(string $id): void
+    {
+        $at = $this->index($id);
+        abort_unless(isset(Page::ITEM_FIELDS[$this->blocks[$at]['type']]), 404);
+        $this->blocks[$at]['items'][] = Page::item($this->blocks[$at]['type']);
+        $this->save();
+    }
+
+    public function removeItem(string $id, string $itemId): void
+    {
+        $at = $this->index($id);
+        $this->blocks[$at]['items'] = array_values(array_filter($this->blocks[$at]['items'], fn ($item) => $item['id'] !== $itemId));
+        $this->save();
+    }
+
     /** Text written straight into a block on the page. */
     public function setField(string $id, string $field, string $value): void
     {
@@ -189,6 +215,7 @@ new class extends Component {
             'organizer' => $organizer,
             'editor' => true,
             'spans' => Page::spans($this->blocks),
+            'spaces' => Page::spaces($this->blocks),
             'selected' => collect($this->blocks)->firstWhere('id', $this->editing),
             'problems' => collect(Page::problems($this->blocks, $forms->keys()->all()))->groupBy('id'),
             'forms' => $forms,
@@ -258,7 +285,7 @@ new class extends Component {
             <div wire:sort="sortBlock" class="grid grid-cols-12 gap-x-4">
                 @foreach ($blocks as $i => $block)
                     @php($chosen = $editing === $block['id'])
-                    <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="group flex min-w-0 flex-col {{ \App\Support\Page::cell($spans[$block['id']]) }}">
+                    <div wire:key="edit-{{ $block['id'] }}" wire:sort:item="{{ $block['id'] }}" id="block-{{ $block['id'] }}" class="group flex min-w-0 flex-col {{ \App\Support\Page::cell($spans[$block['id']]) }} {{ $spaces[$block['id']] }}">
                         <div @unless ($chosen) wire:click="edit('{{ $block['id'] }}')" @endunless
                             @class(['relative flex flex-col gap-2 rounded-[calc(var(--radius-card)+10px)] p-2 ring-1 transition', 'ring-2 ring-brand' => $chosen, 'ring-peach' => ! $chosen && $problems->has($block['id']), 'cursor-pointer ring-transparent hover:ring-zinc-300' => ! $chosen && ! $problems->has($block['id'])])>
                             <div @class(['flex items-center gap-1 self-start rounded-field bg-white px-1.5 py-1 text-sm text-zinc-800 shadow-rest ring-1 ring-zinc-200 transition dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700', 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100' => ! $chosen])>
