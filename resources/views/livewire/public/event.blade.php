@@ -124,7 +124,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         $canPay = $this->raceEvent->organizer->canTakePayments();
         $classes = $this->classes();
 
-        $races = $this->raceEvent->races()->with(['priceSteps', 'raceClasses'])->orderBy('name')->get()
+        $races = $this->raceEvent->races()->with(['priceSteps', 'raceClasses'])->ordered()->get()
             ->map(function ($race) use ($now, $canPay) {
                 $today = $now->copy()->setTimezone($this->raceEvent->timezone)->toDateString();
                 $steps = $race->priceSteps->filter(fn ($step) => $step->until->toDateString() >= $today)->values();

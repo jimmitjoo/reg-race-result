@@ -5,6 +5,7 @@ use App\Models\Organizer;
 use App\Models\Race;
 use App\Models\RaceClass;
 use App\Models\User;
+use App\Support\Format;
 use App\Support\Money;
 use Livewire\Volt\Volt;
 
@@ -336,4 +337,34 @@ it('walks a new event through race, classes and price before showing the race da
         ->assertDontSee(__('events.setup_title'))
         ->assertSee(route('events.timing', $event))
         ->assertSee(__('events.new_race'));
+});
+
+it('lets the organizer put races and classes in their own order, which every list follows', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id, 'slug' => 'sylvesterloppet-2026']);
+    $long = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet']);
+    $kids = Race::factory()->for($event)->create(['name' => 'Lilla Sylvesterloppet']);
+    $class = fn (Race $race, string $name, string $start = '2026-12-31 11:00:00') => RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => $name, 'start_at' => $start]);
+    $men = $class($long, '10 km Män');
+    $women = $class($long, '10 km Kvinnor');
+    $p10 = $class($kids, 'P10 1 km');
+    $p7 = $class($kids, 'P7 1 km', '2026-12-31 11:30:00');
+    $this->actingAs($user);
+
+    // Until moved: races by name, classes by start and then name.
+    expect(Format::classOrder($event->raceClasses)->pluck('name')->all())->toBe(['10 km Kvinnor', '10 km Män', 'P10 1 km', 'P7 1 km']);
+
+    Volt::test('events.show', ['event' => $event])
+        ->call('moveRace', $long->id, -1)
+        ->call('moveClass', $p7->id, -1)
+        ->call('moveClass', $p7->id, -1) // already first: stays
+        ->call('moveClass', $men->id, -1);
+    Volt::test('events.show', ['event' => $event])->assertSeeInOrder(['Sylvesterloppet', '10 km Män', '10 km Kvinnor', 'Lilla Sylvesterloppet', 'P7 1 km', 'P10 1 km']);
+
+    expect(Format::classOrder($event->raceClasses()->get())->pluck('name')->all())->toBe(['10 km Män', '10 km Kvinnor', 'P7 1 km', 'P10 1 km'])
+        ->and($event->races()->ordered()->pluck('name')->all())->toBe(['Sylvesterloppet', 'Lilla Sylvesterloppet']);
+    $this->get('/'.$event->organizer->slug.'/sylvesterloppet-2026/start-list')->assertSeeInOrder(['10 km Män', '10 km Kvinnor', 'P7 1 km', 'P10 1 km']);
+
+    // Another organizer's class cannot be moved.
+    Volt::test('events.show', ['event' => $event])->call('moveClass', RaceClass::factory()->create()->id, 1)->assertNotFound();
 });

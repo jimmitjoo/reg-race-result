@@ -30,6 +30,8 @@ return [
     'save' => 'Save',
     'cancel' => 'Cancel',
     'edit' => 'Edit',
+    'move_up' => 'Move :name up',
+    'move_down' => 'Move :name down',
     'saved' => 'Saved.',
     'prices' => 'Prices',
     'public_link' => 'Public registration link',

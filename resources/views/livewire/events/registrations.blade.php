@@ -42,7 +42,7 @@ new class extends Component {
             // How many paid runners in each age group, for the prizes.
             'ageGroupCounts' => $ageGroups ? RegistrationsCsv::query($this->event)->get()
                 ->map(fn ($r) => $r->raceClass->ageGroupOf($r))->filter()->countBy()->sortKeys() : collect(),
-            'races' => $this->event->races()->with(['raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->orderBy('name')->get(),
+            'races' => $this->event->races()->with(['raceClasses' => fn ($q) => $q->orderBy('start_at')->orderBy('name')])->ordered()->get(),
             'counts' => $counts,
             'download' => route('events.exports.registrations', [$this->event, ...array_filter($filters)]),
             'currency' => $this->event->organizer->currency,
@@ -80,7 +80,7 @@ new class extends Component {
                     <td class="py-1 pe-4 text-right">{{ $r->raceClasses->sum(fn ($c) => $counts[$c->id]->total ?? 0) }}</td>
                     <td class="py-1 text-right">{{ $r->raceClasses->sum(fn ($c) => $counts[$c->id]->paid ?? 0) }}</td>
                 </tr>
-                @foreach ($r->raceClasses as $class)
+                @foreach (\App\Support\Format::classOrder($r->raceClasses) as $class)
                     <tr wire:key="count-class-{{ $class->id }}">
                         <td class="py-1 pe-4 ps-4">{{ $class->name }}</td>
                         <td class="py-1 pe-4 text-right">{{ $counts[$class->id]->total ?? 0 }}</td>

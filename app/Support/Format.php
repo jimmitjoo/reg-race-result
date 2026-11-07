@@ -35,7 +35,8 @@ final class Format
     }
 
     /**
-     * Classes by start time, then by name the way people read numbers: P5, P7, P9, P11, not P11 before P5.
+     * Classes in the organizer's order where it is set, else by start time, then by name the way people
+     * read numbers: P5, P7, P9, P11, not P11 before P5.
      *
      * @param  iterable<RaceClass>  $classes
      * @return Collection<int, RaceClass>
@@ -45,7 +46,8 @@ final class Format
         $name = fn (RaceClass $class) => preg_replace('/\s+/u', '', $class->name);
 
         return collect($classes)
-            ->sort(fn (RaceClass $a, RaceClass $b) => $a->start_at->getTimestamp() <=> $b->start_at->getTimestamp() ?: strnatcasecmp($name($a), $name($b)))
+            ->sort(fn (RaceClass $a, RaceClass $b) => ($a->position ?? PHP_INT_MAX) <=> ($b->position ?? PHP_INT_MAX)
+                ?: $a->start_at->getTimestamp() <=> $b->start_at->getTimestamp() ?: strnatcasecmp($name($a), $name($b)))
             ->values();
     }
 }
