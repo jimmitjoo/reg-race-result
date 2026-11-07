@@ -1,5 +1,8 @@
-{{-- The selected block's settings, beside the page: what is not written into the page itself. --}}
-<div class="flex flex-col gap-4 rounded-panel bg-white p-5 text-sm text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700">
+{{--
+    The selected block's settings, beside the page: what is not written into the page itself. Drawn anew for
+    each block, so that no field stays bound to the block chosen before.
+--}}
+<div wire:key="inspector-{{ $selected['id'] ?? 'none' }}" class="flex flex-col gap-4 rounded-panel bg-white p-5 text-sm text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700">
     @if ($selected)
         @php($i = collect($blocks)->search(fn ($b) => $b['id'] === $selected['id']))
         @php($block = $selected)
