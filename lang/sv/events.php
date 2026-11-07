@@ -32,6 +32,7 @@ return [
     'edit' => 'Ändra',
     'move_up' => 'Flytta upp :name',
     'move_down' => 'Flytta ner :name',
+    'drag' => 'Dra för att flytta',
     'saved' => 'Sparat.',
     'prices' => 'Priser',
     'public_link' => 'Publik länk till anmälan',

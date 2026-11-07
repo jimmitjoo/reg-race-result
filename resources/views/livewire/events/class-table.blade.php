@@ -4,17 +4,17 @@
         <caption class="sr-only">{{ $caption }}</caption>
         <thead class="text-zinc-600 dark:text-zinc-300">
             <tr>
-                <th scope="col" class="py-2 ps-5 pe-3 font-medium">{{ __('events.class_name') }}</th>
+                <th scope="col" class="py-2 ps-10 pe-3 font-medium">{{ __('events.class_name') }}</th>
                 <th scope="col" class="px-3 py-2 font-medium">{{ __('events.start_time') }}</th>
                 <th scope="col" class="px-3 py-2 font-medium max-sm:sr-only">{{ __('events.class_kind') }}</th>
                 <th scope="col" class="px-3 py-2 text-right font-medium">{{ __('events.overview_runners') }}</th>
                 <th scope="col" class="py-2 ps-3 pe-3"><span class="sr-only">{{ __('events.actions') }}</span></th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+        <tbody wire:sort="sortClass" class="divide-y divide-zinc-200 dark:divide-zinc-700">
             @foreach ($classes as $class)
-                <tr wire:key="class-{{ $class->id }}" @class(['bg-zinc-50 dark:bg-zinc-800' => $editingId === $class->id])>
-                    <th scope="row" class="py-2 ps-5 pe-3 font-semibold">{{ $class->name }}</th>
+                <tr wire:key="class-{{ $class->id }}" wire:sort:item="{{ $class->id }}" @class(['bg-zinc-50 dark:bg-zinc-800' => $editingId === $class->id])>
+                    <th scope="row" class="py-1 ps-2 pe-3 font-semibold"><span class="flex items-center gap-1">@include('livewire.events.drag-handle'){{ $class->name }}</span></th>
                     <td class="whitespace-nowrap px-3 py-2 tabular-nums">{{ \App\Support\Format::time($class->start_at->setTimezone($event->timezone)) }}</td>
                     <td class="px-3 py-2 text-zinc-600 max-sm:hidden dark:text-zinc-300">
                         {{ collect([

@@ -53,31 +53,45 @@ new class extends Component {
         $this->raceId = $this->event->races()->ordered()->value('id');
     }
 
-    /** One step up (-1) or down (1) among the event's races. */
+    /** A race dragged to a place (0 first) among the event's races. */
+    public function sortRace(int $id, int $position): void
+    {
+        $this->place($this->event->races()->ordered()->get(), $id, fn () => $position);
+    }
+
+    /** A class dragged to a place (0 first) among its race's classes. */
+    public function sortClass(int $id, int $position): void
+    {
+        $this->place($this->siblings($id), $id, fn () => $position);
+    }
+
+    /** One step up (-1) or down (1), for the arrows: the way without dragging. */
     public function moveRace(int $id, int $step): void
     {
-        $this->renumber($this->event->races()->ordered()->get(), $id, $step);
-        $this->renumberClasses();
+        $this->place($this->event->races()->ordered()->get(), $id, fn ($at) => $at + $step);
     }
 
-    /** One step up (-1) or down (1) among its race's classes. */
     public function moveClass(int $id, int $step): void
     {
-        $class = $this->event->raceClasses()->findOrFail($id);
-        $this->renumber(\App\Support\Format::classOrder($this->event->raceClasses()->where('race_id', $class->race_id)->get()), $id, $step);
-        $this->renumberClasses();
+        $this->place($this->siblings($id), $id, fn ($at) => $at + $step);
     }
 
-    private function renumber($items, int $id, int $step): void
+    private function siblings(int $classId)
     {
-        $items = $items->values()->all();
-        $at = collect($items)->search(fn ($item) => $item->id === $id);
+        $class = $this->event->raceClasses()->findOrFail($classId);
+
+        return \App\Support\Format::classOrder($this->event->raceClasses()->where('race_id', $class->race_id)->get());
+    }
+
+    private function place($items, int $id, Closure $to): void
+    {
+        $items = $items->values();
+        $at = $items->search(fn ($item) => $item->id === $id);
         abort_if($at === false, 404);
-        $to = max(0, min(count($items) - 1, $at + $step));
-        [$items[$at], $items[$to]] = [$items[$to], $items[$at]];
-        foreach ($items as $i => $item) {
-            $item->update(['position' => $i + 1]);
-        }
+        $moved = $items->pull($at);
+        $items->splice(max(0, min($items->count(), $to($at))), 0, [$moved]);
+        $items->values()->each(fn ($item, $i) => $item->update(['position' => $i + 1]));
+        $this->renumberClasses();
     }
 
     /** Classes numbered through the event race by race, so lists of every class keep the races' order. */
@@ -500,14 +514,16 @@ new class extends Component {
             @endunless
         </div>
 
+        <div wire:sort="sortRace" class="flex flex-col gap-4">
         @foreach ($races as $race)
             @php($priceOpen = $pricesOpen === $race->id || ($setup === 'price' && $unpriced($race)))
             @php($classFormHere = ($editingId && $race->raceClasses->contains('id', $editingId)) || $addingClassTo === $race->id || ($setup === 'class' && ! $editingId && $raceId === $race->id))
-            <article wire:key="race-{{ $race->id }}" id="race-{{ $race->id }}" class="{{ $panel }}">
+            <article wire:key="race-{{ $race->id }}" wire:sort:item="{{ $race->id }}" id="race-{{ $race->id }}" class="{{ $panel }}">
                 @if ($editingRaceId === $race->id)
                     @include('livewire.events.race-form')
                 @else
-                    <header class="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 pt-4">
+                    <header class="flex flex-wrap items-center gap-x-3 gap-y-1 ps-2 pe-5 pt-4">
+                        @include('livewire.events.drag-handle')
                         <h3 class="text-base font-semibold">{{ $race->name }}</h3>
                         <span class="text-sm text-zinc-600 dark:text-zinc-300">{{ $race->type }}@if ($race->championship) · {{ $race->championship }}{{ $race->championship_veterans ? ' / V'.$race->championship : '' }}@endif @if ($race->course_measurer) · {{ __('events.measured_by', ['name' => $race->course_measurer, 'date' => $race->measured_on?->toDateString()]) }}@endif</span>
                         <div class="ms-auto flex items-center gap-1">
@@ -586,6 +602,7 @@ new class extends Component {
                 @endif
             </article>
         @endforeach
+        </div>
 
         @if ($unassigned->isNotEmpty())
             <article class="{{ $panel }}">

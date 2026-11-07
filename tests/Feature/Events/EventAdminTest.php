@@ -366,6 +366,10 @@ it('lets the organizer put races and classes in their own order, which every lis
         ->and($event->races()->ordered()->pluck('name')->all())->toBe(['Sylvesterloppet', 'Lilla Sylvesterloppet']);
     $this->get('/'.$event->organizer->slug.'/sylvesterloppet-2026/start-list')->assertSeeInOrder(['10 km Män', '10 km Kvinnor', 'P7 1 km', 'P10 1 km']);
 
+    // Dragged: P10 to the top of its race, and the small race back first.
+    Volt::test('events.show', ['event' => $event])->call('sortClass', $p10->id, 0)->call('sortRace', $kids->id, 0);
+    expect(Format::classOrder($event->raceClasses()->get())->pluck('name')->all())->toBe(['P10 1 km', 'P7 1 km', '10 km Män', '10 km Kvinnor']);
+
     // Another organizer's class cannot be moved.
     Volt::test('events.show', ['event' => $event])->call('moveClass', RaceClass::factory()->create()->id, 1)->assertNotFound();
 });

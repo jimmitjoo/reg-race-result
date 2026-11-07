@@ -32,6 +32,7 @@ return [
     'edit' => 'Edit',
     'move_up' => 'Move :name up',
     'move_down' => 'Move :name down',
+    'drag' => 'Drag to move',
     'saved' => 'Saved.',
     'prices' => 'Prices',
     'public_link' => 'Public registration link',
