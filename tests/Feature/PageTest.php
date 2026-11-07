@@ -167,10 +167,21 @@ it('shows as many races and years as chosen, as a list or cards, on the backgrou
 
     $this->get('/hogby-if')
         ->assertSee('Sylvesterloppet 2026')->assertDontSee('Vårloppet 2027')
-        ->assertSee('class="bleed py-12 sm:py-16 on-brand bg-brand"', false)
+        ->assertSee('on-brand bg-brand', false)
         ->assertSeeInOrder(['>2025<', '>2024<', trans_choice('page.more_years', 1), '>2023<'], false);
 
     $editor = Volt::test('page.edit');
     $editor->call('edit', $editor->get('blocks')[0]['id'])
         ->assertSee(__('page.layouts.feature'))->assertSee(__('page.backgrounds.brand'))->assertSee(__('page.limit_races'));
+});
+
+it('places blocks beside the one before them, up to four in a row, never beside the hero', function () {
+    $block = fn (string $type, bool $beside = false) => array_merge(Page::block($type), ['beside' => $beside]);
+    $blocks = [$block('hero'), $block('text', true), $block('image', true), $block('text'), $block('text', true), $block('text', true), $block('text', true), $block('text', true)];
+
+    expect(array_values(Page::spans($blocks)))->toBe([12, 6, 6, 3, 3, 3, 3, 12]);
+
+    $organizer = pageOrganizer();
+    $organizer->update(['page' => [array_merge($block('text'), ['heading' => 'Om oss']), array_merge($block('contact', true), ['name' => 'Anna', 'background' => 'brand'])]]);
+    $this->get('/hogby-if')->assertSee('col-span-12 lg:col-span-6', false)->assertSee('rounded-card p-6 shadow-rest sm:p-8', false);
 });

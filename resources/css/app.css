@@ -2,6 +2,7 @@
 @import '../../vendor/livewire/flux/dist/flux.css';
 
 @source "../views";
+@source "../../app/Support/Page.php";
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
 @source '../../vendor/livewire/flux/stubs/**/*.blade.php';
@@ -308,7 +309,15 @@ select:focus[data-flux-control] {
     --color-contour: color-mix(in srgb, var(--color-brand-contrast) 40%, transparent);
 }
 
-.on-brand :where(.bg-white) {
+/* On a darkened picture, the same in white. */
+.on-image {
+    color: var(--color-white);
+    --color-ink-soft: var(--color-white);
+    --color-contour: color-mix(in srgb, var(--color-white) 40%, transparent);
+}
+
+.on-brand :where(.bg-white),
+.on-image :where(.bg-white) {
     color: var(--color-ink);
     --color-ink-soft: #4f5a53;
     --color-contour: #d9ded6;

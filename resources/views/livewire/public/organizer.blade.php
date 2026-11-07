@@ -36,6 +36,6 @@ new #[Layout('components.layouts.public')] class extends Component {
     }
 }; ?>
 
-<div class="flex flex-col gap-12 sm:gap-16">
+<div>
     @include('blocks.page')
 </div>

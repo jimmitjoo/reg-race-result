@@ -15,6 +15,7 @@ return [
         'no_image' => 'no image chosen',
         'empty' => 'the block is empty',
         'no_form' => 'no form chosen',
+        'no_background' => 'no background picture chosen',
         'link_text' => 'a link does not say where it goes, like "click here". Write what is there',
     ],
     'type' => [
@@ -130,5 +131,16 @@ return [
         'none' => 'None',
         'tint' => 'Light tint',
         'brand' => 'Club colour',
+        'image' => 'Picture',
     ],
+    'background_image' => 'Background picture',
+    'background_image_help' => 'The picture is darkened so the text on it reads. It is decoration and needs no alt text.',
+    'sizes' => [
+        'text' => 'As the text',
+        'wide' => 'Wide',
+        'full' => 'Whole window',
+    ],
+    'beside' => 'Place beside the block above',
+    'beside_help' => 'The blocks share the row, up to four across. On a phone they stack.',
+    'in_row' => 'Beside other blocks the block fills its part of the row, and a background becomes a panel.',
 ];

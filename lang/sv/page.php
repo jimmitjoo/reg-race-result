@@ -15,6 +15,7 @@ return [
         'no_image' => 'ingen bild vald',
         'empty' => 'blocket är tomt',
         'no_form' => 'inget formulär valt',
+        'no_background' => 'ingen bakgrundsbild vald',
         'link_text' => 'en länk säger inte vart den leder, som "klicka här". Skriv vad som finns där',
     ],
     'type' => [
@@ -130,5 +131,16 @@ return [
         'none' => 'Ingen',
         'tint' => 'Ljus ton',
         'brand' => 'Klubbens färg',
+        'image' => 'Bild',
     ],
+    'background_image' => 'Bakgrundsbild',
+    'background_image_help' => 'Bilden tonas mörkare så att texten på den går att läsa. Den är dekoration och behöver ingen alt-text.',
+    'sizes' => [
+        'text' => 'Som texten',
+        'wide' => 'Bred',
+        'full' => 'Hela fönstret',
+    ],
+    'beside' => 'Lägg bredvid blocket ovanför',
+    'beside_help' => 'Blocken delar raden, upp till fyra i bredd. På mobilen ligger de under varandra.',
+    'in_row' => 'Bredvid andra block fyller blocket sin del av raden, och en bakgrund blir en panel.',
 ];
