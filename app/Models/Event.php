@@ -53,6 +53,11 @@ class Event extends Model
         return route('public.event', ['organizer' => $this->organizer->slug, 'event' => $slug]);
     }
 
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
     public function races(): HasMany
     {
         return $this->hasMany(Race::class);
@@ -67,7 +72,7 @@ class Event extends Model
     // and a club that refunds in Stripe has taken the runner out (#47).
     public function registrations(): HasManyThrough
     {
-        return $this->allRegistrations()->whereNotNull('registrations.paid_at')->whereNull('registrations.refunded_at');
+        return Registration::participating($this->allRegistrations());
     }
 
     public function allRegistrations(): HasManyThrough

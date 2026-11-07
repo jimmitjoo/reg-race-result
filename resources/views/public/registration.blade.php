@@ -6,7 +6,7 @@
     <div class="mx-auto flex max-w-[720px] flex-col gap-8">
         <header class="flex flex-col gap-3">
             <p class="text-[15px] text-ink-soft">{{ $event->organizer->name }}</p>
-            @if ($registration->paid_at)
+            @if ($registration->paid_at || $registration->payment_method === 'invoice')
                 <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ __('registration.confirmation_heading') }}</h1>
                 <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ $order->count() > 1 ? __('registration.confirmation_text_many', ['count' => $order->count(), 'event' => $event->name]) : __('registration.confirmation_text', ['name' => $registration->displayName(), 'class' => $class->name, 'event' => $event->name]) }}</p>
             @else
@@ -42,8 +42,12 @@
             @endif
         </section>
 
+        @if (! $registration->paid_at && $registration->payment_method === 'invoice')
+            <p class="rounded-card bg-white/60 px-5 py-4 text-[15px] text-ink-soft sm:px-7">{{ __('registration.invoiced_by', ['name' => $registration->campaign?->invoice_name ?: $registration->campaign?->name]) }}</p>
+        @endif
+
         <div class="flex flex-wrap gap-2">
-            @if ($registration->paid_at)
+            @if ($registration->paid_at || $registration->payment_method === 'invoice')
                 <a href="{{ URL::signedRoute('public.registration.calendar', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $registration]) }}" class="inline-flex h-11 items-center rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90">{{ __('registration.add_to_calendar') }}</a>
                 <a href="{{ URL::signedRoute('public.receipt', ['organizer' => $event->organizer->slug, 'event' => $event->slug, 'registration' => $order->first()]) }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('receipt.receipt_link') }}</a>
                 <a href="{{ route('public.start-list', ['organizer' => $event->organizer->slug, 'event' => $event->slug]) }}#anmalan-{{ $registration->id }}" class="inline-flex h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold text-ink shadow-rest hover:shadow-hover">{{ __('registration.see_start_list') }}</a>

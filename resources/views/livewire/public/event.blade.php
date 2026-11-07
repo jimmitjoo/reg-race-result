@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Campaign;
+use App\Models\CampaignCode;
+use App\Exceptions\CodeTaken;
 use App\Models\Club;
 use App\Support\Format;
 use App\Models\Event;
@@ -13,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.public')] class extends Component {
@@ -36,6 +40,10 @@ new #[Layout('components.layouts.public')] class extends Component {
     public string $phone = '';
     public bool $acceptTerms = false;
 
+    // A campaign's shared code from its link (?kod=ATEA2027, #85), given to every participant added.
+    #[Url(as: 'kod', except: '')]
+    public string $linkCode = '';
+
     // The arrangemang's slug shows its current upplaga, so the link stays the same every year; an upplaga's own slug still works.
     public function mount(string $organizer, string $event): void
     {
@@ -52,11 +60,19 @@ new #[Layout('components.layouts.public')] class extends Component {
             fn ($participant) => array_merge(self::blank(), array_intersect_key((array) $participant, self::blank())),
             array_slice(array_values((array) $this->participants), 0, self::MAX_PARTICIPANTS),
         ) ?: [self::blank()];
+
+        // The campaign link someone just followed wins over a code remembered from an earlier visit.
+        $this->linkCode = Campaign::normalize($this->linkCode);
+        if ($this->linkCode !== '') {
+            foreach (array_keys($this->participants) as $i) {
+                $this->participants[$i]['code'] = $this->linkCode;
+            }
+        }
     }
 
     private static function blank(): array
     {
-        return ['raceId' => '', 'raceClassId' => '', 'firstName' => '', 'lastName' => '', 'birthDate' => '', 'gender' => '', 'club' => '', 'teamName' => '', 'members' => []];
+        return ['raceId' => '', 'raceClassId' => '', 'firstName' => '', 'lastName' => '', 'birthDate' => '', 'gender' => '', 'club' => '', 'teamName' => '', 'members' => [], 'code' => ''];
     }
 
     public function updated(string $property): void
@@ -77,7 +93,7 @@ new #[Layout('components.layouts.public')] class extends Component {
         if (count($this->participants) >= self::MAX_PARTICIPANTS) {
             return;
         }
-        $this->participants[] = self::blank();
+        $this->participants[] = ['code' => $this->linkCode] + self::blank();
         $this->updated('participants');
         $this->js("document.getElementById('deltagare-".(count($this->participants) - 1)."')?.focus()");
     }
@@ -118,13 +134,16 @@ new #[Layout('components.layouts.public')] class extends Component {
                 return ['race' => $race, 'price' => $price, 'until' => $steps->first()?->until, 'next' => $steps->get(1), 'soon' => $price > 0 && ! $canPay];
             });
 
-        // Per participant: the chosen class, its price now and the age group it gives (#92).
+        // Per participant: the chosen class, its price now (a campaign's, with a code, #85) and the age group it gives (#92).
         $lines = collect($this->participants)->map(function ($participant) use ($classes, $races) {
             $class = $classes->get((int) $participant['raceClassId']);
+            $offer = $class && trim((string) $participant['code']) !== '' ? Campaign::resolve($this->raceEvent, $class, $participant['code']) : null;
 
             return [
                 'class' => $class,
-                'price' => $class ? $races->firstWhere('race.id', $class->race_id)['price'] ?? null : null,
+                'price' => $offer ? $offer['price'] : ($class ? $races->firstWhere('race.id', $class->race_id)['price'] ?? null : null),
+                'campaign' => $offer['campaign'] ?? null,
+                'codeError' => $offer['error'] ?? null,
                 'ageGroup' => $class ? $this->ageGroup($class, $participant) : null,
             ];
         });
@@ -181,6 +200,7 @@ new #[Layout('components.layouts.public')] class extends Component {
             'participants.*.birthDate' => ['required', 'date_format:Y-m-d', 'before:today'],
             'participants.*.gender' => ['required', 'in:M,K'],
             'participants.*.club' => ['nullable', 'string', 'max:100'],
+            'participants.*.code' => ['nullable', 'string', 'max:40'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'acceptTerms' => ['accepted'],
@@ -191,20 +211,31 @@ new #[Layout('components.layouts.public')] class extends Component {
             'participants.*.birthDate' => __('registration.birth_date'),
             'participants.*.gender' => __('registration.gender'),
             'participants.*.club' => __('registration.club'),
+            'participants.*.code' => __('registration.code'),
         ]);
 
         // Every participant is checked before anything is saved, and each error lands on its own participant.
         $classes = $this->classes();
         $canPay = $this->raceEvent->organizer->canTakePayments();
         $year = now()->setTimezone($this->raceEvent->timezone)->year;
-        $prices = [];
+        $offers = [];
 
         foreach ($this->participants as $i => $participant) {
             $class = $classes->get((int) $participant['raceClassId']);
-            $price = $class->race?->priceAt(now());
-            $prices[$i] = $price;
+            // A code sets the price before any payment begins (#85); the same campaign earlier in the order takes places too.
+            $sameCampaign = collect($offers)->filter(fn ($offer) => $offer['campaign'])->countBy(fn ($offer) => $offer['campaign']->id);
+            $offer = Campaign::resolve($this->raceEvent, $class, $participant['code']);
+            if ($offer['campaign'] && ($already = $sameCampaign->get($offer['campaign']->id))) {
+                $offer = Campaign::resolve($this->raceEvent, $class, $participant['code'], $already);
+            }
+            $offers[$i] = $offer;
+            $price = $offer['price'];
 
-            if ($price === null || ($price > 0 && ! $canPay)) {
+            if ($offer['error']) {
+                $this->addError("participants.{$i}.code", __("registration.{$offer['error']}"));
+            }
+
+            if ($price === null || ($price > 0 && ! $canPay && ! $offer['campaign']?->invoice)) {
                 $this->addError("participants.{$i}.raceClassId", __('registration.class_not_open'));
             } elseif ($class->gender && $class->gender !== $participant['gender']) {
                 $this->addError("participants.{$i}.raceClassId", __('registration.wrong_gender'));
@@ -228,37 +259,71 @@ new #[Layout('components.layouts.public')] class extends Component {
             }
         }
 
+        // An order is billed or paid by card, never both: the invoice goes to the campaign's company or school.
+        $invoice = collect($offers)->contains(fn ($offer) => $offer['campaign']?->invoice);
+        foreach ($offers as $i => $offer) {
+            if ($invoice && ! $offer['campaign']?->invoice) {
+                $this->addError("participants.{$i}.code", __('registration.invoice_mix'));
+            }
+        }
+
         if ($this->getErrorBag()->isNotEmpty()) {
             return;
         }
 
-        $order = DB::transaction(function () use ($classes, $prices) {
-            $ref = (string) Str::uuid();
+        try {
+            $order = DB::transaction(function () use ($classes, $offers, $invoice) {
+                $ref = (string) Str::uuid();
 
-            return collect($this->participants)->map(function ($participant, $i) use ($classes, $prices, $ref) {
-                $class = $classes->get((int) $participant['raceClassId']);
-                $club = Club::match($participant['club']);
+                return collect($this->participants)->map(function ($participant, $i) use ($classes, $offers, $invoice, $ref) {
+                    $class = $classes->get((int) $participant['raceClassId']);
+                    $club = Club::match($participant['club']);
+                    $offer = $offers[$i];
 
-                return $class->registrations()->create([
-                    'order_ref' => $ref,
-                    'first_name' => $participant['firstName'],
-                    'last_name' => $participant['lastName'],
-                    'birth_date' => $participant['birthDate'],
-                    'gender' => $participant['gender'],
-                    'club' => $club?->name ?? ($participant['club'] ?: null),
-                    'club_id' => $club?->id,
-                    'email' => $this->email,
-                    'phone' => $this->phone ?: null,
-                    'price' => $prices[$i],
-                    'terms_accepted_at' => now(),
-                    'team_name' => $class->team_size ? $participant['teamName'] : null,
-                    'team_members' => $class->team_size ? $participant['members'] : null,
-                ])->setRelation('raceClass', $class);
+                    $registration = $class->registrations()->create([
+                        'order_ref' => $ref,
+                        'campaign_id' => $offer['campaign']?->id,
+                        'campaign_code' => $offer['campaign'] ? Campaign::normalize($participant['code']) : null,
+                        'first_name' => $participant['firstName'],
+                        'last_name' => $participant['lastName'],
+                        'birth_date' => $participant['birthDate'],
+                        'gender' => $participant['gender'],
+                        'club' => $club?->name ?? ($participant['club'] ?: null),
+                        'club_id' => $club?->id,
+                        'email' => $this->email,
+                        'phone' => $this->phone ?: null,
+                        'price' => $offer['price'],
+                        'payment_method' => $invoice ? 'invoice' : null,
+                        'terms_accepted_at' => now(),
+                        'team_name' => $class->team_size ? $participant['teamName'] : null,
+                        'team_members' => $class->team_size ? $participant['members'] : null,
+                    ])->setRelation('raceClass', $class);
+
+                    // Held for this registration; another order got it first if nothing changes.
+                    if ($offer['code'] && ! CampaignCode::whereKey($offer['code']->id)->free()->update([
+                        'registration_id' => $registration->id, 'reserved_at' => now(), 'used_at' => $invoice ? now() : null,
+                    ])) {
+                        throw new CodeTaken($i);
+                    }
+
+                    return $registration;
+                });
             });
-        });
+        } catch (CodeTaken $taken) {
+            $this->addError("participants.{$taken->participant}.code", __('registration.code_used'));
+
+            return;
+        }
 
         $first = $order->first();
         $confirmationUrl = $first->confirmationUrl();
+
+        // The club sends the invoice from its own books (#85); the registrations count as participants meanwhile.
+        if ($invoice) {
+            $this->redirect($confirmationUrl);
+
+            return;
+        }
 
         if ($order->sum('price') === 0) {
             $first->markPaid('free');
@@ -276,6 +341,7 @@ new #[Layout('components.layouts.public')] class extends Component {
 
 @php($open = $races->contains(fn ($r) => $r['price'] !== null && ! $r['soon']))
 @php($total = $lines->sum(fn ($line) => $line['price'] ?? 0))
+@php($invoiced = $lines->first(fn ($line) => $line['campaign']?->invoice)['campaign'] ?? null)
 @php($max = $this::MAX_PARTICIPANTS)
 <div x-data="{ summaryInView: false }" class="flex flex-col gap-12">
     <header class="flex flex-col gap-4">
@@ -431,6 +497,16 @@ new #[Layout('components.layouts.public')] class extends Component {
                             @endif
 
                             <flux:input wire:model="participants.{{ $i }}.club" list="clubs" autocomplete="off" :label="__('registration.club_optional')" :description:trailing="__('registration.club_help')" />
+
+                            {{-- A company's or club's code (#85), checked as soon as it is written. --}}
+                            <div class="flex flex-col gap-2 sm:max-w-xs">
+                                <flux:input wire:model.live.blur="participants.{{ $i }}.code" :label="__('registration.code_optional')" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                                @if ($line['campaign'])
+                                    <p class="flex items-center gap-1.5 text-[15px] font-medium text-moss" aria-live="polite"><flux:icon.check-circle variant="mini" class="size-5" />{{ __('registration.code_applied', ['campaign' => $line['campaign']->name]) }}</p>
+                                @elseif ($line['codeError'] && ! $errors->has("participants.{$i}.code"))
+                                    <p class="text-[15px] font-medium text-danger" aria-live="polite">{{ __("registration.{$line['codeError']}") }}</p>
+                                @endif
+                            </div>
                         </div>
                     @endforeach
                     <datalist id="clubs">
@@ -469,6 +545,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                 <span class="flex flex-col">
                                     <span class="text-[17px] font-medium">{{ trim($participants[$i]['firstName'].' '.$participants[$i]['lastName']) ?: __('registration.participant_n', ['n' => $i + 1]) }}</span>
                                     <span class="text-[15px] text-ink-soft">{{ $line['class'] ? $line['class']->race?->name.' – '.$line['class']->name.', '.Format::time($line['class']->start_at->setTimezone($event->timezone)) : __('registration.no_class') }}</span>
+                                    @if ($line['campaign'])<span class="text-[14px] text-moss">{{ $line['campaign']->name }}</span>@endif
                                 </span>
                                 <span class="text-[17px] tabular-nums">{{ $line['price'] === null ? '–' : Money::format($line['price'], $currency) }}</span>
                             </li>
@@ -512,10 +589,12 @@ new #[Layout('components.layouts.public')] class extends Component {
                     @endif
 
                     <button type="submit" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90 disabled:opacity-60" wire:loading.attr="disabled">
-                        <span wire:loading.remove wire:target="register">{{ $total ? __('registration.pay', ['price' => Money::format($total, $currency)]) : __('registration.submit_free') }}</span>
+                        <span wire:loading.remove wire:target="register">{{ $invoiced ? __('registration.submit_invoice') : ($total ? __('registration.pay', ['price' => Money::format($total, $currency)]) : __('registration.submit_free')) }}</span>
                         <span wire:loading wire:target="register">{{ __('registration.working') }}</span>
                     </button>
-                    @if ($total)
+                    @if ($invoiced)
+                        <p class="text-[13px] text-ink-soft">{{ __('registration.invoiced_by', ['name' => $invoiced->invoice_name ?: $invoiced->name]) }}</p>
+                    @elseif ($total)
                         <p class="text-[13px] text-ink-soft">{{ __('registration.secure_payment') }}</p>
                     @endif
                 @else
@@ -541,7 +620,7 @@ new #[Layout('components.layouts.public')] class extends Component {
     {{-- On a phone, once a class is chosen, the way to pay stays at hand until the summary is in view. --}}
     @if ($lines[0]['class'])
         <div x-show="! summaryInView" x-transition.opacity class="fixed inset-x-0 bottom-0 z-40 border-t border-contour bg-white/95 px-4 py-3 lg:hidden">
-            <a href="#steg-3" class="flex h-12 w-full items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">{{ $total ? __('registration.pay', ['price' => Money::format($total, $currency)]) : __('registration.submit_free') }}</a>
+            <a href="#steg-3" class="flex h-12 w-full items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">{{ $invoiced ? __('registration.submit_invoice') : ($total ? __('registration.pay', ['price' => Money::format($total, $currency)]) : __('registration.submit_free')) }}</a>
         </div>
     @endif
 </div>

@@ -88,18 +88,20 @@ class Series extends Model
     /**
      * A new upplaga set up like the latest one: details, races, classes, prices and prize names.
      * Price dates move as many days as the race day; start times keep their local clock time.
-     * Registrations, chips, results and the weather belong to the old upplaga.
+     * Campaigns come along without their codes (#85). Registrations, chips, results and the weather belong to the old upplaga.
      */
     public function newEdition(string $date): Event
     {
-        $previous = $this->events()->with(['races.priceSteps', 'raceClasses', 'prizes'])->latest('date')->firstOrFail();
+        $previous = $this->events()->with(['races.priceSteps', 'raceClasses', 'prizes', 'campaigns'])->latest('date')->firstOrFail();
 
         return DB::transaction(function () use ($previous, $date) {
             $event = $this->addEdition($date, $previous->only(['city', 'race_director', 'contact_email', 'timezone']));
             $days = (int) $previous->date->diffInDays($event->date, false);
 
+            $raceIds = [];
             foreach ($previous->races as $race) {
                 $copy = $event->races()->create($race->only(['name', 'onsite_price', 'type', 'course_measurer', 'measured_on', 'age_groups', 'championship', 'championship_districts', 'championship_veterans']));
+                $raceIds[$race->id] = $copy->id;
 
                 foreach ($race->priceSteps as $step) {
                     $copy->priceSteps()->create(['until' => $step->until->addDays($days), 'amount' => $step->amount]);
@@ -112,6 +114,10 @@ class Series extends Model
                         'start_at' => CarbonImmutable::parse("{$event->date->toDateString()} {$time}", $event->timezone),
                     ]);
                 }
+            }
+
+            foreach ($previous->campaigns as $campaign) {
+                $campaign->copyTo($event, $raceIds);
             }
 
             foreach ($previous->prizes as $prize) {

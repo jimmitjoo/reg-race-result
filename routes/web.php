@@ -36,6 +36,9 @@ Route::middleware(['auth'])->group(function () {
         Volt::route('prizes', 'events.prizes')->name('prizes');
         Volt::route('onsite', 'events.onsite')->name('onsite');
         Volt::route('registrations', 'events.registrations')->name('registrations');
+        Volt::route('campaigns', 'events.campaigns')->name('campaigns');
+        Route::get('campaigns/{campaign}/codes', [ExportController::class, 'campaignCodes'])->name('campaigns.codes');
+        Route::get('campaigns/{campaign}/invoice', [ExportController::class, 'invoiceBasis'])->name('campaigns.invoice');
         Route::get('exports/sfif', [ExportController::class, 'sfif'])->name('exports.sfif');
         Route::get('exports/registrations', [ExportController::class, 'registrations'])->name('exports.registrations');
         Route::get('exports/pdf', [ExportController::class, 'pdf'])->name('exports.pdf');

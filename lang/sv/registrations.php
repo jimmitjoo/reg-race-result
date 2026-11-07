@@ -23,10 +23,13 @@ return [
     'created_at' => 'Anmäld',
     'filename' => 'Anmälningar :event.csv',
     'method' => [
+        'invoice' => 'Faktura',
         'stripe' => 'Kort (Stripe)',
         'swish_onsite' => 'Swish på plats',
         'free' => 'Gratis',
         'flexit' => 'Gamla anmälningssystemet',
     ],
     'per_age_group' => 'Betalda per åldersklass',
+    'campaign' => 'Kampanjkod',
+    'invoiced' => 'Fakturerad',
 ];

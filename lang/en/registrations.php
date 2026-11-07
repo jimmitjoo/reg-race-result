@@ -23,10 +23,13 @@ return [
     'created_at' => 'Registered',
     'filename' => 'Registrations :event.csv',
     'method' => [
+        'invoice' => 'Invoice',
         'stripe' => 'Card (Stripe)',
         'swish_onsite' => 'Swish on site',
         'free' => 'Free',
         'flexit' => 'Old registration system',
     ],
     'per_age_group' => 'Paid per age group',
+    'campaign' => 'Campaign code',
+    'invoiced' => 'Invoiced',
 ];
