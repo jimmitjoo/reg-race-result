@@ -4,6 +4,7 @@ use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\Race;
 use App\Models\RaceClass;
+use App\Models\Registration;
 use App\Models\User;
 use App\Support\Format;
 use App\Support\Money;
@@ -367,4 +368,26 @@ it('lets the organizer put races and classes in their own order, which every lis
 
     // Another organizer's class cannot be moved.
     Volt::test('events.show', ['event' => $event])->call('moveClass', RaceClass::factory()->create()->id, 1)->assertNotFound();
+});
+
+it('gives an overview: open until when, how many have come, what has come in, the days left and what waits', function () {
+    $this->travelTo('2026-11-15 12:00:00');
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id, 'date' => '2026-12-31']);
+    $race = Race::factory()->for($event)->create(['name' => 'Sylvesterloppet']);
+    $race->priceSteps()->create(['until' => '2026-12-29', 'amount' => 30000]);
+    $class = RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => '10 km Män']);
+    Registration::factory()->count(2)->create(['race_class_id' => $class->id, 'price' => 30000, 'paid_at' => now()]);
+    Registration::factory()->create(['race_class_id' => $class->id, 'price' => 30000, 'paid_at' => null]);
+
+    $this->actingAs($user)->get(route('events.show', $event))
+        ->assertSee(__('events.open_until', ['date' => '29 dec 2026']))
+        ->assertSee(trans_choice('events.runners', 2))
+        ->assertSee(Money::format(60000, 'SEK'))
+        ->assertSee(trans_choice('events.days_left', 46))
+        ->assertDontSee(__('events.todo_stripe'))
+        ->assertSee(__('events.todo_receipt'));
+
+    $event->organizer->update(['stripe_charges_enabled' => false, 'org_number' => '802000-1239']);
+    $this->get(route('events.show', $event))->assertSee(__('events.todo_stripe'))->assertDontSee(__('events.todo_receipt'));
 });
