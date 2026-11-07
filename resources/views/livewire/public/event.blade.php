@@ -218,17 +218,6 @@ new #[Layout('components.layouts.public')] class extends Component {
 
     <form wire:submit="register" class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start" novalidate>
         <div class="flex flex-col gap-10">
-            @if ($errors->any())
-                <div role="alert" tabindex="-1" x-init="$el.focus(); $el.scrollIntoView({ block: 'center' })" class="rounded-card bg-danger-surface px-6 py-5 text-danger outline-none">
-                    <h2 class="font-semibold">{{ __('registration.errors_heading') }}</h2>
-                    <ul class="mt-2 list-disc ps-5 text-[15px]">
-                        @foreach ($errors->all() as $message)
-                            <li>{{ $message }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
             <section aria-labelledby="steg-1" class="flex scroll-mt-6 flex-col gap-4" id="steg-1-section">
                 <h2 id="steg-1" class="flex scroll-mt-6 items-center gap-3 text-[21px] font-medium sm:text-[26px]">
                     <span aria-hidden="true" class="grid size-8 place-items-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">1</span>
@@ -293,14 +282,14 @@ new #[Layout('components.layouts.public')] class extends Component {
                         <div class="grid gap-4 sm:grid-cols-2">
                             <flux:input wire:model="firstName" :label="__('registration.first_name')" autocomplete="given-name" />
                             <flux:input wire:model="lastName" :label="__('registration.last_name')" autocomplete="family-name" />
-                            <flux:input wire:model.live.blur="birthDate" :label="__('registration.birth_date')" :description="__('registration.birth_date_help')" placeholder="ÅÅÅÅ-MM-DD" inputmode="numeric" autocomplete="bday" maxlength="10" />
-                            <fieldset class="flex flex-col gap-2">
-                                <legend class="mb-2 text-sm font-medium">{{ __('registration.gender') }}</legend>
+                            <flux:input wire:model.live.blur="birthDate" :label="__('registration.birth_date')" :description:trailing="__('registration.birth_date_help')" placeholder="ÅÅÅÅ-MM-DD" inputmode="numeric" autocomplete="bday" maxlength="10" />
+                            <fieldset class="flex flex-col">
+                                <legend class="mb-2 text-sm leading-tight font-medium text-zinc-800">{{ __('registration.gender') }}</legend>
                                 <div class="flex gap-2">
                                     @foreach (['K' => __('registration.gender_k'), 'M' => __('registration.gender_m')] as $value => $label)
                                         <label class="flex-1">
                                             <input type="radio" name="gender" value="{{ $value }}" wire:model.live="gender" class="peer sr-only">
-                                            <span class="flex h-11 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-contour text-[15px] font-medium peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand hover:border-ink-soft">{{ $label }}</span>
+                                            <span class="flex h-12 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-contour text-base font-medium peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand hover:border-ink-soft">{{ $label }}</span>
                                         </label>
                                     @endforeach
                                 </div>
@@ -311,7 +300,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                             <p class="text-[15px] text-ink-soft" aria-live="polite">{{ __('registration.your_age_group', ['group' => $ageGroup]) }}</p>
                         @endif
 
-                        <flux:input wire:model="club" list="clubs" autocomplete="off" :label="__('registration.club')" :description="__('registration.club_help')" />
+                        <flux:input wire:model="club" list="clubs" autocomplete="off" :label="__('registration.club_optional')" :description:trailing="__('registration.club_help')" />
                         <datalist id="clubs">
                             @foreach ($clubs as $name)
                                 <option value="{{ $name }}">
@@ -319,8 +308,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                         </datalist>
 
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <flux:input wire:model="email" type="email" :label="__('registration.email')" :description="__('registration.email_help')" autocomplete="email" />
-                            <flux:input wire:model="phone" type="tel" inputmode="tel" :label="__('registration.phone')" autocomplete="tel" />
+                            <flux:input wire:model="email" type="email" :label="__('registration.email')" :description:trailing="__('registration.email_help')" autocomplete="email" />
+                            <flux:input wire:model="phone" type="tel" inputmode="tel" :label="__('registration.phone_optional')" autocomplete="tel" />
                         </div>
                     </div>
                     @endif
@@ -351,6 +340,25 @@ new #[Layout('components.layouts.public')] class extends Component {
                             <a href="{{ route('public.terms', $event->organizer->slug) }}" target="_blank" class="underline">{{ __('privacy.read_terms') }}<span class="sr-only"> {{ __('public.new_tab') }}</span></a>
                         </p>
                     </div>
+
+                    @if ($errors->any())
+                        {{-- Where the runner pressed pay; each line takes them to its field. --}}
+                        <div role="alert" tabindex="-1" x-init="$el.focus()" class="rounded-[18px] bg-danger-surface px-5 py-4 text-danger outline-none">
+                            <h3 class="text-[15px] font-semibold">{{ __('registration.errors_heading') }}</h3>
+                            <ul class="mt-2 flex flex-col gap-1 text-[15px]">
+                                @foreach ($errors->messages() as $field => $messages)
+                                    <li>
+                                        <a href="#" class="underline" @click.prevent="
+                                            const field = [...document.querySelectorAll('input, select, textarea')]
+                                                .find(el => [...el.attributes].some(a => a.name.startsWith('wire:model') && a.value === @js($field)))
+                                                ?? document.querySelector('[name=' + @js($field) + ']');
+                                            field?.scrollIntoView({ block: 'center' }); field?.focus();
+                                        ">{{ $messages[0] }}</a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
                     <button type="submit" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-6 text-[15px] font-semibold text-brand-contrast hover:opacity-90 disabled:opacity-60" wire:loading.attr="disabled">
                         <span wire:loading.remove wire:target="register">{{ $price ? __('registration.pay', ['price' => Money::format($price, $currency)]) : __('registration.submit_free') }}</span>

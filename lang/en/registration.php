@@ -62,4 +62,6 @@ return [
     'try_again' => 'Pay now',
     'back_to_race' => 'To the race page',
     'who_after_class' => 'Choose a class first, then fill in who is running here.',
+    'club_optional' => 'Club or town (optional)',
+    'phone_optional' => 'Phone (optional)',
 ];

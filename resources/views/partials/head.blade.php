@@ -7,4 +7,7 @@
 <meta name="theme-color" content="#eef0ec">
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
-@fluxAppearance
+{{-- Löpning.se's public pages are always light; only the admin follows the system's dark mode. --}}
+@unless ($light ?? false)
+    @fluxAppearance
+@endunless

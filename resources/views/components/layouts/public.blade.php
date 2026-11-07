@@ -1,9 +1,9 @@
 @props(['title' => null, 'organizer' => null])
 {{-- Löpning.se's quiet frame around an organizer's pages (#118): the organizer leads, the frame gives trust. Always light, as Löpning.se's own pages. --}}
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="lp-light">
     <head>
-        @include('partials.head', ['title' => $title])
+        @include('partials.head', ['title' => $title, 'light' => true])
     </head>
     <body class="lp-public min-h-screen bg-ground text-ink antialiased">
         <a href="#innehall" class="sr-only z-50 rounded-full bg-white px-5 py-3 font-semibold text-ink shadow-raised focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{{ __('public.skip') }}</a>

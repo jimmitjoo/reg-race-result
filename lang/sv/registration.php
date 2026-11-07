@@ -13,7 +13,7 @@ return [
     'gender_m' => 'Man',
     'gender_k' => 'Kvinna',
     'club' => 'Förening eller ort',
-    'club_help' => 'Börja skriva så får du förslag från Friidrottsförbundets föreningslista. Springer du inte för en förening skriver du din ort.',
+    'club_help' => 'Du får förslag från Friidrottsförbundets föreningslista. Springer du inte för en förening skriver du din ort.',
     'email' => 'E-post',
     'phone' => 'Telefon',
     'submit' => 'Anmäl',
@@ -62,4 +62,6 @@ return [
     'try_again' => 'Betala nu',
     'back_to_race' => 'Till loppets sida',
     'who_after_class' => 'Välj en klass först, så fyller du i vem som springer här.',
+    'club_optional' => 'Förening eller ort (valfritt)',
+    'phone_optional' => 'Telefon (valfritt)',
 ];
