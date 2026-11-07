@@ -21,6 +21,28 @@ new class extends Component {
     #[Url]
     public string $race = '';
 
+    #[Url]
+    public string $sort = '';
+
+    #[Url]
+    public string $dir = 'asc';
+
+    /** The columns a header sorts on, empty values last. */
+    private const SORTS = [
+        'bib' => ['registrations.bib'],
+        'name' => ['registrations.last_name', 'registrations.first_name'],
+        'class' => ['race_classes.position', 'race_classes.name'],
+        'status' => ['registrations.paid_at'],
+        'created' => ['registrations.created_at'],
+    ];
+
+    public function sortBy(string $column): void
+    {
+        $this->dir = $this->sort === $column && $this->dir === 'asc' ? 'desc' : 'asc';
+        $this->sort = $column;
+        $this->resetPage();
+    }
+
     public function updated(): void
     {
         $this->resetPage();
@@ -36,8 +58,17 @@ new class extends Component {
 
         $ageGroups = RegistrationsCsv::hasAgeGroups($this->event);
 
+        $registrations = RegistrationsCsv::query($this->event, $status, (int) $this->race ?: null, trim($this->search));
+        if ($columns = self::SORTS[$this->sort] ?? null) {
+            $registrations->reorder();
+            foreach ($columns as $column) {
+                $registrations->orderByRaw("{$column} is null")->orderBy($column, $this->dir === 'desc' ? 'desc' : 'asc');
+            }
+            $registrations->orderBy('registrations.id');
+        }
+
         return [
-            'registrations' => RegistrationsCsv::query($this->event, $status, (int) $this->race ?: null, trim($this->search))->paginate(100),
+            'registrations' => $registrations->paginate(100),
             'ageGroups' => $ageGroups,
             // How many paid runners in each age group, for the prizes.
             'ageGroupCounts' => $ageGroups ? RegistrationsCsv::query($this->event)->get()
@@ -123,11 +154,11 @@ new class extends Component {
         <table class="w-full text-left text-sm">
             <thead class="text-zinc-500">
                 <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                    <th class="py-2 pe-3 font-medium">{{ __('results.bib') }}</th>
-                    <th class="py-2 pe-3 font-medium">{{ __('results.name') }}</th>
-                    <th class="py-2 pe-3 font-medium max-sm:hidden">{{ __('registration.class') }}</th>
-                    <th class="py-2 pe-3 font-medium">{{ __('registrations.status') }}</th>
-                    <th class="py-2 font-medium max-md:hidden">{{ __('registrations.created_at') }}</th>
+                    <x-sort-header column="bib" :$sort :$dir class="py-2 pe-3 font-medium">{{ __('results.bib') }}</x-sort-header>
+                    <x-sort-header column="name" :$sort :$dir class="py-2 pe-3 font-medium">{{ __('results.name') }}</x-sort-header>
+                    <x-sort-header column="class" :$sort :$dir class="py-2 pe-3 font-medium max-sm:hidden">{{ __('registration.class') }}</x-sort-header>
+                    <x-sort-header column="status" :$sort :$dir class="py-2 pe-3 font-medium">{{ __('registrations.status') }}</x-sort-header>
+                    <x-sort-header column="created" :$sort :$dir class="py-2 font-medium max-md:hidden">{{ __('registrations.created_at') }}</x-sort-header>
                 </tr>
             </thead>
             @foreach ($registrations as $registration)

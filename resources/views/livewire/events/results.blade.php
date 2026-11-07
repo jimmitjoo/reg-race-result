@@ -92,25 +92,25 @@ new class extends Component {
             @if ($results->rows === [])
                 <flux:text>{{ __('results.no_results') }}</flux:text>
             @else
-                <table class="w-full text-left text-sm">
+                <table data-sortable class="w-full text-left text-sm">
                     <thead class="text-zinc-500">
                         <tr>
-                            <th class="py-1 pe-2">{{ __('results.placing') }}</th>
-                            <th class="py-1 pe-2">{{ __('results.name') }}</th>
-                            <th class="py-1 pe-2">{{ __('results.born') }}</th>
-                            <th class="py-1 pe-2">{{ __('results.club') }}</th>
-                            <th class="py-1 pe-2 text-right">{{ $results->timed ? __('results.time') : __('results.untimed') }}</th>
-                            <th class="py-1 pe-2 text-right">{{ __('results.bib') }}</th>
-                            @if ($race?->age_groups)<th class="py-1 pe-2">{{ __('results.age_group') }}</th>@endif
-                            @if ($race?->championship)<th class="py-1 pe-2">{{ __('results.championship_placing', ['name' => $race->championship]) }}</th>@endif
-                            @if ($race?->championship_veterans)<th class="py-1">{{ __('results.championship_placing', ['name' => 'V'.$race->championship]) }}</th>@endif
+                            <x-sort-header class="py-1 pe-2">{{ __('results.placing') }}</x-sort-header>
+                            <x-sort-header class="py-1 pe-2">{{ __('results.name') }}</x-sort-header>
+                            <x-sort-header class="py-1 pe-2">{{ __('results.born') }}</x-sort-header>
+                            <x-sort-header class="py-1 pe-2">{{ __('results.club') }}</x-sort-header>
+                            <x-sort-header class="py-1 pe-2 text-right">{{ $results->timed ? __('results.time') : __('results.untimed') }}</x-sort-header>
+                            <x-sort-header class="py-1 pe-2 text-right">{{ __('results.bib') }}</x-sort-header>
+                            @if ($race?->age_groups)<x-sort-header class="py-1 pe-2">{{ __('results.age_group') }}</x-sort-header>@endif
+                            @if ($race?->championship)<x-sort-header class="py-1 pe-2">{{ __('results.championship_placing', ['name' => $race->championship]) }}</x-sort-header>@endif
+                            @if ($race?->championship_veterans)<x-sort-header class="py-1">{{ __('results.championship_placing', ['name' => 'V'.$race->championship]) }}</x-sort-header>@endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($results->rows as $row)
                             <tr class="border-t border-zinc-100 dark:border-zinc-800">
                                 <td class="py-1 pe-2">{{ $row->placing }}</td>
-                                <td class="py-1 pe-2">{{ $row->name }}</td>
+                                <td class="py-1 pe-2" data-sort="{{ trim($row->lastName.' '.$row->firstName) }}">{{ $row->name }}</td>
                                 <td class="py-1 pe-2">{{ $row->birthYear }}</td>
                                 <td class="py-1 pe-2">{{ $row->club }}</td>
                                 <td class="py-1 pe-2 text-right font-mono">{{ $row->time }}</td>

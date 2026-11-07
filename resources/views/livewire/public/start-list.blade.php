@@ -73,16 +73,16 @@ new #[Layout('components.layouts.public')] class extends Component {
                     <h2 id="klass-{{ $class->id }}" class="text-[21px] font-medium">{{ $class->name }}</h2>
                     <p class="text-[15px] text-ink-soft">{{ \App\Support\Format::time($class->start_at->setTimezone($event->timezone)) }} · {{ trans_choice('public.runners', $runners->count(), ['count' => $runners->count()]) }}</p>
                 </div>
-                <table class="mt-4 w-full table-fixed text-[15px]">
+                <table data-sortable class="mt-4 w-full table-fixed text-[15px]">
                     <caption class="sr-only">{{ __('onsite.start_list') }}, {{ $class->name }}</caption>
                     <thead class="text-left text-[13px] text-ink-soft">
                         <tr>
-                            @if ($bibs)<th scope="col" class="w-16 pb-2 font-medium">{{ __('results.bib') }}</th>@endif
-                            <th scope="col" class="pb-2 font-medium sm:w-2/5">{{ $class->team_size ? __('registration.team_name') : __('results.name') }}</th>
-                            @unless ($class->team_size)<th scope="col" class="w-16 pb-2 font-medium">{{ __('results.born') }}</th>@endunless
-                            <th scope="col" class="hidden pb-2 font-medium sm:table-cell">{{ __('registration.club') }}</th>
+                            @if ($bibs)<x-sort-header class="w-16 pb-2 font-medium">{{ __('results.bib') }}</x-sort-header>@endif
+                            <x-sort-header class="pb-2 font-medium sm:w-2/5">{{ $class->team_size ? __('registration.team_name') : __('results.name') }}</x-sort-header>
+                            @unless ($class->team_size)<x-sort-header class="w-16 pb-2 font-medium">{{ __('results.born') }}</x-sort-header>@endunless
+                            <x-sort-header class="hidden pb-2 font-medium sm:table-cell">{{ __('registration.club') }}</x-sort-header>
                             @if ($class->race?->age_groups)
-                                <th scope="col" class="w-20 pb-2 text-right font-medium">{{ __('results.age_group') }}</th>
+                                <x-sort-header class="w-20 pb-2 text-right font-medium">{{ __('results.age_group') }}</x-sort-header>
                             @endif
                         </tr>
                     </thead>
@@ -90,7 +90,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                         @foreach ($runners as $runner)
                             <tr id="anmalan-{{ $runner->id }}" class="scroll-mt-24 border-t border-contour target:bg-peach-light">
                                 @if ($bibs)<td class="py-2.5 pe-3 align-top tabular-nums">{{ $runner->bib ?? '–' }}</td>@endif
-                                <td class="py-2.5 pe-3 align-top">
+                                <td class="py-2.5 pe-3 align-top" data-sort="{{ $runner->team_name || $runner->hidden_at ? $runner->publicName() : $runner->last_name.' '.$runner->first_name }}">
                                     <span class="font-medium">{{ $runner->publicName() }}</span>
                                     @unless ($runner->hidden_at)
                                         <span class="block text-[14px] text-ink-soft sm:hidden">{{ $runner->club }}</span>
