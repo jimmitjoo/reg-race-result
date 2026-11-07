@@ -202,7 +202,7 @@ new #[Layout('components.layouts.public')] class extends Component {
 @php($price = $selected ? $races->firstWhere('race.id', $selected->race_id)['price'] ?? null : null)
 <div x-data="{ summaryInView: false }" class="flex flex-col gap-12">
     <header class="flex flex-col gap-4">
-        <p class="text-[15px] text-ink-soft">{{ $event->organizer->name }}</p>
+        <p class="text-[15px] text-ink-soft"><a href="{{ route('public.organizer', $event->organizer->slug) }}" class="underline decoration-contour hover:text-ink">{{ $event->organizer->name }}</a></p>
         <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ $event->name }}</h1>
         <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</p>
         <div class="flex flex-wrap items-center gap-2 pt-2">
