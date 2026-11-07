@@ -395,3 +395,25 @@ it('gives an overview: open until when, how many have come, what has come in, th
     $event->organizer->update(['stripe_charges_enabled' => false, 'org_number' => '802000-1239']);
     $this->get(route('events.show', $event))->assertSee(__('events.todo_stripe'))->assertDontSee(__('events.todo_receipt'));
 });
+
+it('removes a class or a race nobody has registered for, never one with registrations', function () {
+    $user = organizerUser();
+    $event = Event::factory()->create(['organizer_id' => $user->organizer_id]);
+    $race = Race::factory()->for($event)->create(['name' => 'Milen']);
+    $empty = RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => 'Ingen här']);
+    $taken = RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => 'Anmälda']);
+    Registration::factory()->create(['race_class_id' => $taken->id]);
+    $other = Race::factory()->for($event)->create(['name' => 'Tom']);
+    RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $other->id]);
+    $this->actingAs($user);
+
+    $page = Volt::test('events.show', ['event' => $event]);
+    $page->call('editClass', $empty->id)->call('removeClass')->assertHasNoErrors()->assertSet('editingId', null);
+    $page->call('editClass', $taken->id)->call('removeClass')->assertHasErrors('className');
+    $page->call('editRace', $race->id)->call('removeRace')->assertHasErrors('raceName');
+    $page->call('cancelRace')->call('editRace', $other->id)->call('removeRace')->assertHasNoErrors();
+
+    expect(RaceClass::find($empty->id))->toBeNull()->and($taken->fresh())->not->toBeNull()
+        ->and(Race::find($other->id))->toBeNull()->and($event->raceClasses()->count())->toBe(1)
+        ->and(Registration::count())->toBe(1);
+});
