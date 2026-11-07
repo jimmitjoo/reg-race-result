@@ -71,13 +71,13 @@ new #[Layout('components.layouts.public')] class extends Component {
                     <h2 id="klass-{{ $class->id }}" class="text-[21px] font-medium">{{ $class->name }}</h2>
                     <p class="text-[15px] text-ink-soft">{{ \App\Support\Format::time($class->start_at->setTimezone($event->timezone)) }} · {{ trans_choice('public.runners', $runners->count(), ['count' => $runners->count()]) }}</p>
                 </div>
-                <table class="mt-4 w-full text-[15px]">
+                <table class="mt-4 w-full table-fixed text-[15px]">
                     <caption class="sr-only">{{ __('onsite.start_list') }}, {{ $class->name }}</caption>
                     <thead class="text-left text-[13px] text-ink-soft">
                         <tr>
                             @if ($bibs)<th scope="col" class="w-16 pb-2 font-medium">{{ __('results.bib') }}</th>@endif
                             <th scope="col" class="pb-2 font-medium">{{ $class->team_size ? __('registration.team_name') : __('results.name') }}</th>
-                            <th scope="col" class="hidden pb-2 font-medium sm:table-cell">{{ __('registration.club') }}</th>
+                            <th scope="col" class="hidden w-2/5 pb-2 font-medium sm:table-cell">{{ __('registration.club') }}</th>
                             @if ($class->race?->age_groups)
                                 <th scope="col" class="w-16 pb-2 text-right font-medium">{{ __('results.age_group') }}</th>
                             @endif
