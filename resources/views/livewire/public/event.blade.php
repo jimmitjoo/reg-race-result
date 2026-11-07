@@ -403,16 +403,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                                 @endif
                             </div>
                         </div>
-                        <div class="mt-5 flex flex-wrap gap-2">
-                            @foreach (Format::classOrder($race->raceClasses) as $class)
-                                <label wire:key="class-{{ $class->id }}" class="group relative">
-                                    <input type="radio" name="participants.0.raceClassId" value="{{ $class->id }}" wire:model.live="participants.0.raceClassId" class="peer sr-only" @disabled(! $available)>
-                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-pill border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
-                                        <span class="text-[15px] font-medium">{{ $class->name }}</span>
-                                        <span class="text-[13px] opacity-80">{{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($class->team_size) · {{ __('events.team_of', ['size' => $class->team_size]) }}@endif</span>
-                                    </span>
-                                </label>
-                            @endforeach
+                        <div class="mt-5">
+                            @include('livewire.public.class-choices', ['classes' => $race->raceClasses, 'name' => 'participants.0.raceClassId', 'key' => 'class', 'disabled' => ! $available])
                         </div>
                     </fieldset>
                 @endforeach
@@ -423,7 +415,8 @@ new #[Layout('components.layouts.public')] class extends Component {
                         <span aria-hidden="true" class="grid size-8 place-items-center rounded-full bg-brand text-[15px] font-semibold text-brand-contrast">2</span>
                         {{ count($participants) > 1 ? __('registration.step_who_many') : ($lines[0]['class']?->team_size ? __('registration.step_team') : __('registration.step_who')) }}
                     </h2>
-                    @if (! $lines[0]['class'])
+                    {{-- Only before anyone has a class: once there are several, removing the first must not hide the rest. --}}
+                    @if (! $lines[0]['class'] && count($participants) === 1)
                         <p class="rounded-card bg-white/60 px-5 py-4 text-[15px] text-ink-soft sm:px-7">{{ __('registration.who_after_class') }}</p>
                     @else
                     @foreach ($participants as $i => $participant)
@@ -439,7 +432,11 @@ new #[Layout('components.layouts.public')] class extends Component {
 
                             @if ($i === 0)
                                 {{-- The first participant's class is the one pressed on the race cards above. --}}
-                                <p class="-mt-3 text-[15px] text-ink-soft">{{ $line['class']->race?->name }} – {{ $line['class']->name }} · <a href="#steg-1" class="underline decoration-contour hover:text-ink">{{ __('registration.change_class') }}</a></p>
+                                @if ($line['class'])
+                                    <p class="-mt-3 text-[15px] text-ink-soft">{{ $line['class']->race?->name }} – {{ $line['class']->name }} · <a href="#steg-1" class="underline decoration-contour hover:text-ink">{{ __('registration.change_class') }}</a></p>
+                                @else
+                                    <p class="-mt-3 text-[15px] text-ink-soft"><a href="#steg-1" class="underline decoration-contour hover:text-ink">{{ __('registration.choose_class_above') }}</a></p>
+                                @endif
                             @else
                                 {{-- The same pills as on the race cards, one race at a time: never one long list of every class. --}}
                                 @php($raceId = (int) ($participant['raceId'] ?: $line['class']?->race_id))
@@ -465,17 +462,7 @@ new #[Layout('components.layouts.public')] class extends Component {
                                     @php($raceRow = $races->firstWhere('race.id', $raceId))
                                     <fieldset class="flex flex-col">
                                         <legend class="mb-2 text-sm leading-tight font-medium text-zinc-800">{{ __('registration.class') }}</legend>
-                                        <div class="flex flex-wrap gap-2">
-                                            @foreach (Format::classOrder($raceRow['race']->raceClasses) as $class)
-                                                <label wire:key="klass-{{ $i }}-{{ $class->id }}">
-                                                    <input type="radio" name="participants.{{ $i }}.raceClassId" value="{{ $class->id }}" wire:model.live="participants.{{ $i }}.raceClassId" class="peer sr-only" @disabled($raceRow['price'] === null || $raceRow['soon'])>
-                                                    <span class="flex min-h-11 cursor-pointer flex-col justify-center rounded-pill border-[1.5px] border-contour bg-white px-4 py-1.5 leading-tight transition-colors peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-contrast peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand peer-disabled:cursor-not-allowed peer-disabled:opacity-60 hover:border-ink-soft">
-                                                        <span class="text-[15px] font-medium">{{ $class->name }}</span>
-                                                        <span class="text-[13px] opacity-80">{{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($class->team_size) · {{ __('events.team_of', ['size' => $class->team_size]) }}@endif</span>
-                                                    </span>
-                                                </label>
-                                            @endforeach
-                                        </div>
+                                        @include('livewire.public.class-choices', ['classes' => $raceRow['race']->raceClasses, 'name' => "participants.{$i}.raceClassId", 'key' => "klass-{$i}", 'disabled' => $raceRow['price'] === null || $raceRow['soon']])
                                     </fieldset>
                                 @endif
                             @endif

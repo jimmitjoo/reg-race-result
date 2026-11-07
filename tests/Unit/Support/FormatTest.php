@@ -26,3 +26,10 @@ it('orders classes by start, then by name the way numbers are read', function ()
     expect(Format::classOrder($classes)->pluck('name')->all())
         ->toBe(['10 km Män', 'F9 1 km', 'P5/F5 400m', 'P9 1 km', 'P11 1 km', 'P 13 2 km']);
 });
+
+it('groups classes by start time, earliest first, keeping the order within a group', function () {
+    $class = fn (string $name, string $start) => new RaceClass(['name' => $name, 'start_at' => $start]);
+    $groups = Format::byStart([$class('P11 1 km', '2026-12-31 11:00:00'), $class('P9 1 km', '2026-12-31 10:15:00'), $class('P5 400m', '2026-12-31 11:00:00'), $class('F9 1 km', '2026-12-31 10:15:00')]);
+
+    expect($groups->map(fn ($group) => $group->pluck('name')->all())->all())->toBe([['F9 1 km', 'P9 1 km'], ['P5 400m', 'P11 1 km']]);
+});
