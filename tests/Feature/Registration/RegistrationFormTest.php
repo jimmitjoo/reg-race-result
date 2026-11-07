@@ -32,12 +32,12 @@ function openEvent(): array
 function fillForm($page, RaceClass $class)
 {
     return $page
-        ->set('raceClassId', $class->id)
-        ->set('firstName', 'Anna')
-        ->set('lastName', 'Karlsson')
-        ->set('birthDate', '1991-04-03')
-        ->set('gender', 'K')
-        ->set('club', 'Högby IF')
+        ->set('participants.0.raceClassId', $class->id)
+        ->set('participants.0.firstName', 'Anna')
+        ->set('participants.0.lastName', 'Karlsson')
+        ->set('participants.0.birthDate', '1991-04-03')
+        ->set('participants.0.gender', 'K')
+        ->set('participants.0.club', 'Högby IF')
         ->set('email', 'anna@example.com')
         ->set('phone', '070-123 45 67')
         ->set('acceptTerms', true);
@@ -86,8 +86,8 @@ it('trims names and club', function () {
     [, , , $class] = openEvent();
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
-        ->set('firstName', ' Monica ')
-        ->set('club', 'Högby if ')
+        ->set('participants.0.firstName', ' Monica ')
+        ->set('participants.0.club', 'Högby if ')
         ->call('register');
 
     expect(Registration::sole())->first_name->toBe('Monica')->club->toBe('Högby if');
@@ -98,10 +98,10 @@ it('validates the form', function () {
 
     Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
         ->set('email', 'not-an-email')
-        ->set('birthDate', '1980-13-45')
-        ->set('gender', 'X')
+        ->set('participants.0.birthDate', '1980-13-45')
+        ->set('participants.0.gender', 'X')
         ->call('register')
-        ->assertHasErrors(['raceClassId', 'firstName', 'lastName', 'birthDate', 'gender', 'email']);
+        ->assertHasErrors(['participants.0.raceClassId', 'participants.0.firstName', 'participants.0.lastName', 'participants.0.birthDate', 'participants.0.gender', 'email']);
 });
 
 it('does not accept a class whose race is closed', function () {
@@ -110,7 +110,7 @@ it('does not accept a class whose race is closed', function () {
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
         ->call('register')
-        ->assertHasErrors(['raceClassId']);
+        ->assertHasErrors(['participants.0.raceClassId']);
 });
 
 it('does not accept a class from another event', function () {
@@ -118,9 +118,9 @@ it('does not accept a class from another event', function () {
     $foreign = RaceClass::factory()->create();
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
-        ->set('raceClassId', $foreign->id)
+        ->set('participants.0.raceClassId', $foreign->id)
         ->call('register')
-        ->assertHasErrors(['raceClassId']);
+        ->assertHasErrors(['participants.0.raceClassId']);
 });
 
 it('requires turning 17 during the year for a half marathon or longer', function (string $birthDate, bool $ok) {
@@ -128,10 +128,10 @@ it('requires turning 17 during the year for a half marathon or longer', function
     $half = RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => 'Halvmaraton', 'distance_meters' => 21097]);
 
     $page = fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $half)
-        ->set('birthDate', $birthDate)
+        ->set('participants.0.birthDate', $birthDate)
         ->call('register');
 
-    $ok ? $page->assertHasNoErrors() : $page->assertHasErrors(['birthDate']);
+    $ok ? $page->assertHasNoErrors() : $page->assertHasErrors(['participants.0.birthDate']);
 })->with([
     'turns 17 in December' => ['2009-12-31', true],
     'turns 16' => ['2010-01-01', false],
@@ -163,7 +163,7 @@ it('stores the official club name and link when the typed club is in the federat
     $club = Club::create(['federation' => 'SFIF', 'external_id' => '506', 'name' => 'Högby IF', 'district' => 'Småland']);
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
-        ->set('club', 'högby if ')
+        ->set('participants.0.club', 'högby if ')
         ->call('register');
 
     expect(Registration::sole())->club->toBe('Högby IF')->club_id->toBe($club->id);
@@ -173,7 +173,7 @@ it('keeps a home town as free text', function () {
     [, , , $class] = openEvent();
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
-        ->set('club', 'Kalmar')
+        ->set('participants.0.club', 'Kalmar')
         ->call('register');
 
     expect(Registration::sole())->club->toBe('Kalmar')->club_id->toBeNull();
@@ -186,7 +186,7 @@ it('suggests the federation clubs in the form', function () {
     // The runner's details are asked for once a class is chosen.
     Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
         ->assertDontSeeHtml('<datalist id="clubs">')
-        ->set('raceClassId', (string) $class->id)
+        ->set('participants.0.raceClassId', (string) $class->id)
         ->assertSeeHtml('<datalist id="clubs">')->assertSeeHtml('<option value="Högby IF">');
 });
 
@@ -196,9 +196,9 @@ it('does not let a man register in a women\'s class', function () {
     RaceClass::factory()->create(['event_id' => $event->id, 'race_id' => $race->id, 'name' => 'Män 10 km', 'gender' => 'M']);
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
-        ->set('gender', 'M')
+        ->set('participants.0.gender', 'M')
         ->call('register')
-        ->assertHasErrors(['raceClassId']);
+        ->assertHasErrors(['participants.0.raceClassId']);
 
     expect(Registration::count())->toBe(0);
 });
@@ -208,13 +208,13 @@ it('registers a team with its name and members, the one who registers as contact
     $class->update(['name' => 'Öppen klass', 'team_size' => 3]);
     $page = fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
         ->assertSee(__('registration.team_member_n', ['n' => 3]))
-        ->set('teamName', ' Kyrkans Löpare ')
-        ->set('members', ['Anna Karlsson', 'Bo Ek', '']);
+        ->set('participants.0.teamName', ' Kyrkans Löpare ')
+        ->set('participants.0.members', ['Anna Karlsson', 'Bo Ek', '']);
 
-    $page->call('register')->assertHasErrors(['members.2' => 'required']);
+    $page->call('register')->assertHasErrors(['participants.0.members.2']);
     expect(Registration::count())->toBe(0);
 
-    $page->set('members.2', 'Cilla Ask')->call('register')->assertHasNoErrors();
+    $page->set('participants.0.members.2', 'Cilla Ask')->call('register')->assertHasNoErrors();
     expect(Registration::sole())->team_name->toBe('Kyrkans Löpare')->team_members->toBe(['Anna Karlsson', 'Bo Ek', 'Cilla Ask'])
         ->first_name->toBe('Anna');
 });
@@ -234,7 +234,7 @@ it('shows the price now and the next step, and the sum to pay for the chosen cla
     Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
         ->assertSee(__('registration.price_then', ['date' => '30 nov 2026', 'price' => Money::format(30000, 'SEK')]))
         ->assertSee(__('registration.choose_first'))
-        ->set('raceClassId', (string) $class->id)
+        ->set('participants.0.raceClassId', (string) $class->id)
         ->assertSee(__('registration.pay', ['price' => Money::format(25000, 'SEK')]));
 });
 
@@ -242,7 +242,7 @@ it('takes a birth date written without dashes', function () {
     [, , , $class] = openEvent();
 
     fillForm(Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026']), $class)
-        ->set('birthDate', '19910403')
+        ->set('participants.0.birthDate', '19910403')
         ->call('register')
         ->assertHasNoErrors();
 
@@ -253,15 +253,15 @@ it('keeps what was filled in when the page is loaded again, until the registrati
     [, , , $class] = openEvent();
 
     Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
-        ->set('raceClassId', (string) $class->id)->set('firstName', 'Anna');
+        ->set('participants.0.raceClassId', (string) $class->id)->set('participants.0.firstName', 'Anna');
 
     $again = Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
-        ->assertSet('raceClassId', (string) $class->id)->assertSet('firstName', 'Anna');
+        ->assertSet('participants.0.raceClassId', (string) $class->id)->assertSet('participants.0.firstName', 'Anna');
 
     fillForm($again, $class)->call('register')->assertHasNoErrors();
 
     // Still there for a runner who left Stripe; gone once the confirmation shows it paid.
-    expect(session('registration.'.$class->event_id.'.firstName'))->toBe('Anna');
+    expect(session('registration.'.$class->event_id.'.participants.0.firstName'))->toBe('Anna');
     Registration::sole()->update(['paid_at' => now()]);
     $this->get(Registration::sole()->confirmationUrl())->assertOk();
     expect(session()->has('registration.'.$class->event_id))->toBeFalse();

@@ -20,6 +20,8 @@ class ReconcilePayments extends Command
             ->whereNotNull('stripe_checkout_session_id')
             ->where('created_at', '>=', now()->subDay())
             ->get()
+            // One question per Checkout: markPaid() marks the whole order.
+            ->unique('stripe_checkout_session_id')
             ->each(function (Registration $registration) use ($stripe, &$count) {
                 if ($stripe->isPaid($registration)) {
                     $registration->markPaid('stripe');

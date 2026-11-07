@@ -8,7 +8,7 @@
             <p class="text-[15px] text-ink-soft">{{ $event->organizer->name }}</p>
             @if ($registration->paid_at)
                 <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ __('registration.confirmation_heading') }}</h1>
-                <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ __('registration.confirmation_text', ['name' => $registration->displayName(), 'class' => $class->name, 'event' => $event->name]) }}</p>
+                <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ $order->count() > 1 ? __('registration.confirmation_text_many', ['count' => $order->count(), 'event' => $event->name]) : __('registration.confirmation_text', ['name' => $registration->displayName(), 'class' => $class->name, 'event' => $event->name]) }}</p>
             @else
                 <h1 class="text-[38px] leading-[42px] font-normal tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[56px]">{{ __('registration.unpaid_heading') }}</h1>
                 <p class="text-[17px] text-ink-soft sm:text-[19px]">{{ __('registration.unpaid_text') }}</p>
@@ -16,28 +16,27 @@
         </header>
 
         <section aria-labelledby="anmalan" class="rounded-card bg-white p-5 shadow-rest sm:p-7">
-            <h2 id="anmalan" class="sr-only">{{ __('registration.your_registration') }}</h2>
-            @php($pair = 'grid gap-0.5 sm:grid-cols-[8rem_1fr] sm:gap-6')
-            <dl class="flex flex-col gap-4">
-                <div class="{{ $pair }}">
-                    <dt class="text-[15px] text-ink-soft">{{ $registration->team_name ? __('registration.team_name') : __('registration.runner') }}</dt>
-                    <dd class="text-[17px] font-medium">{{ $registration->displayName() }}</dd>
+            <h2 id="anmalan" class="sr-only">{{ $order->count() > 1 ? __('registration.your_order') : __('registration.your_registration') }}</h2>
+            <ul class="flex flex-col gap-4">
+                @foreach ($order as $entry)
+                    <li class="flex items-baseline justify-between gap-4">
+                        <span class="flex flex-col gap-0.5">
+                            <span class="text-[17px] font-medium">{{ $entry->displayName() }}</span>
+                            <span class="text-[15px] text-ink-soft">{{ $entry->raceClass->race?->name }} – {{ $entry->raceClass->name }}, {{ Format::time($entry->raceClass->start_at->setTimezone($event->timezone)) }}</span>
+                        </span>
+                        @if ($entry->price !== null)
+                            <span class="text-[17px] tabular-nums">{{ Money::format($entry->price, $event->organizer->currency) }}</span>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+            <p class="mt-4 text-[15px] text-ink-soft">{{ Format::date($event->date) }}@if ($event->city) · {{ $event->city }}@endif</p>
+            @if ($order->count() > 1 || ($registration->paid_at && $registration->payment_method))
+                <div class="mt-4 flex items-baseline justify-between border-t border-contour pt-4">
+                    <span class="text-[15px] text-ink-soft">{{ __('registration.total') }}@if ($registration->paid_at && $registration->payment_method) · {{ __("registrations.method.{$registration->payment_method}") }}@endif</span>
+                    <span class="text-[21px] font-medium tabular-nums">{{ Money::format($order->sum('price'), $event->organizer->currency) }}</span>
                 </div>
-                <div class="{{ $pair }}">
-                    <dt class="text-[15px] text-ink-soft">{{ __('registration.class') }}</dt>
-                    <dd class="text-[17px]">{{ $class->race?->name }} – {{ $class->name }}</dd>
-                </div>
-                <div class="{{ $pair }}">
-                    <dt class="text-[15px] text-ink-soft">{{ __('receipt.start') }}</dt>
-                    <dd class="text-[17px]">{{ Format::date($event->date) }}, {{ Format::time($class->start_at->setTimezone($event->timezone)) }}@if ($event->city) · {{ $event->city }}@endif</dd>
-                </div>
-                @if ($registration->price !== null)
-                    <div class="{{ $pair }}">
-                        <dt class="text-[15px] text-ink-soft">{{ __('registrations.price') }}</dt>
-                        <dd class="text-[17px] tabular-nums">{{ Money::format($registration->price, $event->organizer->currency) }}@if ($registration->paid_at && $registration->payment_method) · {{ __("registrations.method.{$registration->payment_method}") }}@endif</dd>
-                    </div>
-                @endif
-            </dl>
+            @endif
             @if ($registration->paid_at && $registration->email)
                 <p class="mt-6 border-t border-contour pt-4 text-[15px] text-ink-soft">{{ __('registration.receipt_sent', ['email' => $registration->email]) }}</p>
             @endif

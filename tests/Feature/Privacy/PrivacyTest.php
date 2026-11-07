@@ -38,8 +38,8 @@ it('requires accepting the terms when registering and remembers when', function 
     $this->travelTo(now()->setDate(2026, 8, 1));
     $this->mock(StripeCheckout::class)->shouldReceive('create')->andReturn(['id' => 'cs', 'url' => 'https://checkout.stripe.com/x']);
     $form = fn () => Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'nattloppet-2026'])
-        ->set('raceClassId', (string) $class->id)->set('firstName', 'Anna')->set('lastName', 'Karlsson')
-        ->set('birthDate', '1991-04-03')->set('gender', 'K')->set('email', 'anna@example.com');
+        ->set('participants.0.raceClassId', (string) $class->id)->set('participants.0.firstName', 'Anna')->set('participants.0.lastName', 'Karlsson')
+        ->set('participants.0.birthDate', '1991-04-03')->set('participants.0.gender', 'K')->set('email', 'anna@example.com');
 
     $form()->call('register')->assertHasErrors(['acceptTerms']);
     $form()->set('acceptTerms', true)->call('register')->assertHasNoErrors();

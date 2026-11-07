@@ -14,7 +14,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-/** The runner's proof of registration, sent once when it is paid. */
+/** The proof of registration for a whole order (#109), sent once to its contact when it is paid. */
 class RegistrationReceipt extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
@@ -39,17 +39,22 @@ class RegistrationReceipt extends Mailable implements ShouldQueue
     public function content(): Content
     {
         $registration = $this->registration->loadMissing('raceClass.race', 'raceClass.event.organizer');
-        $class = $registration->raceClass;
-        $event = $class->event;
+        $event = $registration->raceClass->event;
+        $currency = $event->organizer->currency;
+        $order = $registration->order();
 
         return new Content(markdown: 'mail.receipt', with: [
             'registration' => $registration,
             'event' => $event,
-            'race' => $class->race?->name,
-            'class' => $class->name,
+            'lines' => $order->map(fn ($entry) => [
+                'name' => $entry->displayName(),
+                'class' => trim("{$entry->raceClass->race?->name} – {$entry->raceClass->name}", ' –'),
+                'start' => Format::time($entry->raceClass->start_at->setTimezone($event->timezone)),
+                'price' => Money::format((int) $entry->price, $currency),
+            ]),
+            'count' => $order->count(),
             'date' => Format::date($event->date),
-            'start' => Format::time($class->start_at->setTimezone($event->timezone)),
-            'price' => Money::format((int) $registration->price, $event->organizer->currency),
+            'total' => Money::format((int) $order->sum('price'), $currency),
             'method' => $registration->payment_method ? __("registrations.method.{$registration->payment_method}") : null,
             'url' => $registration->confirmationUrl(),
             'terms' => route('public.terms', $event->organizer->slug),

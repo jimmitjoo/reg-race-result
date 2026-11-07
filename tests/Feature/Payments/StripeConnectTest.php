@@ -85,10 +85,10 @@ it('takes the platform fee on the connected account, and none when the fee is ze
     $class = connectEvent(['fee_basis_points' => 250, 'fee_fixed' => 300]);
     $registration = Registration::factory()->for($class)->unpaid()->create(['price' => 25000]);
 
-    expect(app(StripeCheckout::class)->params($registration, 'https://ok', 'https://cancel')['payment_intent_data'])->toBe(['application_fee_amount' => 925]);
+    expect(app(StripeCheckout::class)->params(collect([$registration]), 'https://ok', 'https://cancel')['payment_intent_data'])->toBe(['application_fee_amount' => 925]);
 
     $class->event->organizer->update(['fee_basis_points' => 0, 'fee_fixed' => 0]);
-    expect(app(StripeCheckout::class)->params($registration->fresh(), 'https://ok', 'https://cancel'))->not->toHaveKey('payment_intent_data');
+    expect(app(StripeCheckout::class)->params(collect([$registration->fresh()]), 'https://ok', 'https://cancel'))->not->toHaveKey('payment_intent_data');
 });
 
 it('never takes a fee larger than the price', function () {
@@ -133,15 +133,15 @@ it('does not take online registrations for paid races until the account can take
     $page = Volt::test('public.event', ['organizer' => 'kalmar-lk', 'event' => 'kalmarmilen'])
         ->assertSee(__('registration.opens_soon'))
         // The paid race's classes cannot be chosen; the free race's can.
-        ->assertSeeHtml('value="'.$class->id.'" wire:model.live="raceClassId" class="peer sr-only" disabled')
-        ->assertDontSeeHtml('value="'.$free->id.'" wire:model.live="raceClassId" class="peer sr-only" disabled');
+        ->assertSeeHtml('value="'.$class->id.'" wire:model.live="participants.0.raceClassId" class="peer sr-only" disabled')
+        ->assertDontSeeHtml('value="'.$free->id.'" wire:model.live="participants.0.raceClassId" class="peer sr-only" disabled');
 
-    $page->set('raceClassId', $class->id)->set('firstName', 'Anna')->set('lastName', 'Karlsson')->set('birthDate', '1991-04-03')
-        ->set('gender', 'K')->set('email', 'anna@example.com')->set('acceptTerms', true)
-        ->call('register')->assertHasErrors(['raceClassId']);
+    $page->set('participants.0.raceClassId', $class->id)->set('participants.0.firstName', 'Anna')->set('participants.0.lastName', 'Karlsson')->set('participants.0.birthDate', '1991-04-03')
+        ->set('participants.0.gender', 'K')->set('email', 'anna@example.com')->set('acceptTerms', true)
+        ->call('register')->assertHasErrors(['participants.0.raceClassId']);
     expect(Registration::count())->toBe(0);
 
-    $page->set('raceClassId', $free->id)->call('register')->assertHasNoErrors();
+    $page->set('participants.0.raceClassId', $free->id)->call('register')->assertHasNoErrors();
     expect(Registration::sole()->paid_at)->not->toBeNull();
 
     $this->actingAs(User::factory()->create(['organizer_id' => $class->event->organizer_id]))

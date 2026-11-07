@@ -24,31 +24,38 @@ class PublicRegistrationController extends Controller
             session()->forget("registration.{$registrationEvent->id}");
         }
 
-        return view('public.registration', ['registration' => $registration, 'event' => $registrationEvent]);
+        return view('public.registration', ['registration' => $registration, 'order' => $registration->order(), 'event' => $registrationEvent]);
     }
 
-    /** The race in the runner's calendar. */
+    /** The race in the runner's calendar, once per participant in the order. */
     public function calendar(string $organizer, string $event, Registration $registration): Response
     {
         $registrationEvent = $this->event($organizer, $event, $registration);
-        $class = $registration->raceClass;
-        $start = $class->start_at->utc();
         $escape = fn (?string $text) => str_replace(['\\', ';', ',', "\n"], ['\\\\', '\\;', '\\,', '\\n'], (string) $text);
+        $order = $registration->order();
         $url = route('public.event', ['organizer' => $organizer, 'event' => $registrationEvent->series?->slug ?? $registrationEvent->slug]);
 
         $ics = implode("\r\n", array_filter([
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
             'PRODID:-//Löpning.se//Anmälan//SV',
-            'BEGIN:VEVENT',
-            "UID:registration-{$registration->id}@".parse_url(config('app.url'), PHP_URL_HOST),
-            'DTSTAMP:'.now()->utc()->format('Ymd\THis\Z'),
-            'DTSTART:'.$start->format('Ymd\THis\Z'),
-            'DTEND:'.$start->addHours(2)->format('Ymd\THis\Z'),
-            'SUMMARY:'.$escape("{$registrationEvent->name} – {$class->name}"),
-            $registrationEvent->city ? 'LOCATION:'.$escape($registrationEvent->city) : null,
-            'URL:'.$url,
-            'END:VEVENT',
+            ...$order->flatMap(function (Registration $entry) use ($registrationEvent, $escape, $url, $order) {
+                $start = $entry->raceClass->start_at->utc();
+                // Whose race it is, when the order has several.
+                $name = $order->count() > 1 ? "{$entry->displayName()}: " : '';
+
+                return [
+                    'BEGIN:VEVENT',
+                    "UID:registration-{$entry->id}@".parse_url(config('app.url'), PHP_URL_HOST),
+                    'DTSTAMP:'.now()->utc()->format('Ymd\THis\Z'),
+                    'DTSTART:'.$start->format('Ymd\THis\Z'),
+                    'DTEND:'.$start->addHours(2)->format('Ymd\THis\Z'),
+                    'SUMMARY:'.$escape("{$name}{$registrationEvent->name} – {$entry->raceClass->name}"),
+                    $registrationEvent->city ? 'LOCATION:'.$escape($registrationEvent->city) : null,
+                    'URL:'.$url,
+                    'END:VEVENT',
+                ];
+            }),
             'END:VCALENDAR',
         ]))."\r\n";
 

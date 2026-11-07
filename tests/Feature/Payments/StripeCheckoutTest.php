@@ -27,11 +27,11 @@ function paidEvent(int $amount = 25000): RaceClass
 function submitRegistration(RaceClass $class)
 {
     return Volt::test('public.event', ['organizer' => 'hogby-if', 'event' => 'sylvesterloppet-2026'])
-        ->set('raceClassId', $class->id)
-        ->set('firstName', 'Anna')
-        ->set('lastName', 'Karlsson')
-        ->set('birthDate', '1991-04-03')
-        ->set('gender', 'K')
+        ->set('participants.0.raceClassId', $class->id)
+        ->set('participants.0.firstName', 'Anna')
+        ->set('participants.0.lastName', 'Karlsson')
+        ->set('participants.0.birthDate', '1991-04-03')
+        ->set('participants.0.gender', 'K')
         ->set('email', 'anna@example.com')
         ->set('acceptTerms', true)
         ->call('register');
@@ -69,7 +69,7 @@ it('builds the checkout session from the registration', function () {
     $class = paidEvent();
     $registration = Registration::factory()->for($class)->create(['price' => 25000, 'email' => 'anna@example.com']);
 
-    $params = app(StripeCheckout::class)->params($registration, 'https://ok', 'https://cancel');
+    $params = app(StripeCheckout::class)->params(collect([$registration]), 'https://ok', 'https://cancel');
 
     expect($params)
         ->mode->toBe('payment')
@@ -81,7 +81,7 @@ it('builds the checkout session from the registration', function () {
             'currency' => 'sek',
             'unit_amount' => 25000,
         ])
-        ->and($params['line_items'][0]['price_data']['product_data']['name'])->toBe('Sylvesterloppet 2026 – Kvinnor 10 km')
+        ->and($params['line_items'][0]['price_data']['product_data']['name'])->toBe("{$registration->displayName()}, Sylvesterloppet 2026 – Kvinnor 10 km")
         ->and($params['metadata'])->toBe(['registration_id' => (string) $registration->id]);
 });
 
