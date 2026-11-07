@@ -278,3 +278,25 @@ select:focus[data-flux-control] {
         -webkit-box-decoration-break: clone;
     }
 }
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* The block editor's text (#115): the placeholder of an empty text. */
+.ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* A block as wide as the window (#116), its content kept in the page's column; in the editor, as wide as the page shown. */
+.bleed {
+    margin-inline: calc(50% - 50vw);
+}
+
+.lp-editor .bleed {
+    margin-inline: 0;
+}

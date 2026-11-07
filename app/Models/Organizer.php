@@ -16,7 +16,7 @@ class Organizer extends Model
 
     protected function casts(): array
     {
-        return ['stripe_details_submitted' => 'boolean', 'stripe_charges_enabled' => 'boolean', 'theme' => 'array', 'theme_draft' => 'array'];
+        return ['stripe_details_submitted' => 'boolean', 'stripe_charges_enabled' => 'boolean', 'theme' => 'array', 'theme_draft' => 'array', 'page' => 'array', 'page_draft' => 'array'];
     }
 
     /** Online payments go to the organizer's own connected Stripe account, or not at all (#47). */
@@ -34,6 +34,11 @@ class Organizer extends Model
     public function series(): HasMany
     {
         return $this->hasMany(Series::class);
+    }
+
+    public function forms(): HasMany
+    {
+        return $this->hasMany(Form::class);
     }
 
     public function events(): HasMany
