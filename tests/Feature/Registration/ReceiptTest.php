@@ -87,7 +87,7 @@ it('writes the receipt in Swedish with the event details and the organizer as re
         ->assertSeeInHtml('torsdag 31 december 2026')
         ->assertSeeInHtml('kl 11.00')
         ->assertSeeInHtml(e(Money::format(25000, 'SEK')))
-        ->assertSeeInHtml(__('registrations.method.stripe'))
+        ->assertSeeInHtml(Illuminate\Support\Str::lcfirst(__('registrations.method.stripe')))
         ->assertSeeInHtml(e($registration->confirmationUrl()))
         ->assertSeeInHtml(route('public.terms', 'hogby-if'));
 });
