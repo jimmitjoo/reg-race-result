@@ -25,7 +25,7 @@ return [
         'contact' => 'Kontakt',
     ],
     'about' => [
-        'hero' => 'Logga, namn, några ord och nästa lopp i din färg.',
+        'hero' => 'Logga, rubrik, några ord och nästa lopp i din färg.',
         'text' => 'Rubrik och text, med listor och länkar.',
         'image' => 'En bild med alt-text och bildtext.',
         'upcoming' => 'Dina kommande lopp, hämtas automatiskt.',
@@ -84,7 +84,7 @@ return [
     'how_add' => '+ mellan blocken lägger till ett nytt. Dra i handtaget eller använd pilarna för att flytta.',
     'how_publish' => 'Ändringarna sparas som utkast. Förhandsvisa, och publicera när du är nöjd.',
     'inline' => [
-        'hero' => 'Skriv texten direkt i toppen. Namnet ändras under klubbens uppgifter och loggan under Utseende.',
+        'hero' => 'Skriv rubrik och text direkt i toppen. En tom rubrik visar klubbens namn. Loggan och färgen ändras under Utseende.',
         'text' => 'Skriv rubrik och text direkt i blocket. Verktygsraden för fetstil, listor och länkar visas när du skriver.',
         'image' => 'Bildtexten skriver du direkt under bilden.',
         'upcoming' => 'Loppen hämtas automatiskt. Rubriken kan du skriva om direkt i blocket.',

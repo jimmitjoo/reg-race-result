@@ -138,3 +138,15 @@ it('puts nothing of Löpning.se above the organizer\'s page, only a quiet line a
     expect($html)->not->toContain('<header')
         ->and(strpos($html, __('public.powered_by')))->toBeGreaterThan(strpos($html, '</main>'));
 });
+
+it('lets the hero say something else than the club\'s name, and says the name again when emptied', function () {
+    $organizer = pageOrganizer();
+    $editor = Volt::test('page.edit');
+    $hero = $editor->get('blocks')[0]['id'];
+
+    $editor->call('setField', $hero, 'title', 'Högbys arrangemang')->call('publish');
+    $this->get('/hogby-if')->assertSee('Högbys arrangemang</h1>', false);
+
+    $editor->call('setField', $hero, 'title', '')->call('publish');
+    $this->get('/hogby-if')->assertSee('Högby IF</h1>', false);
+});

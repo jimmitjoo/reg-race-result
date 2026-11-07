@@ -11,7 +11,7 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 /**
  * The organizer's own page as blocks (#115, #116): structured data per block, rendered on the server to
- * semantic HTML, never free HTML. The name is the page's h1, a block's heading its h2, headings inside a
+ * semantic HTML, never free HTML. The hero's title (the club's name unless rewritten) is the page's h1, a block's heading its h2, headings inside a
  * text h3, so the outline holds whatever order the blocks are in.
  */
 final class Page
@@ -27,7 +27,7 @@ final class Page
 
     /** The fields written straight into a block on the page, rather than in its settings. */
     public const INLINE = [
-        'hero' => ['intro'],
+        'hero' => ['title', 'intro'],
         'text' => ['heading', 'body'],
         'image' => ['caption'],
         'upcoming' => ['heading'],
@@ -44,7 +44,7 @@ final class Page
     public static function block(string $type): array
     {
         return ['id' => Str::lower(Str::random(10)), 'type' => $type] + match ($type) {
-            'hero' => ['variant' => 'brand', 'intro' => '', 'image' => null, 'alt' => '', 'width' => null, 'height' => null],
+            'hero' => ['variant' => 'brand', 'title' => '', 'intro' => '', 'image' => null, 'alt' => '', 'width' => null, 'height' => null],
             'text' => ['heading' => '', 'body' => ''],
             'image' => ['image' => null, 'alt' => '', 'caption' => '', 'size' => 'text', 'width' => null, 'height' => null],
             'upcoming', 'earlier' => ['heading' => ''],
@@ -69,6 +69,7 @@ final class Page
             $key => ['array', 'max:40'],
             "{$key}.*.id" => ['required', 'string', 'max:20'],
             "{$key}.*.type" => ['required', Rule::in(self::TYPES)],
+            "{$key}.*.title" => $text(120),
             "{$key}.*.intro" => $text(400),
             "{$key}.*.heading" => $text(120),
             "{$key}.*.body" => $text(10000),

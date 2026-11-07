@@ -25,7 +25,7 @@ return [
         'contact' => 'Contact',
     ],
     'about' => [
-        'hero' => 'Logo, name, a few words and the next race in your colour.',
+        'hero' => 'Logo, heading, a few words and the next race in your colour.',
         'text' => 'Heading and text, with lists and links.',
         'image' => 'An image with alt text and caption.',
         'upcoming' => 'Your coming races, fetched automatically.',
@@ -84,7 +84,7 @@ return [
     'how_add' => '+ between the blocks adds a new one. Drag the handle or use the arrows to move.',
     'how_publish' => 'Changes are saved as a draft. Preview, and publish when you are happy.',
     'inline' => [
-        'hero' => 'Write the text straight into the top. The name is changed in the club details and the logo under Appearance.',
+        'hero' => 'Write the heading and text straight into the top. An empty heading shows the club\'s name. The logo and colour are changed under Appearance.',
         'text' => 'Write heading and text straight into the block. The toolbar for bold, lists and links shows while you type.',
         'image' => 'Write the caption straight under the image.',
         'upcoming' => 'The races are fetched automatically. You can rewrite the heading straight in the block.',
